@@ -81,7 +81,7 @@ git clone [https://github.com/fgabrielmorais/FTCoin.git](https://github.com/fgab
 
 O desenvolvimento seguiu a metodologia ágil **Kanban**, com a seguinte distribuição de responsabilidades:
 
-* **Gabriel Morais Felix**: Líder de Arquitetura, Versionamento e Integração (Serviços e Cache).
+* **Gabriel Morais Felix**: Líder de Arquitetura, Versionamento e Integração (Serviços e Cache) e Desenvolvimento de Lógica de Negócio.
 * **Erik & Vitor**: Desenvolvimento de Dados (Models e DAOs).
 * **Hyago & Arthur**: Desenvolvimento de Lógica de Negócio (Controllers).
 * **Isabela & Ana**: Desenvolvimento de Experiência do Usuário (Views CLI).
