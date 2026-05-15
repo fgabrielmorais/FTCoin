@@ -10,3 +10,4 @@ bin/
 # Ignorar arquivos do Sistema Operacional
 .DS_Store
 Thumbs.db
+/target/
