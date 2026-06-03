@@ -1,3 +1,4 @@
+
 package br.com.ftcoin.models;
 
 public enum TipoOperacao {

@@ -11,3 +11,6 @@ bin/
 .DS_Store
 Thumbs.db
 /target/
+
+#Credenciais do banco
+database.properties
