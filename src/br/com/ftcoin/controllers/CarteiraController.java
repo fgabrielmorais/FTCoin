@@ -1,69 +1,83 @@
 package br.com.ftcoin.controllers;
 
-import java.util.List;
-
 import br.com.ftcoin.daos.ICarteiraDAO;
 import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.utils.ConsoleColors;
+import java.util.List;
 
 public class CarteiraController {
-	private ICarteiraDAO carteiraDAO;
-	
-	
-	public CarteiraController(ICarteiraDAO carteiraDAO) {
-		this.carteiraDAO = carteiraDAO;
-	}
-	
-	//Registra uma nova carteira no sistema com validações básicas de negócio
-	public void criarCarteira(String nomeTitular, String corretora) {
-		try {
-			
-			// Validação: Campos vazios
-			if(nomeTitular == null || nomeTitular.trim().isEmpty()) {
-				throw new IllegalArgumentException("O nome do titular é obrigatório!");
-			}
-			if(corretora == null || corretora.trim().isEmpty()) {
-				throw new IllegalArgumentException("O nome da corretora é obrigatório!");
-			}
-			
-			//Criacao da entidade
-			Carteira novaCarteira = new Carteira();
-			novaCarteira.setNomeTitular(nomeTitular.trim());
-			novaCarteira.setCorretora(corretora.trim());
-			
-			
-			//Persistencia
-			carteiraDAO.inserir(novaCarteira);
-		    System.out.println("Carteira de " + nomeTitular + "criada com sucesso na corretora " + corretora + "!");
-		} catch (IllegalArgumentException e) {
-			System.err.println("Erro de validação: " + e.getMessage());
-		} catch (Exception e) {
-			System.err.println("Erro ao criar a carteira no banco de dados: " + e.getMessage());
-		}
-	}
-	
-	
-	//Lista de todas as carteiras cadastradas
-	public List<Carteira> listarTodasCarteiras(){
-		try {
-			return carteiraDAO.listarTodas();
-		} catch (Exception e) {
-			System.err.println("Erro ao listar as carteiras: " + e.getMessage());
-			return null;
-		}
-	}
-	
-	//Busca uma carteira específica pelo ID
-	public Carteira buscarCarteira(int id) {
-		try{
-			Carteira carteira = carteiraDAO.buscarPorId(id);
-			if(carteira == null) {
-				System.out.println("Nenhuma carteira encontrada com o ID: " + id);
-			}
-			return carteira;
-			
-		} catch (Exception e) {
-			System.err.println("Erro ao buscar a carteira: " + e.getMessage());
-			return null;
-		}
-	}
+
+    private ICarteiraDAO carteiraDAO;
+
+    public CarteiraController(ICarteiraDAO carteiraDAO) {
+        this.carteiraDAO = carteiraDAO;
+    }
+
+    public void criarCarteira(String nomeTitular, String corretora) {
+        try {
+            if (nomeTitular == null || nomeTitular.trim().isEmpty()) {
+                throw new IllegalArgumentException("O nome do titular é obrigatório.");
+            }
+            if (corretora == null || corretora.trim().isEmpty()) {
+                throw new IllegalArgumentException("O nome da corretora é obrigatório.");
+            }
+
+            Carteira novaCarteira = new Carteira();
+            novaCarteira.setNomeTitular(nomeTitular.trim());
+            novaCarteira.setCorretora(corretora.trim());
+
+            carteiraDAO.inserir(novaCarteira);
+            System.out.println(ConsoleColors.GREEN_BOLD + "Carteira de " + nomeTitular + " criada com sucesso na corretora " + corretora + "!" + ConsoleColors.RESET);
+
+        } catch (IllegalArgumentException e) {
+            System.err.println(ConsoleColors.RED + "Erro de validação: " + e.getMessage() + ConsoleColors.RESET);
+        } catch (Exception e) {
+            System.err.println(ConsoleColors.RED + "Erro ao criar a carteira: " + e.getMessage() + ConsoleColors.RESET);
+        }
+    }
+
+    public List<Carteira> listarTodasCarteiras() {
+        return carteiraDAO.listarTodas();
+    }
+    
+     public Carteira buscarCarteira(int id) {
+         Carteira carteira = carteiraDAO.buscarPorId(id);
+         if (carteira == null) {
+             System.out.println(ConsoleColors.YELLOW + "Nenhuma carteira encontrada com o ID: " + id + ConsoleColors.RESET);
+         }
+         return carteira;
+     }
+
+     public void editarCarteira(int id, String novoTitular, String novaCorretora) {
+         try {
+             Carteira carteiraExistente = carteiraDAO.buscarPorId(id);
+             if (carteiraExistente == null) {
+                 System.out.println(ConsoleColors.YELLOW + "Nenhuma carteira encontrada com o ID: " + id + " para edição." + ConsoleColors.RESET);
+                 return;
+             }
+
+             carteiraExistente.setNomeTitular(novoTitular);
+             carteiraExistente.setCorretora(novaCorretora);
+             carteiraDAO.atualizar(carteiraExistente);
+
+             System.out.println(ConsoleColors.GREEN_BOLD + "Carteira atualizada com sucesso!" + ConsoleColors.RESET);
+         } catch (Exception e) {
+             System.err.println(ConsoleColors.RED + "Erro ao editar a carteira: " + e.getMessage() + ConsoleColors.RESET);
+         }
+     }
+
+     public void excluirCarteira(int id) {
+         try {
+             Carteira carteiraExistente = carteiraDAO.buscarPorId(id);
+             if (carteiraExistente == null) {
+                 System.out.println(ConsoleColors.YELLOW + "Nenhuma carteira encontrada com o ID: " + id + " para exclusão." + ConsoleColors.RESET);
+                 return;
+             }
+             
+             carteiraDAO.excluir(id);
+             System.out.println(ConsoleColors.GREEN_BOLD + "Carteira ID " + id + " excluída com sucesso!" + ConsoleColors.RESET);
+         } catch (Exception e) {
+             System.err.println(ConsoleColors.RED + "Erro ao excluir a carteira: " + e.getMessage() + ConsoleColors.RESET);
+         }
+     }
 }
