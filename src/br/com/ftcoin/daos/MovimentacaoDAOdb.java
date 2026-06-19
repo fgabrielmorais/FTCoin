@@ -20,7 +20,7 @@ public class MovimentacaoDAOdb implements IMovimentacaoDAO{
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setInt(1, mov.getIdCarteira());
-            stmt.setString(2, mov.getTipoOperacao().name());
+            stmt.setString(2, mov.getTipoOperacao().name().substring(0, 1));
             stmt.setBigDecimal(3, mov.getQuantidadeMovimentada());
         
             // Converte o LocalDate do Java para o Date do SQL
@@ -48,7 +48,8 @@ public class MovimentacaoDAOdb implements IMovimentacaoDAO{
                     Movimentacao mov = new Movimentacao();
                     mov.setIdMovimento(rs.getInt("IdMovimento"));
                     mov.setIdCarteira(rs.getInt("IdCarteira"));
-                    mov.setTipoOperacao(TipoOperacao.valueOf(rs.getString("TipoOperacao")));
+                    String letraBanco = rs.getString("TipoOperacao"); // ou "TipoOperacao", dependendo do nome da sua coluna
+                    mov.setTipoOperacao(letraBanco.equals("C") ? TipoOperacao.COMPRA : TipoOperacao.VENDA);
                     mov.setQuantidadeMovimentada(rs.getBigDecimal("Quantidade"));
                     mov.setDataOperacao(rs.getDate("Data").toLocalDate());
                     lista.add(mov);
@@ -65,30 +66,25 @@ public class MovimentacaoDAOdb implements IMovimentacaoDAO{
     @Override
     public List<Movimentacao> listarTodas() {
         List<Movimentacao> lista = new ArrayList<>();
-        String sql = "SELECT * FROM MOVIMENTACAO";
+        String sql = "SELECT * FROM movimentacoes";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             
             while (rs.next()) {
                 Movimentacao mov = new Movimentacao();
+                // Lendo as colunas com os nomes exatos apontados pelo erro
                 mov.setIdMovimento(rs.getInt("IdMovimento"));
                 mov.setIdCarteira(rs.getInt("IdCarteira"));
-                
-                // Converte a String do banco de volta para o Enum
                 mov.setTipoOperacao(TipoOperacao.valueOf(rs.getString("TipoOperacao")));
-                
                 mov.setQuantidadeMovimentada(rs.getBigDecimal("Quantidade"));
-                
-                // Converte o Date do SQL de volta para o LocalDate do Java
                 mov.setDataOperacao(rs.getDate("Data").toLocalDate());
-                
                 lista.add(mov);
             }
         } catch (Exception e) {
             throw new RuntimeException("Erro ao listar todas as movimentações: " + e.getMessage(), e);
         }
-        return lista;
-    }
+        return lista; 
+        }
 
 }

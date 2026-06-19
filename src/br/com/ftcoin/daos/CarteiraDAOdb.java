@@ -47,7 +47,7 @@ public class CarteiraDAOdb implements ICarteiraDAO {
             
             while (rs.next()) {
                 Carteira c = new Carteira();
-                c.setId(rs.getInt("id"));
+                c.setId(rs.getInt("IdCarteira"));
                 c.setNomeTitular(rs.getString("Titular"));
                 c.setCorretora(rs.getString("Corretora"));
                 lista.add(c);
@@ -62,7 +62,7 @@ public class CarteiraDAOdb implements ICarteiraDAO {
 	//BUSCAR UMA CARTEIRA POR UM ID
     @Override
     public Carteira buscarPorId(int id) {
-        String sql = "SELECT * FROM CARTEIRA WHERE idCarteira = ?";
+        String sql = "SELECT * FROM CARTEIRA WHERE IdCarteira = ?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -70,9 +70,9 @@ public class CarteiraDAOdb implements ICarteiraDAO {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     Carteira c = new Carteira();
-                    c.setId(rs.getInt("id"));
-                    c.setNomeTitular(rs.getString("nome_titular"));
-                    c.setCorretora(rs.getString("corretora"));
+                    c.setId(rs.getInt("IdCarteira"));
+                    c.setNomeTitular(rs.getString("Titular"));
+                    c.setCorretora(rs.getString("Corretora"));
                     return c;
                 }
             }
@@ -87,7 +87,7 @@ public class CarteiraDAOdb implements ICarteiraDAO {
     //ATUALIZAR AS INFORMAÇÕES DA CARTEIRA
     @Override
     public void atualizar(Carteira carteira) {
-        String sql = "UPDATE CARTEIRA SET Titular = ?, Corretora = ? WHERE idCarteira = ?";
+        String sql = "UPDATE CARTEIRA SET Titular = ?, Corretora = ? WHERE IdCarteira = ?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
@@ -112,7 +112,7 @@ public class CarteiraDAOdb implements ICarteiraDAO {
     //EXCLUIR AS INFORMAÇÕES DA CARTEIRA
     @Override
     public void excluir(int id) {
-        String sql = "DELETE FROM CARTEIRA WHERE idCarteira = ?";
+        String sql = "DELETE FROM CARTEIRA WHERE IdCarteira = ?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             

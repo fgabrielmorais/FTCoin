@@ -2,11 +2,9 @@ package br.com.ftcoin.main;
 
 import br.com.ftcoin.controllers.CarteiraController;
 import br.com.ftcoin.controllers.MovimentacaoController;
-import br.com.ftcoin.daos.CarteiraDAOMemoria;
 import br.com.ftcoin.daos.CarteiraDAOdb;
 import br.com.ftcoin.daos.ICarteiraDAO;
 import br.com.ftcoin.daos.IMovimentacaoDAO;
-import br.com.ftcoin.daos.MovimentacaoDAOMemoria;
 import br.com.ftcoin.daos.MovimentacaoDAOdb;
 import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.RelatorioDTO;
@@ -14,19 +12,25 @@ import br.com.ftcoin.models.Movimentacao;
 import br.com.ftcoin.utils.ConsoleColors;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Scanner;
 
 public class Main {
 
+    // Criando os formatadores globais para usar em toda a tela
+    private static final DecimalFormat dfMoeda = new DecimalFormat("#,##0.00");
+    private static final DecimalFormat dfCrypto = new DecimalFormat("#,##0.000");
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println(ConsoleColors.YELLOW + "Inicializando o sistema..." + ConsoleColors.RESET);
+        
+        // Mantendo a conexão real com o MariaDB
         ICarteiraDAO carteiraDAO = new CarteiraDAOdb();
         IMovimentacaoDAO movimentacaoDAO = new MovimentacaoDAOdb();
-        
-        
+
         CarteiraController carteiraController = new CarteiraController(carteiraDAO);
         MovimentacaoController movimentacaoController = new MovimentacaoController(movimentacaoDAO, carteiraDAO);
 
@@ -131,7 +135,7 @@ public class Main {
                         carteiraController.excluirCarteira(idExcluir);
                         break;
                     case 0:
-                        break; // Apenas volta
+                        break;
                     default:
                         System.out.println(ConsoleColors.RED + "Opção inválida." + ConsoleColors.RESET);
                 }
@@ -169,16 +173,17 @@ public class Main {
                 System.out.println("      RELATÓRIO FINANCEIRO FTCOIN       ");
                 System.out.println("========================================" + ConsoleColors.RESET);
                 System.out.println("Titular: " + ConsoleColors.CYAN_BOLD + relatorio.getNomeTitular() + ConsoleColors.RESET + " (" + relatorio.getCorretora() + ")");
-                System.out.println("Cotação Atual: " + ConsoleColors.CYAN + "R$ " + relatorio.getCotacaoAtual() + ConsoleColors.RESET);
-                System.out.println("Saldo de Moedas: " + ConsoleColors.YELLOW_BOLD + relatorio.getSaldoMoedas() + " FTC" + ConsoleColors.RESET);
-                System.out.println("Patrimônio Total: R$ " + relatorio.getPatrimonioReal());
                 
-                // LÓGICA DE CORES PARA GANHO/PERDA
+                // Aplicando o DecimalFormat nas saídas financeiras
+                System.out.println("Cotação Atual: " + ConsoleColors.CYAN + "R$ " + dfMoeda.format(relatorio.getCotacaoAtual()) + ConsoleColors.RESET);
+                System.out.println("Saldo de Moedas: " + ConsoleColors.YELLOW_BOLD + dfCrypto.format(relatorio.getSaldoMoedas()) + " FTC" + ConsoleColors.RESET);
+                System.out.println("Patrimônio Total: R$ " + dfMoeda.format(relatorio.getPatrimonioReal()));
+                
                 BigDecimal ganhoPerda = relatorio.getGanhoPerdaTotal();
                 if (ganhoPerda.compareTo(BigDecimal.ZERO) >= 0) {
-                    System.out.println("Lucro/Prejuízo Estimado: " + ConsoleColors.GREEN_BOLD + "+ R$ " + ganhoPerda + " (LUCRO)" + ConsoleColors.RESET);
+                    System.out.println("Lucro/Prejuízo Estimado: " + ConsoleColors.GREEN_BOLD + "+ R$ " + dfMoeda.format(ganhoPerda) + " (LUCRO)" + ConsoleColors.RESET);
                 } else {
-                    System.out.println("Lucro/Prejuízo Estimado: " + ConsoleColors.RED_BOLD + "- R$ " + ganhoPerda.abs() + " (PREJUÍZO)" + ConsoleColors.RESET);
+                    System.out.println("Lucro/Prejuízo Estimado: " + ConsoleColors.RED_BOLD + "- R$ " + dfMoeda.format(ganhoPerda.abs()) + " (PREJUÍZO)" + ConsoleColors.RESET);
                 }
 
                 System.out.println(ConsoleColors.PURPLE + "----------------------------------------" + ConsoleColors.RESET);
@@ -189,7 +194,9 @@ public class Main {
                 } else {
                     for (Movimentacao mov : relatorio.getHistorico()) {
                         String corOperacao = mov.getTipoOperacao().name().equals("COMPRA") ? ConsoleColors.GREEN : ConsoleColors.RED;
-                        System.out.println("  > " + mov.getDataOperacao() + " | " + corOperacao + mov.getTipoOperacao() + ConsoleColors.RESET + " | " + mov.getQuantidadeMovimentada() + " FTC");
+                        
+                        // Aplicando formatação na listagem do histórico também
+                        System.out.println("  > " + mov.getDataOperacao() + " | " + corOperacao + mov.getTipoOperacao() + ConsoleColors.RESET + " | " + dfCrypto.format(mov.getQuantidadeMovimentada()) + " FTC");
                     }
                 }
                 System.out.println(ConsoleColors.PURPLE + "========================================\n" + ConsoleColors.RESET);
