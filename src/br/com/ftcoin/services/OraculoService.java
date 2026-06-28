@@ -3,12 +3,17 @@ package br.com.ftcoin.services;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import br.com.ftcoin.daos.IOraculoDAO;
+import br.com.ftcoin.daos.OraculoDAOMemoria;
+import br.com.ftcoin.daos.OraculoDAOdb;
 import br.com.ftcoin.models.Oraculo;
 
 public class OraculoService {
 	
 	private static OraculoService instancia;
-
+	// private IOraculoDAO oraculoDAO = new OraculoDAOdb();
+	private IOraculoDAO oraculoDAO = new OraculoDAOMemoria();
+	
 	private Oraculo cacheAtual;
 	
 	private OraculoService() {}
@@ -42,9 +47,16 @@ public class OraculoService {
 	}
 	
 	
+
 	private BigDecimal buscarCotacaoNoBanco(LocalDate data) {
-		//TODO: Futuramente, vou conectar isso ao OraculoDAOMariaDB
-		return new BigDecimal("5.50");
-	
-	}
+        BigDecimal cotacaoBanco = oraculoDAO.buscarCotacaoPorData(data);
+        
+        if (cotacaoBanco != null) {
+            return cotacaoBanco;
+        }
+        
+        // Se o banco de dados da faculdade estiver vazio hoje e retornar null,
+        System.out.println("\n [OraculoService]: Cotação para o dia " + data + " não encontrada no banco. Usando cotação de contingência (R$ 5,50).\n");
+        return new BigDecimal("5.50");
+    }
 }

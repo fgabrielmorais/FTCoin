@@ -2,9 +2,11 @@ package br.com.ftcoin.main;
 
 import br.com.ftcoin.controllers.CarteiraController;
 import br.com.ftcoin.controllers.MovimentacaoController;
+import br.com.ftcoin.daos.CarteiraDAOMemoria;
 import br.com.ftcoin.daos.CarteiraDAOdb;
 import br.com.ftcoin.daos.ICarteiraDAO;
 import br.com.ftcoin.daos.IMovimentacaoDAO;
+import br.com.ftcoin.daos.MovimentacaoDAOMemoria;
 import br.com.ftcoin.daos.MovimentacaoDAOdb;
 import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.RelatorioDTO;
@@ -27,9 +29,13 @@ public class Main {
 
         System.out.println(ConsoleColors.YELLOW + "Inicializando o sistema..." + ConsoleColors.RESET);
         
+        
+        ICarteiraDAO carteiraDAO = new CarteiraDAOMemoria();
+        IMovimentacaoDAO movimentacaoDAO = new MovimentacaoDAOMemoria();
+        
         // Mantendo a conexão real com o MariaDB
-        ICarteiraDAO carteiraDAO = new CarteiraDAOdb();
-        IMovimentacaoDAO movimentacaoDAO = new MovimentacaoDAOdb();
+        //ICarteiraDAO carteiraDAO = new CarteiraDAOdb();
+        //IMovimentacaoDAO movimentacaoDAO = new MovimentacaoDAOdb();
 
         CarteiraController carteiraController = new CarteiraController(carteiraDAO);
         MovimentacaoController movimentacaoController = new MovimentacaoController(movimentacaoDAO, carteiraDAO);
@@ -45,7 +51,7 @@ public class Main {
                 switch (opcao) {
                     case 1:
                         menuCarteira(scanner, carteiraController);
-                        break;
+                        break;	
                     case 2:
                         menuMovimentacao(scanner, movimentacaoController);
                         break;

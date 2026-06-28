@@ -1,43 +1,41 @@
-CREATE DATABASE IF NOT EXISTS ftcoin;
-USE ftcoin;
+-- ====================================================================
+-- SCRIPT DE DEFINITION DATA (DDL) - FTCOIN 
+-- Ambiente: Universidade de Campinas (UNICAMP) - WindServer
+-- Base de Dados: PooI_1s26_B02
+-- ====================================================================
 
+CREATE DATABASE IF NOT EXISTS PooI_1s26_B02;
+USE PooI_1s26_B02;
 
----Carteira
----Armazenamento de dados básicos como identificação do titular e da corretora
-CREATE TABLE Carteira (
-	id INT PRIMARY KEY,
-	nome_titular VARCHAR(255) NOT NULL,
-	corretora VARCHAR(255) NOT NULL
-)
+-- --------------------------------------------------------
+-- Tabela: CARTEIRA
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS CARTEIRA (
+  IdCarteira INT(11) NOT NULL AUTO_INCREMENT,
+  Titular VARCHAR(50) NOT NULL,
+  Corretora VARCHAR(50) NOT NULL,
+  PRIMARY KEY (IdCarteira)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
----Oraculo
----Armazenamento da cotação diária. Data como PK para garantir unicidade por dia
-CREATE TABLE Oraculo(
-	data_cotacao DATE PRIMARY KEY,
-	cotacao DECIMAL(18,8) NOT NULL CHECK (cotacao >= 0)
-)
+-- --------------------------------------------------------
+-- Tabela: MOVIMENTACAO
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS MOVIMENTACAO (
+  IdCarteira INT(11) NOT NULL,
+  IdMovimento INT(11) NOT NULL AUTO_INCREMENT,
+  Data DATE DEFAULT NULL,
+  TipoOperacao CHAR(1) DEFAULT NULL,
+  Quantidade DECIMAL(10,3) DEFAULT NULL,
+  PRIMARY KEY (IdMovimento),
+  KEY idx_carteira_movimentacao (IdCarteira),
+  CONSTRAINT fk_mov_carteira FOREIGN KEY (IdCarteira) REFERENCES CARTEIRA (IdCarteira)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
-
----Movimentacao
---- Registro de operações de compra (C) ou venda(V)
----Chave estrangeira vinculada a tabela Carteira
-CREATE TABLE Movimentacao(
-	id_movimento INT PRIMARY KEY AUTO_INCREMENT,
-	id_carteira INT NOT NULL,
-	data_operacao DATE NOT NULL,
-	tipo_operacao CHAR(1) NOT NULL,
-	quantidade_movimentada DECIMAL(18, 8) NOT NULL,
-	
-	CONSTRAINT fk_carteira_movimentacao
-		FOREIGN KEY (id_carteira)
-		REFERENCES Carteira(id)
-		ObeN DELETE CASCADE,
-		
-	CONSTRAINT chk_tipo_operacao
-		CHECK (tipo_operacao IN ('C', 'V')),
-
-	CONSTRAINT chk_quantidade_positiva
-		CHECK (quantidade_movimentada >= 0)
-
-)
+-- --------------------------------------------------------
+-- Tabela: ORACULO
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS ORACULO (
+  Data DATE NOT NULL,
+  Cotacao DECIMAL(6,2) NOT NULL,
+  PRIMARY KEY (Data)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
