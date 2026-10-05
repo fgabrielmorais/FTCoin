@@ -4,7 +4,7 @@ import br.com.ftcoin.models.Movimentacao;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MovimentacaoDAOMemoria implements IMovimentacaoDAO {
+public class MovimentacaoDAOMemoria extends MovimentacaoDAO {
 
     private List<Movimentacao> tabelaMovimentacoes = new ArrayList<>();
     private int contadorId = 1;

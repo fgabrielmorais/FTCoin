@@ -1,36 +1,51 @@
 
 package br.com.ftcoin.models;
 
+import java.math.BigDecimal;
+
 public enum TipoOperacao {
-	COMPRA('C'),
-	VENDA('V');
-	
+	COMPRA('C', "operacao.compra") {
+		@Override
+		public void aplicar(Posicao posicao, BigDecimal quantidade, BigDecimal preco) {
+			posicao.comprar(quantidade, preco);
+		}
+	},
+	VENDA('V', "operacao.venda") {
+		@Override
+		public void aplicar(Posicao posicao, BigDecimal quantidade, BigDecimal preco) {
+			posicao.vender(quantidade, preco);
+		}
+	};
+
 	private final char operacao;
-	
-	TipoOperacao(char operacao){
+	private final String chaveMensagem;
+
+	TipoOperacao(char operacao, String chaveMensagem){
 		this.operacao = operacao;
+		this.chaveMensagem = chaveMensagem;
 	}
-	
+
+	//Código gravado na base de dados
 	public char getOperacao() {
 		return operacao;
 	}
-	
-	
-	//Validação e tratamento de erros dos tipos de operação
-	public static TipoOperacao fromString(String entrada) {
-		if(entrada == null || entrada.trim().isEmpty()) {
-			throw new IllegalArgumentException("A operação não pode ser vazia.");
-		}
-		
-		String operacaoFormatada = entrada.trim().toLowerCase();
-		
-		if(operacaoFormatada.equals("compra") || operacaoFormatada.equals("c")) {
-			return COMPRA;
-		} else if (operacaoFormatada.equals("venda") || operacaoFormatada.equals("v")) {
-			return VENDA;
-		}
-		
 
-		throw new IllegalArgumentException("Tipo de operação inválido. Por favor, digite novamente 'Compra' ou 'Venda'.");
+	//Chave do nome da operação nos arquivos de mensagens
+	public String getChaveMensagem() {
+		return chaveMensagem;
+	}
+
+	//Efeito da operação sobre a posição da carteira
+	public abstract void aplicar(Posicao posicao, BigDecimal quantidade, BigDecimal preco);
+
+
+	public static TipoOperacao fromCodigo(String codigo) {
+		for (TipoOperacao tipo : values()) {
+			if (codigo != null && String.valueOf(tipo.operacao).equalsIgnoreCase(codigo.trim())) {
+				return tipo;
+			}
+		}
+
+		throw new RegraNegocioException("erro.operacao.codigoDesconhecido", codigo);
 	}
 }

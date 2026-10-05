@@ -4,9 +4,8 @@ import br.com.ftcoin.models.Carteira;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CarteiraDAOMemoria implements ICarteiraDAO {
+public class CarteiraDAOMemoria extends CarteiraDAO {
     
-    // A nossa "tabela" do banco de dados na memória RAM
     private List<Carteira> tabelaCarteiras = new ArrayList<>();
     private int contadorId = 1;
 
@@ -33,7 +32,7 @@ public class CarteiraDAOMemoria implements ICarteiraDAO {
 
     @Override
     public void atualizar(Carteira carteira) {
-        // No modo memória, se a gente atualiza o objeto, ele já atualiza na lista
+        tabelaCarteiras.replaceAll(c -> c.getId() == carteira.getId() ? carteira : c);
     }
 
     @Override

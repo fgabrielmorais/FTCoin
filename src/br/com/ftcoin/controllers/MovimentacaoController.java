@@ -2,97 +2,75 @@ package br.com.ftcoin.controllers;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
-import br.com.ftcoin.daos.ICarteiraDAO;
-import br.com.ftcoin.daos.IMovimentacaoDAO;
-import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.daos.CarteiraDAO;
+import br.com.ftcoin.daos.MovimentacaoDAO;
+import br.com.ftcoin.daos.OraculoDAO;
 import br.com.ftcoin.models.Movimentacao;
-import br.com.ftcoin.models.RelatorioDTO;
+import br.com.ftcoin.models.Posicao;
+import br.com.ftcoin.models.RegraNegocioException;
 import br.com.ftcoin.models.TipoOperacao;
-import br.com.ftcoin.services.OraculoService;
-import br.com.ftcoin.utils.ConsoleColors;
 
 public class MovimentacaoController {
-	private IMovimentacaoDAO movimentacaoDAO;
-	private ICarteiraDAO carteiraDAO;
+	private MovimentacaoDAO movimentacaoDAO;
+	private CarteiraDAO carteiraDAO;
+	private OraculoDAO oraculoDAO;
 
-	public MovimentacaoController(IMovimentacaoDAO movDAO, ICarteiraDAO cartDAO) {
+	public MovimentacaoController(MovimentacaoDAO movDAO, CarteiraDAO cartDAO, OraculoDAO oraculoDAO) {
 		this.movimentacaoDAO = movDAO;
 		this.carteiraDAO = cartDAO;
+		this.oraculoDAO = oraculoDAO;
 	}
-	
-	public void registrarOperacao(int idCarteira, String tipoEntrada, BigDecimal quantidade) {
-		try {
-			Carteira carteira = carteiraDAO.buscarPorId(idCarteira);
-			if(carteira == null) {
-				throw new IllegalArgumentException("Nenhuma carteira com o ID " + idCarteira);
-			}
-			
-			TipoOperacao tipo = TipoOperacao.fromString(tipoEntrada);
-			BigDecimal cotacaoHoje = OraculoService.getInstancia().obterCotacaoDoDia();
-			BigDecimal valorTotal = quantidade.multiply(cotacaoHoje);
-			
-			Movimentacao novaMovimentacao = new Movimentacao();
-			novaMovimentacao.setIdCarteira(idCarteira); 
-			novaMovimentacao.setDataOperacao(LocalDate.now());
-			novaMovimentacao.setTipoOperacao(tipo);
-			novaMovimentacao.setQuantidadeMovimentada(quantidade);
+
+	public Movimentacao registrarOperacao(int idCarteira, TipoOperacao tipo, BigDecimal quantidade) {
+		carteiraDAO.buscarExistente(idCarteira);
 		
-			movimentacaoDAO.inserir(novaMovimentacao);
-			
-			System.out.println(ConsoleColors.GREEN_BOLD + "\n✅ Operação realizada com sucesso!!" + ConsoleColors.RESET);
-			System.out.println(ConsoleColors.CYAN + "Titular: " + carteira.getNomeTitular());
-			System.out.println("Detalhes: " + tipo + " de " + quantidade + " FTCoins(s)");
-			System.out.println("Cotação aplicada no dia: R$ " + cotacaoHoje);
-			System.out.println("Valor total envolvido: R$ " + valorTotal + ConsoleColors.RESET + "\n");
-			
-		} catch (IllegalArgumentException e) {
-			System.err.println(ConsoleColors.RED + "\n❌ Validação falhou: " + e.getMessage() + ConsoleColors.RESET + "\n");
-		} catch (Exception e) {
-			System.err.println(ConsoleColors.RED + "\n❌ Erro interno do sistema: " + e.getMessage() + ConsoleColors.RESET + "\n");
-		}
+		Movimentacao novaMovimentacao = new Movimentacao();
+		novaMovimentacao.setIdCarteira(idCarteira);
+		novaMovimentacao.setDataOperacao(LocalDate.now());
+		novaMovimentacao.setTipoOperacao(tipo);
+		novaMovimentacao.setQuantidadeMovimentada(quantidade);
+		
+		// Aplicar na posição atual valida a operação (ex.: saldo insuficiente na venda) antes de gravar
+		tipo.aplicar(apurarPosicao(idCarteira), quantidade, buscarCotacaoAtual());
+	
+		movimentacaoDAO.inserir(novaMovimentacao);
+		return novaMovimentacao;
 	}
 
-	public RelatorioDTO gerarRelatorio(int idCarteira) {
-		try {
-			Carteira carteira = carteiraDAO.buscarPorId(idCarteira);
-			if (carteira == null) {
-				throw new IllegalArgumentException("Carteira não encontrada com o ID informado.");
-			}
+	public BigDecimal calcularValorDaOperacao(Movimentacao movimentacao) {
+		return movimentacao.getQuantidadeMovimentada().multiply(buscarCotacao(movimentacao.getDataOperacao()));
+	}
 
-			List<Movimentacao> historico = movimentacaoDAO.buscarPorCarteira(idCarteira);
+	// Histórico em ordem cronológica, que é a ordem exigida pelo cálculo do custo médio
+	public List<Movimentacao> buscarHistorico(int idCarteira) {
+		List<Movimentacao> historico = new ArrayList<>(movimentacaoDAO.buscarPorCarteira(idCarteira));
+		historico.sort(Comparator.comparing(Movimentacao::getDataOperacao).thenComparing(Movimentacao::getIdMovimento));
+		return historico;
+	}
 
-			BigDecimal saldoMoedas = BigDecimal.ZERO;
-			for (Movimentacao mov : historico) {
-				if (mov.getTipoOperacao() == TipoOperacao.COMPRA) {
-					saldoMoedas = saldoMoedas.add(mov.getQuantidadeMovimentada());
-				} else if (mov.getTipoOperacao() == TipoOperacao.VENDA) {
-					saldoMoedas = saldoMoedas.subtract(mov.getQuantidadeMovimentada());
-				}
-			}
-
-			BigDecimal cotacaoHoje = OraculoService.getInstancia().obterCotacaoDoDia();
-			BigDecimal patrimonioReal = saldoMoedas.multiply(cotacaoHoje);
-
-            // SIMULAÇÃO DE GANHO/PERDA (assumindo que o preço médio de compra histórico foi R$ 100,00)
-            BigDecimal precoMedioSimulado = new BigDecimal("100.00");
-            BigDecimal valorInvestidoEstimado = saldoMoedas.multiply(precoMedioSimulado);
-            BigDecimal ganhoPerda = patrimonioReal.subtract(valorInvestidoEstimado);
-
-			return new RelatorioDTO(
-				carteira.getNomeTitular(),
-				carteira.getCorretora(),
-				saldoMoedas,
-				cotacaoHoje,
-				patrimonioReal,
-                ganhoPerda,
-				historico
-			);
-
-		} catch (Exception e) {
-			System.err.println(ConsoleColors.RED + "❌ Erro ao gerar relatório: " + e.getMessage() + ConsoleColors.RESET);
-			return null;
+	// Cada movimentação é valorizada pela cotação do Oráculo na data em que ocorreu
+	public Posicao apurarPosicao(int idCarteira) {
+		Posicao posicao = new Posicao();
+		for (Movimentacao mov : buscarHistorico(idCarteira)) {
+			BigDecimal cotacaoNaData = buscarCotacao(mov.getDataOperacao());
+			mov.getTipoOperacao().aplicar(posicao, mov.getQuantidadeMovimentada(), cotacaoNaData);
 		}
+		return posicao;
+	}
+
+	public BigDecimal buscarCotacaoAtual() {
+		return buscarCotacao(LocalDate.now());
+	}
+
+	public BigDecimal buscarCotacao(LocalDate data) {
+		BigDecimal cotacao = oraculoDAO.buscarCotacaoPorData(data);
+		if (cotacao == null) {
+			throw new RegraNegocioException("erro.oraculo.semCotacao", data);
+		}
+		return cotacao;
 	}
 }

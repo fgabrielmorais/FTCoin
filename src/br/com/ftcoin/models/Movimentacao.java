@@ -17,9 +17,9 @@ public class Movimentacao {
 		this.idCarteira = idCarteira;
 		this.dataOperacao = data;
 		this.tipoOperacao = tipo;
+		setQuantidadeMovimentada(qtd);
 	}
 	
-	// Getters e Setters
     public int getIdMovimento() { return idMovimento; }
     public void setIdMovimento(int id) { this.idMovimento = id; }
 
@@ -35,8 +35,8 @@ public class Movimentacao {
     public BigDecimal getQuantidadeMovimentada() { return quantidadeMovimentada; }
     
     public void setQuantidadeMovimentada(BigDecimal quantidade) {
-    	if(quantidade == null || quantidade.compareTo(BigDecimal.ZERO) < 0) {
-    		throw new IllegalArgumentException("A quantidade movimentada não pode ser negativa.");
+    	if(quantidade == null || quantidade.compareTo(BigDecimal.ZERO) <= 0) {
+    		throw new RegraNegocioException("erro.movimentacao.quantidadeInvalida");
     	}
     	
     	this.quantidadeMovimentada = quantidade;
