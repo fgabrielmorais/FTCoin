@@ -5,9 +5,10 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 
-public class OraculoDAOdb implements IOraculoDAO {
+public class OraculoDAOMariaDB extends OraculoDAO {
 	
 	@Override
 	    public BigDecimal buscarCotacaoPorData(LocalDate data) {
@@ -23,8 +24,8 @@ public class OraculoDAOdb implements IOraculoDAO {
 	                    return rs.getBigDecimal("Cotacao"); 
 	                }
 	            }
-	        } catch (Exception e) {
-	            System.err.println("Erro ao buscar cotação no banco: " + e.getMessage());
+	        } catch (SQLException e) {
+	            throw new PersistenciaException("erro.persistencia.oraculo.buscar", e);
 	        }
 	        
 	        return null; 

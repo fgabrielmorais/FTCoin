@@ -1,0 +1,5 @@
+# Copie este arquivo para database.properties (mesma pasta) e preencha os valores.
+# O database.properties está no .gitignore e não deve ser versionado.
+db.url=jdbc:mariadb://HOST:3306/NOME_DO_BANCO
+db.user=USUARIO
+db.password=SENHA

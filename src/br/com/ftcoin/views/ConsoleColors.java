@@ -1,4 +1,4 @@
-package br.com.ftcoin.utils;
+package br.com.ftcoin.views;
 
 public class ConsoleColors {
     // Reset (Para voltar a cor ao normal)

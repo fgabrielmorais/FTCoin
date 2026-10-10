@@ -14,3 +14,5 @@ Thumbs.db
 
 #Credenciais do banco
 database.properties
+# Configurações locais do VS Code
+.vscode/
