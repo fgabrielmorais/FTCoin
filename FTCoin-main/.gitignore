@@ -1,0 +1,18 @@
+#Arquivos compilados do Java
+bin/
+*.class
+
+# Configurações locais do Eclipse
+.settings/
+.project
+.classpath
+
+# Ignorar arquivos do Sistema Operacional
+.DS_Store
+Thumbs.db
+/target/
+
+#Credenciais do banco
+database.properties
+# Configurações locais do VS Code
+.vscode/
