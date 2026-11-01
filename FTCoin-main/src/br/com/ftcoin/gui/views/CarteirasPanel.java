@@ -71,6 +71,14 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
      * Referência para a janela modal de formulário ativa.
      */
     private JDialog modalFormularioAtivo;
+    private final JLabel rotuloTitulo;
+
+    private final ModernButton botaoNovaCarteira;
+    private final ModernButton botaoEditarCarteira;
+    private final ModernButton botaoExcluirCarteira;
+    private final ModernButton botaoAtualizarLista;
+
+    private final Runnable ouvinteMudancaIdioma = this::atualizarTextos;
 
     /**
      * Constrói o painel de carteiras inicializando componentes visuais e apresentador.
@@ -89,18 +97,33 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         JPanel painelTopo = new JPanel(new BorderLayout());
         painelTopo.setOpaque(false);
 
-        JLabel rotuloTitulo = new JLabel(mensagens.get("gui.carteira.titulo"));
+        rotuloTitulo = new JLabel(mensagens.get("gui.carteira.titulo"));
         rotuloTitulo.setFont(TemaCores.FONTE_TITULO_GRANDE);
         rotuloTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
-        painelTopo.add(rotuloTitulo, BorderLayout.WEST);
+        painelTopo.add(rotuloTitulo, BorderLayout.NORTH);
 
         JPanel painelBotoesAcao = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         painelBotoesAcao.setOpaque(false);
 
-        ModernButton botaoNovaCarteira = new ModernButton(mensagens.get("gui.carteira.btn.novo"), ModernButton.Variante.SUCESSO);
-        ModernButton botaoEditarCarteira = new ModernButton(mensagens.get("gui.carteira.btn.editar"), ModernButton.Variante.PRIMARIA);
-        ModernButton botaoExcluirCarteira = new ModernButton(mensagens.get("gui.carteira.btn.excluir"), ModernButton.Variante.PERIGO);
-        ModernButton botaoAtualizarLista = new ModernButton(mensagens.get("gui.carteira.btn.atualizar"), ModernButton.Variante.NEUTRO);
+                botaoNovaCarteira = new ModernButton(
+                mensagens.get("gui.carteira.btn.novo"),
+                ModernButton.Variante.SUCESSO
+        );
+
+        botaoEditarCarteira = new ModernButton(
+                mensagens.get("gui.carteira.btn.editar"),
+                ModernButton.Variante.PRIMARIA
+        );
+
+        botaoExcluirCarteira = new ModernButton(
+                mensagens.get("gui.carteira.btn.excluir"),
+                ModernButton.Variante.PERIGO
+        );
+
+        botaoAtualizarLista = new ModernButton(
+                mensagens.get("gui.carteira.btn.atualizar"),
+                ModernButton.Variante.NEUTRO
+        );
 
         botaoNovaCarteira.addActionListener(e -> abrirModalCadastro());
         botaoEditarCarteira.addActionListener(e -> tratarAcaoEditar());
@@ -111,7 +134,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         painelBotoesAcao.add(botaoEditarCarteira);
         painelBotoesAcao.add(botaoExcluirCarteira);
         painelBotoesAcao.add(botaoAtualizarLista);
-        painelTopo.add(painelBotoesAcao, BorderLayout.EAST);
+        painelTopo.add(painelBotoesAcao, BorderLayout.SOUTH);
 
         add(painelTopo, BorderLayout.NORTH);
 
@@ -152,6 +175,74 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         add(painelRolagemTabela, BorderLayout.CENTER);
     }
 
+        /**
+     * Registra a atualização de idioma quando o painel entra na janela.
+     */
+    @Override
+    public void addNotify() {
+        super.addNotify();
+
+        AppContext.getInstancia().getMensagens()
+                .adicionarOuvinte(ouvinteMudancaIdioma);
+
+        atualizarTextos();
+    }
+
+    /**
+     * Remove o registro quando o painel sai da janela.
+     */
+    @Override
+    public void removeNotify() {
+        AppContext.getInstancia().getMensagens()
+                .removerOuvinte(ouvinteMudancaIdioma);
+
+        super.removeNotify();
+    }
+
+    /**
+     * Atualiza os textos sem reconstruir a tabela nem alterar seus dados.
+     */
+    private void atualizarTextos() {
+        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+
+        rotuloTitulo.setText(mensagens.get("gui.carteira.titulo"));
+
+        botaoNovaCarteira.setText(
+                mensagens.get("gui.carteira.btn.novo")
+        );
+        botaoEditarCarteira.setText(
+                mensagens.get("gui.carteira.btn.editar")
+        );
+        botaoExcluirCarteira.setText(
+                mensagens.get("gui.carteira.btn.excluir")
+        );
+        botaoAtualizarLista.setText(
+                mensagens.get("gui.carteira.btn.atualizar")
+        );
+
+        String[] chavesColunas = {
+                "gui.carteira.col.id",
+                "gui.carteira.col.titular",
+                "gui.carteira.col.corretora",
+                "gui.carteira.col.saldo",
+                "gui.carteira.col.valorMercado"
+        };
+
+        for (int i = 0; i < tabelaCarteiras.getColumnCount(); i++) {
+            javax.swing.table.TableColumn coluna =
+                    tabelaCarteiras.getColumnModel().getColumn(i);
+
+            coluna.setHeaderValue(
+                    mensagens.get(chavesColunas[coluna.getModelIndex()])
+            );
+        }
+
+        tabelaCarteiras.getTableHeader().repaint();
+        tabelaCarteiras.repaint();
+        revalidate();
+        repaint();
+    }
+
     /**
      * Inicializa a tela disparando o carregamento dos registros pelo apresentador.
      */
@@ -174,22 +265,39 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
     /**
      * Trata o evento de clique no botão de exclusão de carteira solicitando confirmação.
      */
-    private void tratarAcaoExcluir() {
+        private void tratarAcaoExcluir() {
         CarteiraDTO selecionada = getCarteiraSelecionada();
-        if (selecionada != null) {
-            MensagensGui mensagens = AppContext.getInstancia().getMensagens();
-            int confirmacao = JOptionPane.showConfirmDialog(
-                    this,
-                    mensagens.get("gui.carteira.confirm.excluir", selecionada.id(), selecionada.nomeTitular()),
-                    mensagens.get("gui.comum.atencao"),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
+        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+
+        if (selecionada == null) {
+            exibirMensagemErro(
+                    mensagens.get("gui.carteira.erro.selecione")
             );
-            if (confirmacao == JOptionPane.YES_OPTION) {
-                presenter.excluirCarteira();
-            }
-        } else {
-            exibirMensagemErro(AppContext.getInstancia().getMensagens().get("gui.carteira.erro.selecione"));
+            return;
+        }
+
+        Object[] opcoes = {
+                mensagens.get("gui.carteira.btn.excluir"),
+                mensagens.get("gui.comum.cancelar")
+        };
+
+        int confirmacao = JOptionPane.showOptionDialog(
+                this,
+                mensagens.get(
+                        "gui.carteira.confirm.excluir",
+                        selecionada.id(),
+                        selecionada.nomeTitular()
+                ),
+                mensagens.get("gui.comum.atencao"),
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                opcoes,
+                opcoes[1]
+        );
+
+        if (confirmacao == 0) {
+            presenter.excluirCarteira();
         }
     }
 
@@ -329,7 +437,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
 
         JPanel painelBotoesModal = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         painelBotoesModal.setBackground(TemaCores.SUPERFICIE_HEADER);
-        painelBotoesModal.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, TemaCores.BORDA_SUAVE));
+        painelBotoesModal.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, TemaCores.BORDA_SUAVE));z
 
         ModernButton botaoCancelar = new ModernButton(mensagens.get("gui.comum.cancelar"), ModernButton.Variante.NEUTRO);
         botaoCancelar.addActionListener(e -> fecharModal());
@@ -346,8 +454,54 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         painelBotoesModal.add(botaoCancelar);
         painelBotoesModal.add(botaoSalvar);
 
-        modalFormularioAtivo.add(painelFormulario, BorderLayout.CENTER);
+                modalFormularioAtivo.add(painelFormulario, BorderLayout.CENTER);
         modalFormularioAtivo.add(painelBotoesModal, BorderLayout.SOUTH);
-        modalFormularioAtivo.setVisible(true);
+
+        JDialog dialogo = modalFormularioAtivo;
+
+        Runnable atualizarFormulario = () -> {
+            String chaveTitulo = existente == null
+                    ? "gui.carteira.dialog.novoTitulo"
+                    : "gui.carteira.dialog.editarTitulo";
+
+            dialogo.setTitle(mensagens.get(chaveTitulo));
+
+            rotuloTitular.setText(
+                    mensagens.get("gui.carteira.form.titular")
+            );
+            rotuloCorretora.setText(
+                    mensagens.get("gui.carteira.form.corretora")
+            );
+            botaoCancelar.setText(
+                    mensagens.get("gui.comum.cancelar")
+            );
+            botaoSalvar.setText(
+                    mensagens.get("gui.comum.salvar")
+            );
+
+            dialogo.pack();
+
+            dialogo.setSize(
+                    Math.max(460, dialogo.getWidth()),
+                    Math.max(280, dialogo.getHeight())
+            );
+
+            dialogo.revalidate();
+            dialogo.repaint();
+        };
+
+        mensagens.adicionarOuvinte(atualizarFormulario);
+
+        try {
+            atualizarFormulario.run();
+            dialogo.setLocationRelativeTo(this);
+            dialogo.setVisible(true);
+        } finally {
+            mensagens.removerOuvinte(atualizarFormulario);
+
+            if (modalFormularioAtivo == dialogo) {
+                modalFormularioAtivo = null;
+            }
+        }
     }
 }
