@@ -437,7 +437,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
 
         JPanel painelBotoesModal = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
         painelBotoesModal.setBackground(TemaCores.SUPERFICIE_HEADER);
-        painelBotoesModal.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, TemaCores.BORDA_SUAVE));z
+        painelBotoesModal.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, TemaCores.BORDA_SUAVE));
 
         ModernButton botaoCancelar = new ModernButton(mensagens.get("gui.comum.cancelar"), ModernButton.Variante.NEUTRO);
         botaoCancelar.addActionListener(e -> fecharModal());
