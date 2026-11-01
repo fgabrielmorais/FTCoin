@@ -8,91 +8,96 @@ import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
 /**
- * <p>
- * Provedor centralizado de mensagens internacionalizadas para a interface gráfica ({@code GUI}).
- * </p>
+ * Centraliza as traduções da interface gráfica.
  *
- * <p>
- * Suporta alternância dinâmica de idioma em tempo de execução via {@code ResourceBundle},
- * com notificação automática a componentes observadores registrados.
- * </p>
- *
- * @author Equipe FTCoin
- * @version 1.0.0
- * @since 2026-10-20
+ * Suporta português, inglês e espanhol, com troca de idioma
+ * durante a execução e notificação dos componentes registrados.
  */
 public class MensagensGui {
 
-    /**
-     * Nome base dos arquivos de propriedades (bundle).
-     */
     private static final String BUNDLE_BASE_NAME = "Messages";
 
     /**
-     * Localização padrão para o idioma Português (Brasil).
+     * Português do Brasil.
      */
     public static final Locale LOCALE_PT = Locale.of("pt", "BR");
 
     /**
-     * Localização padrão para o idioma Inglês (Estados Unidos).
+     * Inglês dos Estados Unidos.
      */
     public static final Locale LOCALE_EN = Locale.of("en", "US");
 
     /**
-     * Localidade atualmente aplicada aos textos da interface.
+     * Espanhol da Espanha.
      */
+    public static final Locale LOCALE_ES = Locale.of("es", "ES");
+
     private Locale localeAtual;
-
-    /**
-     * Conjunto de recursos com os textos traduzidos ativos.
-     */
     private ResourceBundle bundle;
-
-    /**
-     * Utilitário de formatação de valores sincronizado com a localidade ativa.
-     */
     private GuiFormatador formatador;
 
-    /**
-     * Lista de ouvintes notificados quando ocorre mudança dinâmica de idioma.
-     */
     private final List<Runnable> ouvintesMudancaIdioma = new ArrayList<>();
 
     /**
-     * Constrói o provedor de mensagens com a localidade inicial fornecida.
+     * Inicializa as mensagens no idioma informado.
      *
-     * @param localeInicial Localidade de inicialização; se {@code null}, adota {@code LOCALE_PT}
+     * @param localeInicial idioma inicial; null utiliza português
      */
     public MensagensGui(Locale localeInicial) {
-        setLocale(localeInicial != null ? localeInicial : LOCALE_PT);
+        setLocale(localeInicial);
     }
 
     /**
-     * Define a nova localidade da interface, recarregando bundles e notificando ouvintes.
+     * Troca o idioma, recarrega as traduções e avisa os componentes.
      *
-     * @param novoLocale Nova localidade desejada para a interface
+     * Idiomas não disponíveis utilizam português.
+     *
+     * @param novoLocale idioma desejado
      */
     public synchronized void setLocale(Locale novoLocale) {
-        this.localeAtual = (novoLocale != null && "en".equalsIgnoreCase(novoLocale.getLanguage()))
-                ? LOCALE_EN : LOCALE_PT;
-        this.bundle = ResourceBundle.getBundle(BUNDLE_BASE_NAME, this.localeAtual);
-        this.formatador = new GuiFormatador(this.localeAtual);
+        String idioma = novoLocale != null
+                ? novoLocale.getLanguage()
+                : "pt";
+
+        Locale localeSelecionado;
+
+        if ("en".equalsIgnoreCase(idioma)) {
+            localeSelecionado = LOCALE_EN;
+        } else if ("es".equalsIgnoreCase(idioma)) {
+            localeSelecionado = LOCALE_ES;
+        } else {
+            localeSelecionado = LOCALE_PT;
+        }
+
+        ResourceBundle novoBundle = ResourceBundle.getBundle(
+                BUNDLE_BASE_NAME,
+                localeSelecionado
+        );
+
+        GuiFormatador novoFormatador = new GuiFormatador(localeSelecionado);
+
+        this.localeAtual = localeSelecionado;
+        this.bundle = novoBundle;
+        this.formatador = novoFormatador;
+
         notificarOuvintes();
     }
 
     /**
-     * Retorna a mensagem internacionalizada associada à chave fornecida.
+     * Obtém uma tradução e substitui os parâmetros, quando houver.
      *
-     * @param chave      Chave de identificação no arquivo de propriedades
-     * @param argumentos Parâmetros variáveis para interpolação via {@code MessageFormat}
-     * @return O texto traduzido e formatado, ou a chave envolvida em exclamações em caso de ausência
+     * @param chave identificação da mensagem
+     * @param argumentos valores para os parâmetros da mensagem
+     * @return mensagem traduzida ou a chave entre exclamações se ausente
      */
     public synchronized String get(String chave, Object... argumentos) {
         try {
             String padrao = bundle.getString(chave);
+
             if (argumentos == null || argumentos.length == 0) {
                 return padrao;
             }
+
             return new MessageFormat(padrao, localeAtual).format(argumentos);
         } catch (MissingResourceException e) {
             return "!" + chave + "!";
@@ -100,27 +105,27 @@ public class MensagensGui {
     }
 
     /**
-     * Retorna a localidade atualmente em operação na interface.
+     * Retorna o idioma ativo.
      *
-     * @return A instância ativa de {@code Locale}
+     * @return localidade atual
      */
     public synchronized Locale getLocaleAtual() {
         return localeAtual;
     }
 
     /**
-     * Retorna o utilitário de formatação configurado para a localidade ativa.
+     * Retorna o formatador de números e datas do idioma ativo.
      *
-     * @return O formatador gráfico {@code GuiFormatador}
+     * @return formatador atual
      */
     public synchronized GuiFormatador getFormatador() {
         return formatador;
     }
 
     /**
-     * Registra um novo ouvinte para receber notificações após a alteração de idioma.
+     * Registra uma ação executada quando o idioma muda.
      *
-     * @param ouvinte Ação executável a ser disparada
+     * @param ouvinte ação de atualização
      */
     public synchronized void adicionarOuvinte(Runnable ouvinte) {
         if (ouvinte != null && !ouvintesMudancaIdioma.contains(ouvinte)) {
@@ -129,22 +134,23 @@ public class MensagensGui {
     }
 
     /**
-     * Remove um ouvinte previamente cadastrado.
+     * Remove uma ação de atualização anteriormente registrada.
      *
-     * @param ouvinte Ação executável a ser desvinculada
+     * @param ouvinte ação a remover
      */
     public synchronized void removerOuvinte(Runnable ouvinte) {
         ouvintesMudancaIdioma.remove(ouvinte);
     }
 
     /**
-     * Dispara as notificações a todos os observadores de alteração de idioma.
+     * Notifica os componentes registrados sobre a troca de idioma.
      */
     private void notificarOuvintes() {
         for (Runnable ouvinte : new ArrayList<>(ouvintesMudancaIdioma)) {
             try {
                 ouvinte.run();
             } catch (Exception ignored) {
+                // Permite que os demais componentes sejam notificados.
             }
         }
     }
