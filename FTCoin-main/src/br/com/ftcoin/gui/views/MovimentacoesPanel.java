@@ -121,6 +121,19 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      * Tabela visual para renderização do histórico de operações.
      */
     private final JTable tabelaHistoricoOperacoes;
+        private final JLabel rotuloTituloSuperior;
+    private final JLabel rotuloHistoricoTitulo;
+    private final JTabbedPane abasOperacoes;
+
+    private final List<Runnable> atualizacoesFormulario =
+            new java.util.ArrayList<>();
+
+    private final Runnable ouvinteMudancaIdioma = this::atualizarTextos;
+
+    private List<MovimentacaoDTO> historicoCarregado = List.of();
+
+    private BigDecimal ultimaCotacaoEstimada;
+    private BigDecimal ultimoTotalEstimado;
 
     /**
      * <p>
@@ -162,7 +175,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Título Superior
-        JLabel rotuloTituloSuperior = new JLabel(mensagens.get("gui.mov.tituloSuperior"));
+        rotuloTituloSuperior = new JLabel(mensagens.get("gui.mov.tituloSuperior"));
         rotuloTituloSuperior.setFont(TemaCores.FONTE_TITULO_GRANDE);
         rotuloTituloSuperior.setForeground(TemaCores.TEXTO_PRINCIPAL);
         add(rotuloTituloSuperior, BorderLayout.NORTH);
@@ -171,7 +184,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         JPanel painelConteudoCentral = new JPanel(new BorderLayout(15, 15));
         painelConteudoCentral.setOpaque(false);
 
-        JTabbedPane abasOperacoes = new JTabbedPane();
+        abasOperacoes = new JTabbedPane();
         abasOperacoes.setFont(TemaCores.FONTE_LABEL);
         abasOperacoes.addTab(mensagens.get("gui.mov.tab.compra"), criarPainelFormulario(TipoOperacao.COMPRA));
         abasOperacoes.addTab(mensagens.get("gui.mov.tab.venda"), criarPainelFormulario(TipoOperacao.VENDA));
@@ -182,7 +195,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         JPanel painelHistorico = new JPanel(new BorderLayout(8, 8));
         painelHistorico.setOpaque(false);
 
-        JLabel rotuloHistoricoTitulo = new JLabel(mensagens.get("gui.mov.historico.titulo"));
+        rotuloHistoricoTitulo = new JLabel(mensagens.get("gui.mov.historico.titulo"));
         rotuloHistoricoTitulo.setFont(TemaCores.FONTE_TITULO_MEDIO);
         rotuloHistoricoTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         painelHistorico.add(rotuloHistoricoTitulo, BorderLayout.NORTH);
@@ -261,7 +274,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         // Linha 0: Seleção de Carteira
         restricoes.gridx = 0; restricoes.gridy = 0;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.carteiraDestinoOrigem")), restricoes);
+        painelForm.add(criarRotuloTraduzido("gui.mov.label.carteiraDestinoOrigem"), restricoes);
         restricoes.gridx = 1; restricoes.gridy = 0; restricoes.gridwidth = 2;
         painelForm.add(comboCarteira, restricoes);
         restricoes.gridwidth = 1;
@@ -269,7 +282,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         // Se for Venda, exibe saldo disponível para alienação
         if (!ehCompra) {
             restricoes.gridx = 3; restricoes.gridy = 0;
-            painelForm.add(new JLabel(mensagens.get("gui.mov.label.saldoDisponivel")), restricoes);
+            painelForm.add(criarRotuloTraduzido("gui.mov.label.saldoDisponivel"), restricoes);
             restricoes.gridx = 4; restricoes.gridy = 0;
             rotuloSaldoDisponivelVenda.setFont(TemaCores.FONTE_LABEL);
             rotuloSaldoDisponivelVenda.setForeground(TemaCores.POSITIVO_LUCRO);
@@ -278,23 +291,23 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         // Linha 1: Data e Quantidade
         restricoes.gridx = 0; restricoes.gridy = 1;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.dataOperacao")), restricoes);
+        painelForm.add(criarRotuloTraduzido("gui.mov.label.dataOperacao"), restricoes);
         restricoes.gridx = 1; restricoes.gridy = 1;
         painelForm.add(campoData, restricoes);
 
         restricoes.gridx = 2; restricoes.gridy = 1;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.quantidadeFTC")), restricoes);
+        painelForm.add(criarRotuloTraduzido("gui.mov.label.quantidadeFTC"), restricoes);
         restricoes.gridx = 3; restricoes.gridy = 1;
         painelForm.add(campoQuantidade, restricoes);
 
         // Linha 2: Cotação e Total Estimado
         restricoes.gridx = 0; restricoes.gridy = 2;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.cotacaoAplicada")), restricoes);
+        painelForm.add(criarRotuloTraduzido("gui.mov.label.cotacaoAplicada"), restricoes);
         restricoes.gridx = 1; restricoes.gridy = 2;
         painelForm.add(rotuloCotacao, restricoes);
 
         restricoes.gridx = 2; restricoes.gridy = 2;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.totalEstimado")), restricoes);
+        painelForm.add(criarRotuloTraduzido("gui.mov.label.totalEstimado"), restricoes);
         restricoes.gridx = 3; restricoes.gridy = 2;
         painelForm.add(rotuloTotal, restricoes);
 
@@ -305,7 +318,15 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
                 textoBotao,
                 ehCompra ? ModernButton.Variante.SUCESSO : ModernButton.Variante.PRIMARIA
         );
-        botaoConfirmar.setPreferredSize(new Dimension(230, 38));
+        botaoConfirmar.setPreferredSize(new Dimension(280, 38));
+
+        String chaveBotao = ehCompra
+                ? "gui.mov.btn.confirmarCompra"
+                : "gui.mov.btn.confirmarVenda";
+
+        atualizacoesFormulario.add(
+                () -> botaoConfirmar.setText(mensagens.get(chaveBotao))
+        );
         botaoConfirmar.addActionListener(e -> {
             ItemCarteiraCombo item = (ItemCarteiraCombo) comboCarteira.getSelectedItem();
             if (item == null) {
@@ -378,12 +399,136 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         }
     }
 
+        /**
+     * Cria um rótulo e registra sua atualização de idioma.
+     *
+     * @param chave chave da tradução
+     * @return rótulo traduzido
+     */
+    private JLabel criarRotuloTraduzido(String chave) {
+        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+
+        JLabel rotulo = new JLabel(mensagens.get(chave));
+
+        atualizacoesFormulario.add(
+                () -> rotulo.setText(mensagens.get(chave))
+        );
+
+        return rotulo;
+    }
+
+    /**
+     * Registra a atualização de idioma quando o painel entra na janela.
+     */
+    @Override
+    public void addNotify() {
+        super.addNotify();
+
+        AppContext.getInstancia().getMensagens()
+                .adicionarOuvinte(ouvinteMudancaIdioma);
+
+        atualizarTextos();
+    }
+
+    /**
+     * Remove o registro quando o painel sai da janela.
+     */
+    @Override
+    public void removeNotify() {
+        AppContext.getInstancia().getMensagens()
+                .removerOuvinte(ouvinteMudancaIdioma);
+
+        super.removeNotify();
+    }
+
+    /**
+     * Atualiza a apresentação sem alterar os campos dos formulários.
+     */
+    private void atualizarTextos() {
+        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+
+        rotuloTituloSuperior.setText(
+                mensagens.get("gui.mov.tituloSuperior")
+        );
+
+        rotuloHistoricoTitulo.setText(
+                mensagens.get("gui.mov.historico.titulo")
+        );
+
+        abasOperacoes.setTitleAt(
+                0, mensagens.get("gui.mov.tab.compra")
+        );
+        abasOperacoes.setTitleAt(
+                1, mensagens.get("gui.mov.tab.venda")
+        );
+
+        for (Runnable atualizacao : atualizacoesFormulario) {
+            atualizacao.run();
+        }
+
+        String[] chavesColunas = {
+                "gui.dash.feed.col.data",
+                "gui.dash.feed.col.carteira",
+                "gui.dash.feed.col.tipo",
+                "gui.dash.feed.col.quantidade",
+                "gui.dash.feed.col.cotacao",
+                "gui.dash.feed.col.total"
+        };
+
+        for (int i = 0; i < tabelaHistoricoOperacoes.getColumnCount(); i++) {
+            javax.swing.table.TableColumn coluna =
+                    tabelaHistoricoOperacoes.getColumnModel().getColumn(i);
+
+            coluna.setHeaderValue(
+                    mensagens.get(chavesColunas[coluna.getModelIndex()])
+            );
+        }
+
+        int linhaSelecionada = tabelaHistoricoOperacoes.getSelectedRow();
+
+        exibirHistoricoMovimentacoes(historicoCarregado);
+
+        if (linhaSelecionada >= 0
+                && linhaSelecionada < tabelaHistoricoOperacoes.getRowCount()) {
+            tabelaHistoricoOperacoes.setRowSelectionInterval(
+                    linhaSelecionada,
+                    linhaSelecionada
+            );
+        }
+
+        if (ultimaCotacaoEstimada != null && ultimoTotalEstimado != null) {
+            atualizarEstimativas(
+                    ultimaCotacaoEstimada,
+                    ultimoTotalEstimado
+            );
+        }
+
+        ItemCarteiraCombo carteiraVenda =
+                (ItemCarteiraCombo) comboCarteiraVenda.getSelectedItem();
+
+        if (carteiraVenda != null) {
+            rotuloSaldoDisponivelVenda.setText(
+                    mensagens.getFormatador().quantidade(carteiraVenda.saldo())
+            );
+        } else {
+            rotuloSaldoDisponivelVenda.setText("-");
+        }
+
+        tabelaHistoricoOperacoes.getTableHeader().repaint();
+        tabelaHistoricoOperacoes.repaint();
+        revalidate();
+        repaint();
+    }
+
     /**
      * Inicializa a tela disparando a carga de carteiras e a estimativa inicial.
      */
     public void inicializar() {
         presenter.inicializar();
-        presenter.calcularEstimativas(LocalDate.now(), campoQuantidadeCompra.getText());
+        presenter.calcularEstimativas(
+                LocalDate.now(),
+                campoQuantidadeCompra.getText()
+        );
     }
 
     /**
@@ -417,6 +562,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     @Override
     public void exibirHistoricoMovimentacoes(List<MovimentacaoDTO> movimentacoes) {
+        this.historicoCarregado = List.copyOf(movimentacoes);
         modeloTabelaHistorico.setRowCount(0);
         GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
         for (MovimentacaoDTO movimentacao : movimentacoes) {
@@ -439,6 +585,8 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     @Override
     public void atualizarEstimativas(BigDecimal cotacao, BigDecimal valorTotal) {
+        this.ultimaCotacaoEstimada = cotacao;
+        this.ultimoTotalEstimado = valorTotal;
         GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
         rotuloCotacaoEstimadaCompra.setText(formatador.moeda(cotacao));
         rotuloTotalEstimadoCompra.setText(formatador.moeda(valorTotal));
