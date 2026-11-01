@@ -116,6 +116,16 @@ public class DashboardPanel extends JPanel implements IDashboardView {
      * Rótulo descritivo do cabeçalho da tabela de transações recentes.
      */
     private final JLabel rotuloFeedTitulo;
+        /**
+     * Últimos dados recebidos, utilizados para atualizar a formatação
+     * quando o idioma muda, sem consultar novamente os serviços.
+     */
+    private ResumoDashboardDTO ultimoResumo;
+
+    /**
+     * Ação registrada para atualizar o painel na troca de idioma.
+     */
+    private final Runnable ouvinteMudancaIdioma = this::atualizarTextos;
 
     /**
      * Constrói o painel de dashboard inicializando cartões, tabelas e botões de atalho.
@@ -132,12 +142,39 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         setBackground(TemaCores.FUNDO_APP);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // Inicialização dos cartões com textos internacionalizados
-        cardPatrimonioTotal = new ModernCard(mensagens.get("gui.dash.card.patrimonio"), "R$ 0,00", TemaCores.PRIMARIA);
-        cardSaldoConsolidado = new ModernCard(mensagens.get("gui.dash.card.saldoConsolidado"), "0.000 FTC", TemaCores.TEXTO_PRINCIPAL);
-        cardCotacaoHoje = new ModernCard(mensagens.get("gui.dash.card.cotacaoHoje"), "R$ 0,00", TemaCores.SECUNDARIA);
-        cardCarteirasAtivas = new ModernCard(mensagens.get("gui.dash.card.carteirasAtivas"), "0", TemaCores.ACCENT);
-        cardResultadoTotal = new ModernCard(mensagens.get("gui.dash.card.resultadoTotal"), "R$ 0,00", TemaCores.POSITIVO_LUCRO);
+               // Inicializa os cartões com a formatação do idioma ativo.
+        GuiFormatador formatadorInicial = mensagens.getFormatador();
+        java.math.BigDecimal zero = java.math.BigDecimal.ZERO;
+
+        cardPatrimonioTotal = new ModernCard(
+                mensagens.get("gui.dash.card.patrimonio"),
+                formatadorInicial.moeda(zero),
+                TemaCores.PRIMARIA
+        );
+
+        cardSaldoConsolidado = new ModernCard(
+                mensagens.get("gui.dash.card.saldoConsolidado"),
+                formatadorInicial.quantidade(zero),
+                TemaCores.TEXTO_PRINCIPAL
+        );
+
+        cardCotacaoHoje = new ModernCard(
+                mensagens.get("gui.dash.card.cotacaoHoje"),
+                formatadorInicial.moeda(zero),
+                TemaCores.SECUNDARIA
+        );
+
+        cardCarteirasAtivas = new ModernCard(
+                mensagens.get("gui.dash.card.carteirasAtivas"),
+                "0",
+                TemaCores.ACCENT
+        );
+
+        cardResultadoTotal = new ModernCard(
+                mensagens.get("gui.dash.card.resultadoTotal"),
+                formatadorInicial.moeda(zero),
+                TemaCores.POSITIVO_LUCRO
+        );
 
         // Topo: Título da tela e Ações Rápidas
         JPanel painelTopo = new JPanel(new BorderLayout());
@@ -232,10 +269,126 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         add(painelCorpoCentral, BorderLayout.CENTER);
     }
 
+        /**
+     * Registra a atualização de idioma quando o painel entra na janela.
+     */
+    @Override
+    public void addNotify() {
+        super.addNotify();
+
+        AppContext.getInstancia().getMensagens()
+                .adicionarOuvinte(ouvinteMudancaIdioma);
+
+        atualizarTextos();
+    }
+
+    /**
+     * Remove o registro quando o painel sai da janela.
+     */
+    @Override
+    public void removeNotify() {
+        AppContext.getInstancia().getMensagens()
+                .removerOuvinte(ouvinteMudancaIdioma);
+
+        super.removeNotify();
+    }
+
+    /**
+     * Atualiza textos, cabeçalhos e valores no idioma ativo.
+     */
+    private void atualizarTextos() {
+        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+
+        rotuloTitulo.setText(mensagens.get("gui.dash.titulo"));
+        rotuloFeedTitulo.setText(mensagens.get("gui.dash.feed.titulo"));
+
+        botaoNovaCarteira.setText(
+                mensagens.get("gui.dash.btn.novaCarteira")
+        );
+        botaoComprarMoedas.setText(
+                mensagens.get("gui.dash.btn.comprarFTC")
+        );
+        botaoVenderMoedas.setText(
+                mensagens.get("gui.dash.btn.venderFTC")
+        );
+        botaoAbrirRelatorios.setText(
+                mensagens.get("gui.dash.btn.relatorios")
+        );
+
+        cardPatrimonioTotal.setTitulo(
+                mensagens.get("gui.dash.card.patrimonio")
+        );
+        cardSaldoConsolidado.setTitulo(
+                mensagens.get("gui.dash.card.saldoConsolidado")
+        );
+        cardCotacaoHoje.setTitulo(
+                mensagens.get("gui.dash.card.cotacaoHoje")
+        );
+        cardCarteirasAtivas.setTitulo(
+                mensagens.get("gui.dash.card.carteirasAtivas")
+        );
+        cardResultadoTotal.setTitulo(
+                mensagens.get("gui.dash.card.resultadoTotal")
+        );
+
+        String[] chavesColunas = {
+                "gui.dash.feed.col.data",
+                "gui.dash.feed.col.carteira",
+                "gui.dash.feed.col.tipo",
+                "gui.dash.feed.col.quantidade",
+                "gui.dash.feed.col.cotacao",
+                "gui.dash.feed.col.total"
+        };
+
+        for (int i = 0; i < tabelaFeedOperacoes.getColumnCount(); i++) {
+            javax.swing.table.TableColumn coluna =
+                    tabelaFeedOperacoes.getColumnModel().getColumn(i);
+
+            coluna.setHeaderValue(
+                    mensagens.get(chavesColunas[coluna.getModelIndex()])
+            );
+        }
+
+        if (ultimoResumo != null) {
+            int linhaSelecionada = tabelaFeedOperacoes.getSelectedRow();
+
+            exibirResumo(ultimoResumo);
+
+            if (linhaSelecionada >= 0
+                    && linhaSelecionada < tabelaFeedOperacoes.getRowCount()) {
+                tabelaFeedOperacoes.setRowSelectionInterval(
+                        linhaSelecionada,
+                        linhaSelecionada
+                );
+            }
+        } else {
+            GuiFormatador formatador = mensagens.getFormatador();
+            java.math.BigDecimal zero = java.math.BigDecimal.ZERO;
+
+            cardPatrimonioTotal.setValor(
+                    formatador.moeda(zero), TemaCores.PRIMARIA
+            );
+            cardSaldoConsolidado.setValor(
+                    formatador.quantidade(zero), TemaCores.TEXTO_PRINCIPAL
+            );
+            cardCotacaoHoje.setValor(
+                    formatador.moeda(zero), TemaCores.SECUNDARIA
+            );
+            cardCarteirasAtivas.setValor("0", TemaCores.ACCENT);
+            cardResultadoTotal.setValor(
+                    formatador.moeda(zero), TemaCores.POSITIVO_LUCRO
+            );
+        }
+
+        tabelaFeedOperacoes.getTableHeader().repaint();
+        revalidate();
+        repaint();
+    }
+
     /**
      * Solicita a transição para a tela identificada pelo argumento fornecido.
      *
-     * @param destino Identificador de cartão da tela de destino
+     * @param destino identificador da tela de destino
      */
     private void navegarPara(String destino) {
         if (consumidorNavegacao != null) {
@@ -257,6 +410,7 @@ public class DashboardPanel extends JPanel implements IDashboardView {
      */
     @Override
     public void exibirResumo(ResumoDashboardDTO resumo) {
+        this.ultimoResumo = resumo;
         GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
 
         cardPatrimonioTotal.setValor(formatador.moeda(resumo.patrimonioTotal()), TemaCores.PRIMARIA);
