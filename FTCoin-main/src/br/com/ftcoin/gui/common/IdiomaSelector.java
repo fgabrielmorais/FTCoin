@@ -3,104 +3,100 @@ package br.com.ftcoin.gui.common;
 import java.util.Locale;
 
 /**
- * <p>
- * Enumeração para o seletor de idiomas suportados na interface gráfica.
- * </p>
- *
- * <p>
- * Representa os estados fixos de localização disponíveis para alternância dinâmica
- * pelo usuário nos componentes da {@code GUI}.
- * </p>
- *
- * @author Equipe FTCoin
- * @version 1.0.0
- * @since 2026-10-20
+ * Representa os idiomas disponíveis na interface gráfica.
  */
 public enum IdiomaSelector {
 
-    /**
-     * Localização em Português do Brasil.
-     */
-    PORTUGUES(MensagensGui.LOCALE_PT, "gui.menu.idioma.pt", "🇧🇷 Português (BR)"),
+    PORTUGUES(
+            MensagensGui.LOCALE_PT,
+            "gui.menu.idioma.pt",
+            "🇧🇷 Português (BR)"
+    ),
 
-    /**
-     * Localização em Inglês dos Estados Unidos.
-     */
-    INGLES(MensagensGui.LOCALE_EN, "gui.menu.idioma.en", "🇺🇸 English (US)");
+    INGLES(
+            MensagensGui.LOCALE_EN,
+            "gui.menu.idioma.en",
+            "🇺🇸 English (US)"
+    ),
 
-    /**
-     * Localidade do sistema associada ao seletor.
-     */
+    ESPANHOL(
+            MensagensGui.LOCALE_ES,
+            "gui.menu.idioma.es",
+            "🇪🇸 Español (ES)"
+    );
+
     private final Locale locale;
-
-    /**
-     * Chave do arquivo de propriedades para o nome do idioma.
-     */
     private final String chaveMensagem;
-
-    /**
-     * Rótulo descritivo padrão com emoji de bandeira.
-     */
     private final String descricaoPadrao;
 
-    /**
-     * Construtor da enumeração do seletor de idioma.
-     *
-     * @param locale          Instância de {@code Locale} correspondente
-     * @param chaveMensagem   Chave do bundle de mensagens para internacionalização
-     * @param descricaoPadrao Texto padrão de fallback para o componente visual
-     */
-    IdiomaSelector(Locale locale, String chaveMensagem, String descricaoPadrao) {
+    IdiomaSelector(
+            Locale locale,
+            String chaveMensagem,
+            String descricaoPadrao
+    ) {
         this.locale = locale;
         this.chaveMensagem = chaveMensagem;
         this.descricaoPadrao = descricaoPadrao;
     }
 
     /**
-     * Retorna a localidade ({@code Locale}) associada a este seletor.
+     * Retorna a localidade associada ao idioma.
      *
-     * @return O {@code Locale} correspondente
+     * @return localidade do idioma
      */
     public Locale getLocale() {
         return locale;
     }
 
     /**
-     * Retorna a chave do bundle de mensagens para este seletor.
+     * Retorna a chave de tradução do nome do idioma.
      *
-     * @return A chave de internacionalização {@code String}
+     * @return chave da mensagem
      */
     public String getChaveMensagem() {
         return chaveMensagem;
     }
 
     /**
-     * Retorna a descrição padrão com ícone para este seletor.
+     * Retorna a descrição utilizada como alternativa.
      *
-     * @return A descrição padrão {@code String}
+     * @return descrição padrão
      */
     public String getDescricaoPadrao() {
         return descricaoPadrao;
     }
 
     /**
-     * Retorna o texto formatado e internacionalizado para o seletor.
+     * Retorna o nome do idioma acompanhado de sua bandeira.
      *
-     * @return O rótulo localizado do seletor {@code String}
+     * @return descrição para o seletor
      */
     public String getDescricaoLocalizada() {
         MensagensGui mensagens = AppContext.getInstancia().getMensagens();
-        if (mensagens != null) {
-            String prefixo = (this == PORTUGUES) ? "🇧🇷 " : "🇺🇸 ";
-            return prefixo + mensagens.get(chaveMensagem);
+
+        if (mensagens == null) {
+            return descricaoPadrao;
         }
-        return descricaoPadrao;
+
+        String descricao = mensagens.get(chaveMensagem);
+
+        if (descricao.equals("!" + chaveMensagem + "!")) {
+            return descricaoPadrao;
+        }
+
+        String prefixo = switch (this) {
+            case PORTUGUES -> "🇧🇷 ";
+            case INGLES -> "🇺🇸 ";
+            case ESPANHOL -> "🇪🇸 ";
+        };
+
+        return prefixo + descricao;
     }
 
     /**
-     * Retorna a representação textual para renderização no componente de seleção da GUI.
+     * Retorna o texto exibido no componente de seleção.
      *
-     * @return O texto de apresentação no {@code JComboBox}
+     * @return descrição do idioma
      */
     @Override
     public String toString() {
@@ -108,15 +104,23 @@ public enum IdiomaSelector {
     }
 
     /**
-     * Converte um {@code Locale} no seletor de idioma correspondente.
+     * Identifica a opção correspondente à localidade informada.
      *
-     * @param locale Localidade a ser verificada
-     * @return A instância de {@code IdiomaSelector} correspondente
+     * @param locale localidade a identificar
+     * @return idioma correspondente ou português como padrão
      */
     public static IdiomaSelector porLocale(Locale locale) {
-        if (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) {
-            return INGLES;
+        if (locale == null) {
+            return PORTUGUES;
         }
+
+        for (IdiomaSelector idioma : values()) {
+            if (idioma.getLocale().getLanguage()
+                    .equalsIgnoreCase(locale.getLanguage())) {
+                return idioma;
+            }
+        }
+
         return PORTUGUES;
     }
 }
