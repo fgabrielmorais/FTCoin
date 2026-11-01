@@ -52,8 +52,34 @@ public class MainFrame extends JFrame {
     private final JLabel lblStatusMensagem = new JLabel("");
 
     private final JComboBox<IdiomaSelector> cmbIdioma =
-        new JComboBox<>(IdiomaSelector.values());
-    private final JComboBox<String> cmbBanco = new JComboBox<>(new String[]{"💾 Memória Volátil", "🗄️ MariaDB (SQL)"});
+            new JComboBox<>(IdiomaSelector.values());
+
+    private final JComboBox<String> cmbBanco =
+            new JComboBox<>(new String[]{"memory", "mariadb"});
+
+    private final JLabel lblIdioma = new JLabel();
+    private final JLabel lblBanco = new JLabel();
+
+    private final ModernButton btnDash =
+            new ModernButton("", ModernButton.Variante.NEUTRO);
+
+    private final ModernButton btnCart =
+            new ModernButton("", ModernButton.Variante.NEUTRO);
+
+    private final ModernButton btnMov =
+            new ModernButton("", ModernButton.Variante.NEUTRO);
+
+    private final ModernButton btnCot =
+            new ModernButton("", ModernButton.Variante.NEUTRO);
+
+    private final ModernButton btnRel =
+            new ModernButton("", ModernButton.Variante.NEUTRO);
+
+    private final ModernButton btnAjudaTop =
+            new ModernButton("", ModernButton.Variante.NEUTRO);
+
+    private final ModernButton btnSobreTop =
+            new ModernButton("", ModernButton.Variante.NEUTRO);
 
     public MainFrame() {
         super(AppContext.getInstancia().getMensagens().get("gui.app.titulo"));
@@ -103,7 +129,7 @@ public class MainFrame extends JFrame {
         pnlCotacao.inicializar();
         pnlRelatorios.inicializar();
 
-        atualizarStatusBar();
+        atualizarTextosInterface();
     }
 
     private JMenuBar criarBarraMenus() {
@@ -190,31 +216,24 @@ public class MainFrame extends JFrame {
         return menuBar;
     }
 
-    private JPanel criarBarraNavegacaoSuperior() {
-        JPanel pnlBarra = new JPanel(new BorderLayout(15, 0));
+        private JPanel criarBarraNavegacaoSuperior() {
+        JPanel pnlBarra = new JPanel(new BorderLayout(0, 8));
         pnlBarra.setBackground(TemaCores.SUPERFICIE_CARD);
         pnlBarra.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, TemaCores.BORDA_SUAVE),
+                BorderFactory.createMatteBorder(
+                        0, 0, 1, 0, TemaCores.BORDA_SUAVE
+                ),
                 BorderFactory.createEmptyBorder(10, 15, 10, 15)
         ));
 
-        // Botões de Navegação Unificada
-        JPanel pnlBotoesNav = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel pnlBotoesNav =
+                new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         pnlBotoesNav.setOpaque(false);
 
-        ModernButton btnDash = new ModernButton("📊 Dashboard", ModernButton.Variante.NEUTRO);
         btnDash.addActionListener(e -> navegarPara(TELA_DASHBOARD));
-
-        ModernButton btnCart = new ModernButton("💼 Carteiras", ModernButton.Variante.NEUTRO);
         btnCart.addActionListener(e -> navegarPara(TELA_CARTEIRAS));
-
-        ModernButton btnMov = new ModernButton("🔄 Movimentações", ModernButton.Variante.NEUTRO);
         btnMov.addActionListener(e -> navegarPara(TELA_MOVIMENTACOES));
-
-        ModernButton btnCot = new ModernButton("🌐 Cotação & Oráculo", ModernButton.Variante.NEUTRO);
         btnCot.addActionListener(e -> navegarPara(TELA_COTACAO));
-
-        ModernButton btnRel = new ModernButton("📈 Relatórios", ModernButton.Variante.NEUTRO);
         btnRel.addActionListener(e -> navegarPara(TELA_RELATORIOS));
 
         pnlBotoesNav.add(btnDash);
@@ -223,27 +242,50 @@ public class MainFrame extends JFrame {
         pnlBotoesNav.add(btnCot);
         pnlBotoesNav.add(btnRel);
 
-        pnlBarra.add(pnlBotoesNav, BorderLayout.WEST);
-
-        // Controles de Configuração: Seletor de Idioma e Seletor de Banco de Dados
-        JPanel pnlConfig = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        JPanel pnlConfig =
+                new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         pnlConfig.setOpaque(false);
 
-        JLabel lblIdioma = new JLabel("Idioma:");
         lblIdioma.setFont(TemaCores.FONTE_LABEL);
         cmbIdioma.setFont(TemaCores.FONTE_PADRAO);
-        cmbIdioma.setPreferredSize(new Dimension(150, 30));
+        cmbIdioma.setPreferredSize(new Dimension(180, 30));
 
-        JLabel lblBanco = new JLabel("Banco:");
         lblBanco.setFont(TemaCores.FONTE_LABEL);
         cmbBanco.setFont(TemaCores.FONTE_PADRAO);
-        cmbBanco.setPreferredSize(new Dimension(160, 30));
+        cmbBanco.setPreferredSize(new Dimension(240, 30));
 
-        ModernButton btnAjudaTop = new ModernButton("❓ Ajuda", ModernButton.Variante.NEUTRO);
-        btnAjudaTop.addActionListener(e -> new AjudaDialog(this).setVisible(true));
+        javax.swing.DefaultListCellRenderer renderizadorBanco =
+                new javax.swing.DefaultListCellRenderer();
 
-        ModernButton btnSobreTop = new ModernButton("ℹ️ Sobre", ModernButton.Variante.NEUTRO);
-        btnSobreTop.addActionListener(e -> new CreditosDialog(this).setVisible(true));
+        cmbBanco.setRenderer((lista, valor, indice, selecionado, foco) -> {
+            JLabel rotulo = (JLabel) renderizadorBanco
+                    .getListCellRendererComponent(
+                            lista, valor, indice, selecionado, foco
+                    );
+
+            if (valor == null) {
+                rotulo.setText("");
+            } else {
+                MensagensGui mensagens =
+                        AppContext.getInstancia().getMensagens();
+
+                String chave = "mariadb".equals(valor)
+                        ? "gui.menu.banco.mariadb"
+                        : "gui.menu.banco.memoria";
+
+                rotulo.setText(mensagens.get(chave));
+            }
+
+            return rotulo;
+        });
+
+        btnAjudaTop.addActionListener(
+                e -> new AjudaDialog(this).setVisible(true)
+        );
+
+        btnSobreTop.addActionListener(
+                e -> new CreditosDialog(this).setVisible(true)
+        );
 
         pnlConfig.add(lblIdioma);
         pnlConfig.add(cmbIdioma);
@@ -254,7 +296,8 @@ public class MainFrame extends JFrame {
         pnlConfig.add(btnAjudaTop);
         pnlConfig.add(btnSobreTop);
 
-        pnlBarra.add(pnlConfig, BorderLayout.EAST);
+        pnlBarra.add(pnlBotoesNav, BorderLayout.NORTH);
+        pnlBarra.add(pnlConfig, BorderLayout.SOUTH);
 
         return pnlBarra;
     }
@@ -319,15 +362,33 @@ public class MainFrame extends JFrame {
             try {
                 AppContext.getInstancia().alternarPersistencia(desejado);
                 atualizarStatusBar();
-                lblStatusMensagem.setText("Mecanismo de persistência alterado para: " + desejado.getValorConfiguracao());
+                                MensagensGui msg =
+                        AppContext.getInstancia().getMensagens();
+
+                String chaveBanco = desejado == TipoPersistencia.MEMORIA
+                        ? "gui.menu.banco.memoria"
+                        : "gui.menu.banco.mariadb";
+
+                lblStatusMensagem.setText(
+                        msg.get(
+                                "gui.status.persistencia.alterada",
+                                msg.get(chaveBanco)
+                        )
+                );
                 recarregarTodosPaineis();
             } catch (Exception ex) {
                 // Reverte seleção caso o banco falhe
                 cmbBanco.setSelectedIndex(0);
+                                MensagensGui msg =
+                        AppContext.getInstancia().getMensagens();
+
                 JOptionPane.showMessageDialog(
                         this,
-                        "Não foi possível conectar ao banco MariaDB.\nCertifique-se de que o serviço está ativo e configurado em database.properties.\n\nDetalhes: " + ex.getMessage(),
-                        "Falha na Conexão com MariaDB",
+                        msg.get(
+                                "gui.status.erro.conexao.msg",
+                                ex.getMessage()
+                        ),
+                        msg.get("gui.status.erro.conexao.titulo"),
                         JOptionPane.ERROR_MESSAGE
                 );
             }
@@ -364,10 +425,22 @@ public class MainFrame extends JFrame {
         atualizarStatusBar();
     }
 
-        private void atualizarTextosInterface() {
+            private void atualizarTextosInterface() {
         MensagensGui mensagens = AppContext.getInstancia().getMensagens();
 
         setTitle(mensagens.get("gui.app.titulo"));
+
+        btnDash.setText(mensagens.get("gui.nav.btn.dashboard"));
+        btnCart.setText(mensagens.get("gui.nav.btn.carteiras"));
+        btnMov.setText(mensagens.get("gui.nav.btn.movimentacoes"));
+        btnCot.setText(mensagens.get("gui.nav.btn.cotacao"));
+        btnRel.setText(mensagens.get("gui.nav.btn.relatorios"));
+
+        btnAjudaTop.setText(mensagens.get("gui.nav.btn.ajuda"));
+        btnSobreTop.setText(mensagens.get("gui.nav.creditos"));
+
+        lblIdioma.setText(mensagens.get("gui.nav.label.idioma"));
+        lblBanco.setText(mensagens.get("gui.nav.label.banco"));
 
         IdiomaSelector idiomaAtual =
                 IdiomaSelector.porLocale(mensagens.getLocaleAtual());
@@ -375,6 +448,9 @@ public class MainFrame extends JFrame {
         if (cmbIdioma.getSelectedItem() != idiomaAtual) {
             cmbIdioma.setSelectedItem(idiomaAtual);
         }
+
+        cmbIdioma.repaint();
+        cmbBanco.repaint();
 
         atualizarStatusBar();
         revalidate();
