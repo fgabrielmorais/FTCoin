@@ -18,6 +18,7 @@ import javax.swing.JPanel;
 
 import br.com.ftcoin.daos.TipoPersistencia;
 import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.IdiomaSelector;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
@@ -50,11 +51,12 @@ public class MainFrame extends JFrame {
     private final JLabel lblStatusIdioma = new JLabel();
     private final JLabel lblStatusMensagem = new JLabel("");
 
-    private final JComboBox<String> cmbIdioma = new JComboBox<>(new String[]{"🇧🇷 Português (BR)", "🇺🇸 English (US)"});
+    private final JComboBox<IdiomaSelector> cmbIdioma =
+        new JComboBox<>(IdiomaSelector.values());
     private final JComboBox<String> cmbBanco = new JComboBox<>(new String[]{"💾 Memória Volátil", "🗄️ MariaDB (SQL)"});
 
     public MainFrame() {
-        super("FTCoin Studio - Gestão Financeira de Criptomoedas (Java 25 LTS)");
+        super(AppContext.getInstancia().getMensagens().get("gui.app.titulo"));
 
         // Configurações da Janela
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -286,16 +288,27 @@ public class MainFrame extends JFrame {
     }
 
     private void configurarSeletores() {
-        // Seletor de Idioma
+                // Seleciona inicialmente o idioma que já está ativo.
+        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+
+        cmbIdioma.setSelectedItem(
+                IdiomaSelector.porLocale(mensagens.getLocaleAtual())
+        );
+
+        // Aplica o idioma escolhido pelo usuário.
         cmbIdioma.addActionListener(e -> {
-            int idx = cmbIdioma.getSelectedIndex();
-            MensagensGui msg = AppContext.getInstancia().getMensagens();
-            if (idx == 0) {
-                msg.setLocale(MensagensGui.LOCALE_PT);
-            } else {
-                msg.setLocale(MensagensGui.LOCALE_EN);
+            IdiomaSelector selecionado =
+                    (IdiomaSelector) cmbIdioma.getSelectedItem();
+
+            if (selecionado == null) {
+                return;
             }
-            atualizarStatusBar();
+
+            MensagensGui msg = AppContext.getInstancia().getMensagens();
+
+            if (!selecionado.getLocale().equals(msg.getLocaleAtual())) {
+                msg.setLocale(selecionado.getLocale());
+            }
         });
 
         // Seletor de Banco de Dados
@@ -351,14 +364,45 @@ public class MainFrame extends JFrame {
         atualizarStatusBar();
     }
 
-    private void atualizarTextosInterface() {
+        private void atualizarTextosInterface() {
+        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+
+        setTitle(mensagens.get("gui.app.titulo"));
+
+        IdiomaSelector idiomaAtual =
+                IdiomaSelector.porLocale(mensagens.getLocaleAtual());
+
+        if (cmbIdioma.getSelectedItem() != idiomaAtual) {
+            cmbIdioma.setSelectedItem(idiomaAtual);
+        }
+
+        atualizarStatusBar();
         revalidate();
         repaint();
     }
 
-    private void atualizarStatusBar() {
-        TipoPersistencia tipo = AppContext.getInstancia().getTipoPersistenciaAtual();
-        lblStatusBanco.setText("Persistência: " + (tipo == TipoPersistencia.MEMORIA ? "💾 MEMÓRIA (Ativa)" : "🗄️ MARIADB (Conectado)"));
-        lblStatusIdioma.setText("Idioma: " + AppContext.getInstancia().getMensagens().getLocaleAtual().getDisplayLanguage());
+        private void atualizarStatusBar() {
+        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+
+        TipoPersistencia tipo =
+                AppContext.getInstancia().getTipoPersistenciaAtual();
+
+        String chaveBanco = tipo == TipoPersistencia.MEMORIA
+                ? "gui.status.banco.memoria"
+                : "gui.status.banco.mariadb";
+
+        lblStatusBanco.setText(
+                mensagens.get(
+                        "gui.status.label.persistencia",
+                        mensagens.get(chaveBanco)
+                )
+        );
+
+        String nomeIdioma = mensagens.getLocaleAtual()
+                .getDisplayLanguage(mensagens.getLocaleAtual());
+
+        lblStatusIdioma.setText(
+                mensagens.get("gui.status.label.idioma", nomeIdioma)
+        );
     }
 }
