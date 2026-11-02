@@ -17,6 +17,7 @@ import javax.swing.table.DefaultTableModel;
 
 import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.common.GuiFormatador;
+import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.dto.MovimentacaoDTO;
@@ -39,6 +40,12 @@ import br.com.ftcoin.gui.views.contracts.IRelatoriosView;
 public class RelatoriosPanel extends JPanel implements IRelatoriosView {
 
     private final RelatoriosPresenter presenter;
+    private final JLabel lblTitulo = new JLabel();
+    private final JLabel lblFiltrar = new JLabel();
+
+    private final ModernButton btnRecarregar = new ModernButton("", ModernButton.Variante.NEUTRO);
+
+    private final Runnable ouvinteIdioma = this::atualizarTextosInterface;
 
     private final JComboBox<ItemFiltroCarteira> cmbCarteiraFiltro = new JComboBox<>();
     private final JTabbedPane tabRelatorios = new JTabbedPane();
@@ -88,7 +95,10 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         JPanel pnlTopo = new JPanel(new BorderLayout(10, 10));
         pnlTopo.setOpaque(false);
 
-        JLabel lblTitulo = new JLabel("Painel Analítico de Relatórios Financeiros (5 Relatórios)");
+        lblTitulo.setText(
+                AppContext.getInstancia().getMensagens()
+                        .get("gui.rel.painel.titulo")
+        );
         lblTitulo.setFont(TemaCores.FONTE_TITULO_GRANDE);
         lblTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         pnlTopo.add(lblTitulo, BorderLayout.NORTH);
@@ -96,7 +106,10 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         JPanel pnlFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         pnlFiltro.setOpaque(false);
 
-        JLabel lblFiltrar = new JLabel("Selecionar Carteira para Análise:");
+        lblFiltrar.setText(
+                AppContext.getInstancia().getMensagens()
+                        .get("gui.rel.filtro.label")
+        );
         lblFiltrar.setFont(TemaCores.FONTE_LABEL);
         pnlFiltro.add(lblFiltrar);
 
@@ -113,7 +126,10 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         });
         pnlFiltro.add(cmbCarteiraFiltro);
 
-        ModernButton btnRecarregar = new ModernButton("Atualizar Todos", ModernButton.Variante.NEUTRO);
+        btnRecarregar.setText(
+                AppContext.getInstancia().getMensagens()
+                        .get("gui.rel.btn.atualizarTodos")
+        );
         btnRecarregar.addActionListener(e -> presenter.inicializar());
         pnlFiltro.add(btnRecarregar);
 
@@ -205,6 +221,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         tabRelatorios.addTab("  5. Histórico do Oráculo  ", new JScrollPane(tabelaRel5));
 
         add(tabRelatorios, BorderLayout.CENTER);
+        atualizarTextosInterface();
     }
 
     private JTable criarTabelaFormatada(DefaultTableModel model) {
@@ -218,6 +235,79 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
 
     public void inicializar() {
         presenter.inicializar();
+    }
+
+        @Override
+    public void addNotify() {
+        super.addNotify();
+        AppContext.getInstancia().getMensagens()
+                .adicionarOuvinte(ouvinteIdioma);
+        atualizarTextosInterface();
+    }
+
+    @Override
+    public void removeNotify() {
+        AppContext.getInstancia().getMensagens()
+                .removerOuvinte(ouvinteIdioma);
+        super.removeNotify();
+    }
+
+    private void atualizarTextosInterface() {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+            javax.swing.SwingUtilities.invokeLater(
+                    this::atualizarTextosInterface
+            );
+            return;
+        }
+
+        MensagensGui mensagens =
+                AppContext.getInstancia().getMensagens();
+
+        lblTitulo.setText(mensagens.get("gui.rel.painel.titulo"));
+        lblFiltrar.setText(mensagens.get("gui.rel.filtro.label"));
+        btnRecarregar.setText(
+                mensagens.get("gui.rel.btn.atualizarTodos")
+        );
+
+        String[] chavesAbas = {
+                "gui.rel.tab1.titulo",
+                "gui.rel.tab2.titulo",
+                "gui.rel.tab3.titulo",
+                "gui.rel.tab4.titulo",
+                "gui.rel.tab5.titulo"
+        };
+
+        for (int i = 0; i < chavesAbas.length; i++) {
+            tabRelatorios.setTitleAt(i, mensagens.get(chavesAbas[i]));
+        }
+
+        cardSaldo.setTitulo(
+                mensagens.get("gui.rel.card.saldoCarteira")
+        );
+        cardCustoMedio.setTitulo(
+                mensagens.get("gui.rel.card.custoMedioCMP")
+        );
+        cardValorCusto.setTitulo(
+                mensagens.get("gui.rel.card.totalACusto")
+        );
+        cardValorMercado.setTitulo(
+                mensagens.get("gui.rel.card.valorMercadoAtual")
+        );
+        cardGanhoRealizado.setTitulo(
+                mensagens.get("gui.rel.card.ganhoRealizado")
+        );
+        cardGanhoNaoRealizado.setTitulo(
+                mensagens.get("gui.rel.card.ganhoNaoRealizado")
+        );
+        cardGanhoTotal.setTitulo(
+                mensagens.get("gui.rel.card.ganhoTotalLiquido")
+        );
+        cardRoi.setTitulo(
+                mensagens.get("gui.rel.card.retornoRoi")
+        );
+
+        revalidate();
+        repaint();
     }
 
     /**
@@ -358,6 +448,12 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
 
     @Override
     public void exibirMensagemErro(String mensagem) {
-        JOptionPane.showMessageDialog(this, mensagem, "Erro no Relatório", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(
+                this,
+                mensagem,
+                AppContext.getInstancia().getMensagens()
+                        .get("gui.rel.erro.titulo"),
+                JOptionPane.ERROR_MESSAGE
+        );
     }
 }
