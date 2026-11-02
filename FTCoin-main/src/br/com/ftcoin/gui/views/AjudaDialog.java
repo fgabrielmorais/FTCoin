@@ -160,68 +160,64 @@ public class AjudaDialog extends JDialog {
     }
 
     /**
-     * Retorna a documentação operacional e arquitetural estruturada em formato HTML.
+     * Monta o manual com os textos do idioma ativo.
      *
-     * @return O conteúdo textual formatado {@code String}
+     * @return Conteúdo do manual em HTML
      */
     private String gerarConteudoManualHtml() {
-        return """
-            <html>
-            <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 15px; color: #1f2937;">
-                <h1 style="color: #1a2b4c; margin-bottom: 5px;">Manual Estendido do Usuário</h1>
-                <p style="color: #6b7280; font-size: 13px;">""" + Info.NOME_SISTEMA + " - Versão " + Info.VERSAO + " | Arquitetura POO & MVP</p>" + """
-                <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
+        MensagensGui mensagens =
+                AppContext.getInstancia().getMensagens();
 
-                <h3 style="color: #2563eb;">1. Visão Geral e Inicialização</h3>
-                <p>O <b>FTCoin Studio</b> é uma plataforma profissional para gestão de carteiras de criptomoedas, registro de operações e apuração de resultados financeiros.
-                O sistema permite operar em modo de <b>Memória Volátil</b> (ideal para simulações e testes rápidos) ou com <b>Banco de Dados MariaDB</b> para persistência definitiva.</p>
+        StringBuilder html = new StringBuilder();
 
-                <h3 style="color: #2563eb;">2. Módulo de Carteiras (View + Presenter)</h3>
-                <ul>
-                    <li><b>Inclusão de Carteira:</b> No menu ou na aba <i>Carteiras</i>, clique em <i>+ Nova Carteira</i> e informe o Nome do Titular e a Corretora. Ambos os campos são validados quanto a preenchimento e tamanho.</li>
-                    <li><b>Edição:</b> Selecione a carteira na tabela e clique em <i>Editar</i> para atualizar dados cadastrais.</li>
-                    <li><b>Exclusão:</b> Uma carteira que possua movimentações registradas não pode ser excluída, garantindo a integridade dos livros contábeis.</li>
-                </ul>
+        html.append("""
+                <html>
+                <body style="font-family: sans-serif;
+                             padding: 15px;
+                             color: #1f2937;">
+                <h1 style="color: #1a2b4c;">
+                """);
 
-                <h3 style="color: #2563eb;">3. Módulo de Movimentações (Compra e Venda)</h3>
-                <ul>
-                    <li><b>Compra:</b> Aumenta o saldo sob custódia e o custo total investido, recalculando automaticamente o Custo Médio Ponderado.</li>
-                    <li><b>Venda:</b> Mantém inalterado o Custo Médio e realiza imediatamente o lucro ou prejuízo da quantidade alienada: <i>Qtd × (Cotação - Custo Médio)</i>. O sistema bloqueia vendas que excedam o saldo disponível.</li>
-                </ul>
+        html.append(escaparHtml(
+                mensagens.get("gui.ajuda.manual.titulo")
+        ));
 
-                <h3 style="color: #2563eb;">4. Oráculo de Cotações e Cache Inteligente</h3>
-                <p>As cotações de moedas são processadas em <b>Virtual Threads</b>. A tela de cotação exibe um badge visual colorido indicando:</p>
-                <ul>
-                    <li><span style="color: #15803d; font-weight: bold;">[ORÁCULO EXTERNO]</span>: Consulta direta efetuada ao provedor com round-trip simulado.</li>
-                    <li><span style="color: #1d4ed8; font-weight: bold;">[CACHE LOCAL]</span>: Resposta instantânea recuperada da memória de alta velocidade (TTL configurado).</li>
-                </ul>
+        html.append("</h1>");
+        html.append("<p style=\"color: #6b7280;\">");
+        html.append(escaparHtml(Info.NOME_SISTEMA));
+        html.append(" — ");
+        html.append(escaparHtml(
+                mensagens.get("gui.ajuda.manual.versao")
+        ));
+        html.append(" ");
+        html.append(escaparHtml(Info.VERSAO));
+        html.append("</p><hr>");
 
-                <h3 style="color: #2563eb;">5. Módulo de Relatórios Financeiros (5 Relatórios)</h3>
-                <ol>
-                    <li><b>Posição Consolidada (CMP):</b> Saldo, Custo Médio, Valor a Custo, Valor de Mercado e Ganhos Realizado, Não Realizado e Total.</li>
-                    <li><b>Histórico de Operações:</b> Extrato cronológico com tipo de operação, datas e valores totais.</li>
-                    <li><b>Consolidado do Portfólio:</b> Visão horizontal de todas as carteiras com percentual de participação patrimonial.</li>
-                    <li><b>Desempenho & Lucratividade:</b> Ranking de rentabilidade com ROI (%) e saldo líquido em cores (verde para lucro, vermelho para prejuízo).</li>
-                    <li><b>Histórico do Oráculo:</b> Análise da curva diária de oscilação de preço da FTCoins.</li>
-                </ol>
+        for (int numero = 1; numero <= 8; numero++) {
+            String prefixo = "gui.ajuda.manual.secao" + numero;
 
-                <h3 style="color: #2563eb;">6. Seletor de Idioma e Banco de Dados</h3>
-                <p>Na barra superior, o usuário pode alternar a qualquer momento entre <b>Português (Brasil)</b> e <b>English (US)</b>, ou trocar a camada de persistência entre <b>Memória</b> e <b>MariaDB</b> em tempo de execução sem reiniciar o programa.</p>
+            html.append("<h2 style=\"color: #2563eb;\">");
+            html.append(escaparHtml(
+                    mensagens.get(prefixo + ".titulo")
+            ));
+            html.append("</h2>");
 
-                <h3 style="color: #2563eb;">7. Contato e Suporte da Equipe de Desenvolvimento</h3>
-                <p>Para dúvidas técnicas, suporte operacional ou informações acadêmicas sobre o <b>FTCoin Studio</b>, entre em contato com os membros da equipe de desenvolvimento:</p>
-                <ul style="font-size: 13px; line-height: 1.8;">
-                    <li><b>Ana:</b> ana@dac.unicamp.br</li>
-                    <li><b>Arthur:</b> arthur@dac.unicamp.br</li>
-                    <li><b>Erik:</b> erik@dac.unicamp.br</li>
-                    <li><b>Gabriel Morais Felix:</b> fgabrielmorais@gmail.com</li>
-                    <li><b>Hyago:</b> hyago@dac.unicamp.br</li>
-                    <li><b>Isabela Dumas:</b> isabeladumas12@gmail.com</li>
-                    <li><b>Pedro:</b> pedro@dac.unicamp.br</li>
-                    <li><b>Vitor:</b> vitor@dac.unicamp.br</li>
-                </ul>
-            </body>
-            </html>
-            """;
+            html.append(mensagens.get(prefixo + ".html"));
+        }
+
+        html.append("</body></html>");
+        return html.toString();
+    }
+
+    private static String escaparHtml(String texto) {
+        if (texto == null) {
+            return "";
+        }
+
+        return texto
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
     }
 }
