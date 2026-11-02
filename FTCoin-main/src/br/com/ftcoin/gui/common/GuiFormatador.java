@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Locale;
+import java.util.Currency;
 
 /**
  * <p>
@@ -72,6 +73,7 @@ public class GuiFormatador {
     public GuiFormatador(Locale locale) {
         this.locale = (locale != null) ? locale : Locale.of("pt", "BR");
         this.formatoMoeda = NumberFormat.getCurrencyInstance(this.locale);
+        this.formatoMoeda.setCurrency(Currency.getInstance("BRL"));
         this.formatoMoeda.setMinimumFractionDigits(CASAS_MOEDA);
         this.formatoMoeda.setMaximumFractionDigits(CASAS_MOEDA);
 
@@ -87,7 +89,7 @@ public class GuiFormatador {
     }
 
     /**
-     * Formata um valor numérico em texto monetário com símbolo da moeda ativa.
+     * Formata um valor em reais (BRL), respeitando a apresentação do idioma ativo.
      *
      * @param valor Montante numérico a ser formatado
      * @return O valor formatado como moeda (ex: {@code "R$ 1.500,00"})
@@ -106,10 +108,11 @@ public class GuiFormatador {
      * @return A quantidade formatada acompanhada do sufixo (ex: {@code "10,000 FTC"})
      */
     public String quantidade(BigDecimal quantidade) {
-        if (quantidade == null) {
-            return formatoQuantidade.format(BigDecimal.ZERO);
-        }
-        return formatoQuantidade.format(quantidade) + " FTC";
+        BigDecimal valor = quantidade != null
+                ? quantidade
+                : BigDecimal.ZERO;
+
+        return formatoQuantidade.format(valor) + " FTC";
     }
 
     /**
@@ -132,11 +135,13 @@ public class GuiFormatador {
      * @return O percentual com símbolo e sinal (ex: {@code "+12,50%"})
      */
     public String percentual(BigDecimal percentual) {
-        if (percentual == null) {
-            return "0,00%";
-        }
-        String sinal = percentual.signum() > 0 ? "+" : "";
-        return sinal + formatoPercentual.format(percentual) + "%";
+        BigDecimal valor = percentual != null
+                ? percentual
+                : BigDecimal.ZERO;
+
+        String sinal = valor.signum() > 0 ? "+" : "";
+
+        return sinal + formatoPercentual.format(valor) + "%";
     }
 
     /**
