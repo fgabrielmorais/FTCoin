@@ -61,13 +61,25 @@ public class BadgeLabel extends JLabel {
      */
     public void configurarOrigem(OrigemCotacao origem) {
         if (origem == null) {
-            setText("INDETERMINADO");
-            setEstilo(new Color(243, 244, 246), new Color(107, 114, 128), new Color(209, 213, 219));
+            setText("—");
+            setEstilo(
+                    new Color(243, 244, 246),
+                    new Color(107, 114, 128),
+                    new Color(209, 213, 219)
+            );
             return;
         }
 
-        setText(origem.getIcone() + " " + origem.getDescricao());
-        setEstilo(origem.getCorFundo(), origem.getCorTexto(), origem.getCorTexto());
+        setText(
+                origem.getIcone() + " "
+                        + origem.getDescricaoLocalizada()
+        );
+
+        setEstilo(
+                origem.getCorFundo(),
+                origem.getCorTexto(),
+                origem.getCorTexto()
+        );
     }
 
     /**
