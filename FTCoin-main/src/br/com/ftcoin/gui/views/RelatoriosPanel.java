@@ -46,6 +46,11 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     private final ModernButton btnRecarregar = new ModernButton("", ModernButton.Variante.NEUTRO);
 
     private final Runnable ouvinteIdioma = this::atualizarTextosInterface;
+    private PosicaoRelatorioDTO ultimaPosicao;
+
+    private List<MovimentacaoDTO> historicoCarregado = List.of();
+
+    private List<RelatorioHistoricoCotacaoDTO> cotacoesCarregadas = List.of();
 
     private final JComboBox<ItemFiltroCarteira> cmbCarteiraFiltro = new JComboBox<>();
     private final JTabbedPane tabRelatorios = new JTabbedPane();
@@ -306,8 +311,96 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
                 mensagens.get("gui.rel.card.retornoRoi")
         );
 
+        atualizarCabecalhos(
+                tabelaRel2,
+                "gui.rel.tab2.col.data",
+                "gui.rel.tab2.col.operacao",
+                "gui.rel.tab2.col.quantidade",
+                "gui.rel.tab2.col.cotacao",
+                "gui.rel.tab2.col.total"
+        );
+
+        atualizarCabecalhos(
+                tabelaRel3,
+                "gui.rel.tab3.col.id",
+                "gui.rel.tab3.col.titular",
+                "gui.rel.tab3.col.corretora",
+                "gui.rel.tab3.col.saldo",
+                "gui.rel.tab3.col.valorMercado",
+                "gui.rel.tab3.col.participacao",
+                "gui.rel.tab3.col.ganhoTotal"
+        );
+
+        atualizarCabecalhos(
+                tabelaRel4,
+                "gui.rel.tab4.col.id",
+                "gui.rel.tab4.col.titular",
+                "gui.rel.tab4.col.corretora",
+                "gui.rel.tab4.col.investido",
+                "gui.rel.tab4.col.valorAtual",
+                "gui.rel.tab4.col.lucroPrejuizo",
+                "gui.rel.tab4.col.roi"
+        );
+
+        atualizarCabecalhos(
+                tabelaRel5,
+                "gui.rel.tab5.col.data",
+                "gui.rel.tab5.col.cotacao",
+                "gui.rel.tab5.col.varAbs",
+                "gui.rel.tab5.col.varPerc",
+                "gui.rel.tab5.col.fonte"
+        );
+
+        GuiFormatador fmt = mensagens.getFormatador();
+
+        if (ultimaPosicao == null) {
+            apresentarCartoesVazios();
+        } else {
+            exibirRelatorio1Posicao(ultimaPosicao);
+        }
+
+        for (int i = 0; i < historicoCarregado.size(); i++) {
+            modelRel2.setValueAt(
+                    fmt.data(historicoCarregado.get(i).dataOperacao()),
+                    i,
+                    0
+            );
+        }
+
+        for (int i = 0; i < cotacoesCarregadas.size(); i++) {
+            modelRel5.setValueAt(
+                    fmt.data(cotacoesCarregadas.get(i).data()),
+                    i,
+                    0
+            );
+        }
+
+        tabelaRel2.repaint();
+        tabelaRel3.repaint();
+        tabelaRel4.repaint();
+        tabelaRel5.repaint();
+
         revalidate();
         repaint();
+    }
+
+    private void atualizarCabecalhos(
+            JTable tabela,
+            String... chaves
+    ) {
+        MensagensGui mensagens =
+                AppContext.getInstancia().getMensagens();
+
+        for (int i = 0; i < tabela.getColumnCount(); i++) {
+            javax.swing.table.TableColumn coluna =
+                    tabela.getColumnModel().getColumn(i);
+
+            coluna.setHeaderValue(
+                    mensagens.get(chaves[coluna.getModelIndex()])
+            );
+        }
+
+        tabela.getTableHeader().repaint();
     }
 
     /**
@@ -341,19 +434,58 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     }
 
     private void limparRelatoriosIndividuais() {
-        cardSaldo.setValor("0.000 FTC", TemaCores.PRIMARIA);
-        cardCustoMedio.setValor("R$ 0,00", TemaCores.TEXTO_PRINCIPAL);
-        cardValorCusto.setValor("R$ 0,00", TemaCores.TEXTO_PRINCIPAL);
-        cardValorMercado.setValor("R$ 0,00", TemaCores.SECUNDARIA);
-        cardGanhoRealizado.setValor("R$ 0,00", TemaCores.POSITIVO_LUCRO);
-        cardGanhoNaoRealizado.setValor("R$ 0,00", TemaCores.POSITIVO_LUCRO);
-        cardGanhoTotal.setValor("R$ 0,00", TemaCores.POSITIVO_LUCRO);
-        cardRoi.setValor("0,00%", TemaCores.POSITIVO_LUCRO);
+        ultimaPosicao = null;
+        historicoCarregado = List.of();
+
+        apresentarCartoesVazios();
         modelRel2.setRowCount(0);
+    }
+
+    private void apresentarCartoesVazios() {
+        GuiFormatador fmt =
+                AppContext.getInstancia().getMensagens().getFormatador();
+
+        java.math.BigDecimal zero = java.math.BigDecimal.ZERO;
+        String moedaZero = fmt.moeda(zero);
+
+        cardSaldo.setValor(
+                fmt.quantidade(zero),
+                TemaCores.PRIMARIA
+        );
+        cardCustoMedio.setValor(
+                moedaZero,
+                TemaCores.TEXTO_PRINCIPAL
+        );
+        cardValorCusto.setValor(
+                moedaZero,
+                TemaCores.TEXTO_PRINCIPAL
+        );
+        cardValorMercado.setValor(
+                moedaZero,
+                TemaCores.SECUNDARIA
+        );
+        cardGanhoRealizado.setValor(
+                moedaZero,
+                TemaCores.POSITIVO_LUCRO
+        );
+        cardGanhoNaoRealizado.setValor(
+                moedaZero,
+                TemaCores.POSITIVO_LUCRO
+        );
+        cardGanhoTotal.setValor(
+                moedaZero,
+                TemaCores.POSITIVO_LUCRO
+        );
+        cardRoi.setValor(
+                fmt.percentual(zero),
+                TemaCores.POSITIVO_LUCRO
+        );
     }
 
     @Override
     public void exibirRelatorio1Posicao(PosicaoRelatorioDTO posicao) {
+        ultimaPosicao = posicao;
+
         if (posicao == null) {
             limparRelatoriosIndividuais();
             return;
@@ -386,6 +518,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
 
     @Override
     public void exibirRelatorio2Historico(List<MovimentacaoDTO> historico) {
+        historicoCarregado = List.copyOf(historico);
         modelRel2.setRowCount(0);
         GuiFormatador fmt = AppContext.getInstancia().getMensagens().getFormatador();
         for (MovimentacaoDTO m : historico) {
@@ -433,6 +566,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
 
     @Override
     public void exibirRelatorio5Cotacoes(List<RelatorioHistoricoCotacaoDTO> cotacoes) {
+        cotacoesCarregadas = List.copyOf(cotacoes);
         modelRel5.setRowCount(0);
         GuiFormatador fmt = AppContext.getInstancia().getMensagens().getFormatador();
         for (RelatorioHistoricoCotacaoDTO c : cotacoes) {
