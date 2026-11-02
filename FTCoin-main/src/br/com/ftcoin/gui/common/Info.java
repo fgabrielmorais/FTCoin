@@ -42,7 +42,31 @@ public final class Info {
     /**
      * Data de publicação ou homologação do build atual.
      */
-    public static final String DATA_LANCAMENTO = "Outubro de 2026";
+    public static final java.time.YearMonth MES_LANCAMENTO =
+            java.time.YearMonth.of(2026, 10);
+
+    public static final String DATA_LANCAMENTO =
+            getDataLancamentoLocalizada(java.util.Locale.of("pt", "BR"));
+
+    public static String getDataLancamentoLocalizada(
+            java.util.Locale locale
+    ) {
+        java.util.Locale idioma = locale != null
+                ? locale
+                : java.util.Locale.of("pt", "BR");
+
+        String padrao = "en".equals(idioma.getLanguage())
+                ? "MMMM uuuu"
+                : "MMMM 'de' uuuu";
+
+        String texto = MES_LANCAMENTO.format(
+                java.time.format.DateTimeFormatter
+                        .ofPattern(padrao, idioma)
+        );
+
+        return texto.substring(0, 1).toUpperCase(idioma)
+                + texto.substring(1);
+    }
 
     /**
      * Relação resumida dos autores e engenheiros do sistema.

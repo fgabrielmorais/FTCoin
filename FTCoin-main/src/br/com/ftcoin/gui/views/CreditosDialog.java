@@ -9,6 +9,8 @@ import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
+
 import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.common.Info;
 import br.com.ftcoin.gui.common.MensagensGui;
@@ -16,43 +18,34 @@ import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.views.components.ModernButton;
 
 /**
- * <p>
- * Diálogo modal de Créditos e Informações Institucionais do sistema <b>FTCoin Studio</b>.
- * </p>
- *
- * <p>
- * Recupera os metadados centralizados a partir de {@link Info} para exibir versões, autores,
- * papéis da equipe e copyright institucional da aplicação.
- * </p>
+ * Diálogo modal de créditos e informações do sistema.
+ * Apresenta os metadados e textos no idioma ativo.
  *
  * @author Equipe FTCoin
- * @version 1.0.0
- * @since 2026-10-20
  */
 public class CreditosDialog extends JDialog {
 
-    /**
-     * Painel de exibição de texto formatado com tecnologia HTML.
-     */
     private final JEditorPane editorTexto;
-
-    /**
-     * Botão de fechamento da janela modal.
-     */
     private final ModernButton botaoFechar;
+    private final JScrollPane painelRolagem;
 
-    /**
-     * Constrói o diálogo modal de créditos e dados de autoria.
-     *
-     * @param janelaPai Janela principal ({@link Frame}) proprietária deste diálogo
-     */
+    private final Runnable ouvinteIdioma = this::atualizarTextosInterface;
+
     public CreditosDialog(Frame janelaPai) {
-        super(janelaPai, AppContext.getInstancia().getMensagens().get("gui.creditos.dialog.titulo"), true);
+        super(
+                janelaPai,
+                AppContext.getInstancia().getMensagens()
+                        .get("gui.creditos.dialog.titulo"),
+                true
+        );
+
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         setSize(560, 480);
         setLocationRelativeTo(janelaPai);
         setLayout(new BorderLayout());
 
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens =
+                AppContext.getInstancia().getMensagens();
 
         editorTexto = new JEditorPane();
         editorTexto.setEditable(false);
@@ -61,66 +54,212 @@ public class CreditosDialog extends JDialog {
         editorTexto.setText(gerarConteudoCreditosHtml());
         editorTexto.setCaretPosition(0);
 
-        JScrollPane painelRolagem = new JScrollPane(editorTexto);
-        painelRolagem.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        painelRolagem = new JScrollPane(editorTexto);
+        painelRolagem.setBorder(
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        );
         add(painelRolagem, BorderLayout.CENTER);
 
-        JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 12));
-        painelBotoes.setBackground(TemaCores.SUPERFICIE_HEADER);
-        painelBotoes.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, TemaCores.BORDA_SUAVE));
+        JPanel painelBotoes =
+                new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 12));
 
-        botaoFechar = new ModernButton(mensagens.get("gui.creditos.btn.fechar"), ModernButton.Variante.PRIMARIA);
-        botaoFechar.setPreferredSize(new Dimension(100, 32));
+        painelBotoes.setBackground(TemaCores.SUPERFICIE_HEADER);
+        painelBotoes.setBorder(
+                BorderFactory.createMatteBorder(
+                        1, 0, 0, 0, TemaCores.BORDA_SUAVE
+                )
+        );
+
+        botaoFechar = new ModernButton(
+                mensagens.get("gui.creditos.btn.fechar"),
+                ModernButton.Variante.PRIMARIA
+        );
+
         botaoFechar.addActionListener(e -> dispose());
         painelBotoes.add(botaoFechar);
-
         add(painelBotoes, BorderLayout.SOUTH);
     }
 
-    /**
-     * Retorna a estrutura HTML com os dados de versão e autoria estruturados via {@link Info}.
-     *
-     * @return O conteúdo formatado em HTML {@code String}
-     */
+    @Override
+    public void addNotify() {
+        super.addNotify();
+
+        AppContext.getInstancia().getMensagens()
+                .adicionarOuvinte(ouvinteIdioma);
+
+        atualizarTextosInterface();
+    }
+
+    @Override
+    public void removeNotify() {
+        AppContext.getInstancia().getMensagens()
+                .removerOuvinte(ouvinteIdioma);
+
+        super.removeNotify();
+    }
+
+    private void atualizarTextosInterface() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::atualizarTextosInterface);
+            return;
+        }
+
+        MensagensGui mensagens =
+                AppContext.getInstancia().getMensagens();
+
+        javax.swing.JScrollBar barra =
+                painelRolagem.getVerticalScrollBar();
+
+        int alcanceAnterior = Math.max(
+                0,
+                barra.getMaximum() - barra.getVisibleAmount()
+        );
+
+        double proporcao = alcanceAnterior == 0
+                ? 0.0
+                : (double) barra.getValue() / alcanceAnterior;
+
+        setTitle(mensagens.get("gui.creditos.dialog.titulo"));
+        botaoFechar.setText(mensagens.get("gui.creditos.btn.fechar"));
+
+        botaoFechar.setPreferredSize(null);
+        Dimension tamanhoNatural = botaoFechar.getPreferredSize();
+
+        botaoFechar.setPreferredSize(
+                new Dimension(
+                        Math.max(100, tamanhoNatural.width),
+                        Math.max(32, tamanhoNatural.height)
+                )
+        );
+
+        editorTexto.setText(gerarConteudoCreditosHtml());
+        editorTexto.setCaretPosition(0);
+
+        revalidate();
+        repaint();
+
+        SwingUtilities.invokeLater(() -> {
+            if (!isDisplayable()) {
+                return;
+            }
+
+            int novoAlcance = Math.max(
+                    0,
+                    barra.getMaximum() - barra.getVisibleAmount()
+            );
+
+            barra.setValue((int) Math.round(proporcao * novoAlcance));
+        });
+    }
+
     private String gerarConteudoCreditosHtml() {
-        return """
-            <html>
-            <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 15px; color: #1f2937; text-align: center;">
-                <h2 style="color: #1a2b4c; margin-bottom: 2px;">""" + Info.NOME_SISTEMA + """
-                </h2>
-                <h4 style="color: #4f46e5; margin-top: 0;">Sistema de Gestão Financeira de Criptomoedas</h4>
-                <p style="font-size: 13px; color: #6b7280;"><b>Versão:</b> """ + Info.VERSAO + """
-                 &nbsp;|&nbsp; <b>Tecnologia:</b> """ + Info.PLATAFORMA_JAVA + """
-                </p>
-                <p style="font-size: 12px; color: #6b7280;"><b>Data de Lançamento:</b> """ + Info.DATA_LANCAMENTO + """
-                </p>
-                <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
+        MensagensGui mensagens =
+                AppContext.getInstancia().getMensagens();
 
-                <h3 style="color: #1a2b4c; text-align: left;">Equipe de Desenvolvimento:</h3>
-                <ul style="text-align: left; font-size: 13px; line-height: 1.8;">
-                    <li><b>Ana</b></li>
-                    <li><b>Arthur</b></li>
-                    <li><b>Erik</b></li>
-                    <li><b>Gabriel Morais Felix</b></li>
-                    <li><b>Hyago</b></li>
-                    <li><b>Isabela</b></li>
-                    <li><b>Pedro</b></li>
-                    <li><b>Vitor</b></li>
-                </ul>
+        StringBuilder html = new StringBuilder();
 
-                <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
-                <p style="font-size: 12px; color: #4b5563;"><b>Instituição:</b> """ + Info.INSTITUICAO + """
-                <br>
-                """ + Info.CURSO + """
-                 - """ + Info.DISCIPLINA + """
-                </p>
-                <p style="font-size: 11px; color: #9ca3af; margin-top: 15px;">
-                    """ + Info.COPYRIGHT + """
-                    <br>
-                    Desenvolvido com fins estritamente acadêmicos e profissionais.
-                </p>
-            </body>
-            </html>
-            """;
+        html.append("""
+                <html>
+                <body style="font-family: sans-serif;
+                             padding: 15px;
+                             color: #1f2937;">
+                <h2 style="color: #1a2b4c;">
+                """);
+
+        html.append(escaparHtml(Info.NOME_SISTEMA));
+        html.append("</h2><h4 style=\"color: #4f46e5;\">");
+        html.append(escaparHtml(
+                mensagens.get("gui.creditos.apresentacao")
+        ));
+        html.append("</h4>");
+
+        acrescentarCampo(
+                html,
+                mensagens.get("gui.creditos.versao"),
+                Info.VERSAO
+        );
+
+        acrescentarCampo(
+                html,
+                mensagens.get("gui.creditos.tecnologia"),
+                Info.PLATAFORMA_JAVA
+        );
+
+        acrescentarCampo(
+                html,
+                mensagens.get("gui.creditos.data"),
+                Info.getDataLancamentoLocalizada(
+                        mensagens.getLocaleAtual()
+                )
+        );
+
+        html.append("<hr><h3>");
+        html.append(escaparHtml(
+                mensagens.get("gui.creditos.equipe")
+        ));
+        html.append("</h3><ul>");
+
+        for (String autor : Info.AUTORES.split(",")) {
+            html.append("<li><b>");
+            html.append(escaparHtml(autor.trim()));
+            html.append("</b></li>");
+        }
+
+        html.append("</ul><hr>");
+
+        acrescentarCampo(
+                html,
+                mensagens.get("gui.creditos.instituicao"),
+                Info.INSTITUICAO
+        );
+
+        html.append("<p>");
+        html.append(escaparHtml(
+                mensagens.get("gui.creditos.curso")
+        ));
+        html.append("<br>");
+        html.append(escaparHtml(
+                mensagens.get("gui.creditos.disciplina")
+        ));
+        html.append("</p>");
+
+        html.append("<p style=\"font-size: 11px; color: #6b7280;\">");
+        html.append("© 2026 ");
+        html.append(escaparHtml(Info.NOME_SISTEMA));
+        html.append(". ");
+        html.append(escaparHtml(
+                mensagens.get("gui.creditos.direitos")
+        ));
+        html.append("<br>");
+        html.append(escaparHtml(
+                mensagens.get("gui.creditos.finalidade")
+        ));
+        html.append("</p></body></html>");
+
+        return html.toString();
+    }
+
+    private static void acrescentarCampo(
+            StringBuilder html,
+            String rotulo,
+            String valor
+    ) {
+        html.append("<p><b>");
+        html.append(escaparHtml(rotulo));
+        html.append(":</b> ");
+        html.append(escaparHtml(valor));
+        html.append("</p>");
+    }
+
+    private static String escaparHtml(String texto) {
+        if (texto == null) {
+            return "";
+        }
+
+        return texto
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
     }
 }
