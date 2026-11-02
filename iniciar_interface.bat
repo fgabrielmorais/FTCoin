@@ -17,7 +17,7 @@ echo   Iniciando FTCoin Studio - GUI (Java 25 LTS)
 echo ========================================================
 echo.
 
-"%JAVA_BIN%" -cp "FTCoin-main\bin;FTCoin-main\src" br.com.ftcoin.gui.main.FTCoinGuiApp
+"%JAVA_BIN%" -cp "bin;src" br.com.ftcoin.gui.main.FTCoinGuiApp
 
 if %ERRORLEVEL% NEQ 0 (
     echo.

@@ -50,6 +50,7 @@ src/
 └── br/com/ftcoin/
     ├── main/          # ponto de entrada
     ├── views/         # menu genérico, telas, console e mensagens
+    ├── gui/           # interface gráfica (Swing, padrão MVP)
     ├── controllers/   # casos de uso
     ├── models/        # entidades, apuração da posição e exceções do domínio
     └── daos/          # persistência em memória e em MariaDB
@@ -74,7 +75,7 @@ src/
    ```
 
 2. Importe o projeto na IDE (Eclipse, IntelliJ ou VS Code) como **projeto Maven**.
-3. Execute a classe `br.com.ftcoin.main.Main`.
+3. Execute a classe `br.com.ftcoin.main.Main` (linha de comando) ou `br.com.ftcoin.gui.main.FTCoinGuiApp` (interface gráfica). No Windows, a interface também abre pelo `iniciar_interface.bat`, depois de compilar o projeto na IDE.
 
 O projeto vem configurado para o modo memória e roda sem banco de dados. Nesse modo, os dados são perdidos ao encerrar e as cotações são simuladas: variam conforme a data, e a mesma data devolve sempre o mesmo valor.
 
