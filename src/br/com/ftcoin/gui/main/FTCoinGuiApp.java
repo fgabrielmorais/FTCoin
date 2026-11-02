@@ -9,8 +9,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import br.com.ftcoin.config.ConfiguracaoLog;
-import br.com.ftcoin.controllers.CarteiraController;
-import br.com.ftcoin.controllers.MovimentacaoController;
+import br.com.ftcoin.services.CarteiraService;
+import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.daos.TipoPersistencia;
 import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.views.MainFrame;
@@ -105,23 +105,23 @@ public class FTCoinGuiApp {
     private static void carregarMassaDadosDemonstracao() {
         AppContext contexto = AppContext.getInstancia();
         if (contexto.getTipoPersistenciaAtual() == TipoPersistencia.MEMORIA) {
-            CarteiraController carteiraController = contexto.getCarteiraController();
-            MovimentacaoController movimentacaoController = contexto.getMovimentacaoController();
+            CarteiraService carteiraService = contexto.getCarteiraService();
+            MovimentacaoService movimentacaoService = contexto.getMovimentacaoService();
 
-            if (carteiraController.listarTodasCarteiras().isEmpty()) {
+            if (carteiraService.listarTodasCarteiras().isEmpty()) {
                 LOG.fine("Carregando dados de demonstração na persistência em memória");
                 // Popula carteiras iniciais para demonstração
-                Carteira c1 = carteiraController.criarCarteira("Gabriel Morais Felix", "Binance");
-                movimentacaoController.registrarOperacao(c1.getId(), TipoOperacao.COMPRA, new BigDecimal("150.000"));
-                movimentacaoController.registrarOperacao(c1.getId(), TipoOperacao.COMPRA, new BigDecimal("50.000"));
-                movimentacaoController.registrarOperacao(c1.getId(), TipoOperacao.VENDA, new BigDecimal("30.000"));
+                Carteira c1 = carteiraService.criarCarteira("Gabriel Morais Felix", "Binance");
+                movimentacaoService.registrarOperacao(c1.getId(), TipoOperacao.COMPRA, new BigDecimal("150.000"));
+                movimentacaoService.registrarOperacao(c1.getId(), TipoOperacao.COMPRA, new BigDecimal("50.000"));
+                movimentacaoService.registrarOperacao(c1.getId(), TipoOperacao.VENDA, new BigDecimal("30.000"));
 
-                Carteira c2 = carteiraController.criarCarteira("Isabela & Ana UX", "Mercado Bitcoin");
-                movimentacaoController.registrarOperacao(c2.getId(), TipoOperacao.COMPRA, new BigDecimal("85.500"));
-                movimentacaoController.registrarOperacao(c2.getId(), TipoOperacao.VENDA, new BigDecimal("15.500"));
+                Carteira c2 = carteiraService.criarCarteira("Isabela & Ana UX", "Mercado Bitcoin");
+                movimentacaoService.registrarOperacao(c2.getId(), TipoOperacao.COMPRA, new BigDecimal("85.500"));
+                movimentacaoService.registrarOperacao(c2.getId(), TipoOperacao.VENDA, new BigDecimal("15.500"));
 
-                Carteira c3 = carteiraController.criarCarteira("UNICAMP Limeira Lab", "Coinbase");
-                movimentacaoController.registrarOperacao(c3.getId(), TipoOperacao.COMPRA, new BigDecimal("200.000"));
+                Carteira c3 = carteiraService.criarCarteira("UNICAMP Limeira Lab", "Coinbase");
+                movimentacaoService.registrarOperacao(c3.getId(), TipoOperacao.COMPRA, new BigDecimal("200.000"));
             }
         }
     }

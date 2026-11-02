@@ -3,7 +3,7 @@ package br.com.ftcoin.views;
 import java.math.BigDecimal;
 import java.util.List;
 
-import br.com.ftcoin.controllers.MovimentacaoController;
+import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.models.Movimentacao;
 import br.com.ftcoin.models.TipoOperacao;
 
@@ -11,12 +11,12 @@ public class MovimentacaoView {
 
 	private final Console console;
 	private final Formatador formatador;
-	private final MovimentacaoController movimentacaoController;
+	private final MovimentacaoService movimentacaoService;
 
-	public MovimentacaoView(Console console, MovimentacaoController movimentacaoController) {
+	public MovimentacaoView(Console console, MovimentacaoService movimentacaoService) {
 		this.console = console;
 		this.formatador = console.getFormatador();
-		this.movimentacaoController = movimentacaoController;
+		this.movimentacaoService = movimentacaoService;
 	}
 
 	public void registrar() {
@@ -25,15 +25,15 @@ public class MovimentacaoView {
 		TipoOperacao tipo = console.escolher("movimentacao.tipo", List.of(TipoOperacao.values()), TipoOperacao::getChaveMensagem);
 		BigDecimal quantidade = console.lerDecimal("movimentacao.quantidade");
 
-		Movimentacao registrada = movimentacaoController.registrarOperacao(idCarteira, tipo, quantidade);
+		Movimentacao registrada = movimentacaoService.registrarOperacao(idCarteira, tipo, quantidade);
 
 		console.exibirPositivo("movimentacao.sucesso");
 		console.exibir("movimentacao.detalhes",
 				console.texto(tipo.getChaveMensagem()),
 				formatador.quantidade(registrada.getQuantidadeMovimentada()));
 		console.exibir("movimentacao.cotacao",
-				formatador.moeda(movimentacaoController.buscarCotacao(registrada.getDataOperacao())));
+				formatador.moeda(movimentacaoService.buscarCotacao(registrada.getDataOperacao())));
 		console.exibir("movimentacao.valorTotal",
-				formatador.moeda(movimentacaoController.calcularValorDaOperacao(registrada)));
+				formatador.moeda(movimentacaoService.calcularValorDaOperacao(registrada)));
 	}
 }

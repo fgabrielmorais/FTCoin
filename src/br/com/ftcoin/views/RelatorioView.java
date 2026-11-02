@@ -3,8 +3,8 @@ package br.com.ftcoin.views;
 import java.math.BigDecimal;
 import java.util.List;
 
-import br.com.ftcoin.controllers.CarteiraController;
-import br.com.ftcoin.controllers.MovimentacaoController;
+import br.com.ftcoin.services.CarteiraService;
+import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.Movimentacao;
 import br.com.ftcoin.models.Posicao;
@@ -13,24 +13,24 @@ public class RelatorioView {
 
 	private final Console console;
 	private final Formatador formatador;
-	private final CarteiraController carteiraController;
-	private final MovimentacaoController movimentacaoController;
+	private final CarteiraService carteiraService;
+	private final MovimentacaoService movimentacaoService;
 
-	public RelatorioView(Console console, CarteiraController carteiraController, MovimentacaoController movimentacaoController) {
+	public RelatorioView(Console console, CarteiraService carteiraService, MovimentacaoService movimentacaoService) {
 		this.console = console;
 		this.formatador = console.getFormatador();
-		this.carteiraController = carteiraController;
-		this.movimentacaoController = movimentacaoController;
+		this.carteiraService = carteiraService;
+		this.movimentacaoService = movimentacaoService;
 	}
 
 	public void exibir() {
 		console.exibirTitulo("relatorio.titulo");
 		int idCarteira = console.lerInteiro("entrada.idCarteira");
 
-		Carteira carteira = carteiraController.buscarCarteira(idCarteira);
-		List<Movimentacao> historico = movimentacaoController.buscarHistorico(idCarteira);
-		Posicao posicao = movimentacaoController.apurarPosicao(idCarteira);
-		BigDecimal cotacaoAtual = movimentacaoController.buscarCotacaoAtual();
+		Carteira carteira = carteiraService.buscarCarteira(idCarteira);
+		List<Movimentacao> historico = movimentacaoService.buscarHistorico(idCarteira);
+		Posicao posicao = movimentacaoService.apurarPosicao(idCarteira);
+		BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
 		console.exibir("relatorio.titular", carteira.getNomeTitular(), carteira.getCorretora());
 		exibirPosicao(posicao, cotacaoAtual);

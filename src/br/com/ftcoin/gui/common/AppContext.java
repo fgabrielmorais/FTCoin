@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import br.com.ftcoin.controllers.CarteiraController;
-import br.com.ftcoin.controllers.MovimentacaoController;
+import br.com.ftcoin.services.CarteiraService;
+import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.daos.CarteiraDAO;
 import br.com.ftcoin.daos.DAOFactory;
 import br.com.ftcoin.daos.MovimentacaoDAO;
@@ -19,7 +19,7 @@ import br.com.ftcoin.daos.TipoPersistencia;
  * </p>
  *
  * <p>
- * Implementa o padrão <i>Singleton</i> para gerenciar o ciclo de vida dos controladores,
+ * Implementa o padrão <i>Singleton</i> para gerenciar o ciclo de vida dos serviços,
  * objetos de acesso a dados ({@code DAO}), serviços de internacionalização e a alternância
  * dinâmica de mecanismos de persistência (Memória versus MariaDB) em tempo de execução.
  * </p>
@@ -68,14 +68,14 @@ public class AppContext {
     private OraculoDAO oraculoDAO;
 
     /**
-     * Controlador responsável pelos casos de uso do domínio de carteiras.
+     * Serviço responsável pelos casos de uso do domínio de carteiras.
      */
-    private CarteiraController carteiraController;
+    private CarteiraService carteiraService;
 
     /**
-     * Controlador responsável pelos casos de uso de movimentações e cálculo de posição.
+     * Serviço responsável pelos casos de uso de movimentações e cálculo de posição.
      */
-    private MovimentacaoController movimentacaoController;
+    private MovimentacaoService movimentacaoService;
 
     /**
      * Lista de ouvintes notificados quando ocorre alternância na camada de persistência.
@@ -104,7 +104,7 @@ public class AppContext {
     }
 
     /**
-     * Inicializa a fábrica abstrata de persistência, os DAOs e os controladores correspondentes.
+     * Inicializa a fábrica abstrata de persistência, os DAOs e os serviços correspondentes.
      *
      * @param tipo Tipo de persistência a ser inicializado
      */
@@ -120,8 +120,8 @@ public class AppContext {
         this.movimentacaoDAO = daoFactoryAtual.criarMovimentacaoDAO();
         this.oraculoDAO = daoFactoryAtual.criarOraculoDAO();
 
-        this.carteiraController = new CarteiraController(this.carteiraDAO, this.movimentacaoDAO);
-        this.movimentacaoController = new MovimentacaoController(this.movimentacaoDAO, this.carteiraDAO, this.oraculoDAO);
+        this.carteiraService = new CarteiraService(this.carteiraDAO, this.movimentacaoDAO);
+        this.movimentacaoService = new MovimentacaoService(this.movimentacaoDAO, this.carteiraDAO, this.oraculoDAO);
         this.tipoPersistenciaAtual = tipo;
         LOG.log(Level.INFO, "Persistência ativa: {0}", tipo.getValorConfiguracao());
     }
@@ -208,21 +208,21 @@ public class AppContext {
     }
 
     /**
-     * Retorna o controlador de carteiras configurado no contexto.
+     * Retorna o serviço de carteiras configurado no contexto.
      *
-     * @return O controlador {@code CarteiraController}
+     * @return O serviço {@code CarteiraService}
      */
-    public synchronized CarteiraController getCarteiraController() {
-        return carteiraController;
+    public synchronized CarteiraService getCarteiraService() {
+        return carteiraService;
     }
 
     /**
-     * Retorna o controlador de movimentações configurado no contexto.
+     * Retorna o serviço de movimentações configurado no contexto.
      *
-     * @return O controlador {@code MovimentacaoController}
+     * @return O serviço {@code MovimentacaoService}
      */
-    public synchronized MovimentacaoController getMovimentacaoController() {
-        return movimentacaoController;
+    public synchronized MovimentacaoService getMovimentacaoService() {
+        return movimentacaoService;
     }
 
     /**

@@ -2,17 +2,17 @@ package br.com.ftcoin.views;
 
 import java.util.List;
 
-import br.com.ftcoin.controllers.CarteiraController;
+import br.com.ftcoin.services.CarteiraService;
 import br.com.ftcoin.models.Carteira;
 
 public class CarteiraView {
 
 	private final Console console;
-	private final CarteiraController carteiraController;
+	private final CarteiraService carteiraService;
 
-	public CarteiraView(Console console, CarteiraController carteiraController) {
+	public CarteiraView(Console console, CarteiraService carteiraService) {
 		this.console = console;
-		this.carteiraController = carteiraController;
+		this.carteiraService = carteiraService;
 	}
 
 	public void exibirMenu() {
@@ -29,16 +29,16 @@ public class CarteiraView {
 		String titular = console.lerTexto("carteira.titular");
 		String corretora = console.lerTexto("carteira.corretora");
 
-		Carteira criada = carteiraController.criarCarteira(titular, corretora);
+		Carteira criada = carteiraService.criarCarteira(titular, corretora);
 		console.exibirPositivo("carteira.criada", criada.getId(), criada.getNomeTitular(), criada.getCorretora());
 	}
 
 	private void consultar() {
-		exibirLinha(carteiraController.buscarCarteira(console.lerInteiro("entrada.idCarteira")));
+		exibirLinha(carteiraService.buscarCarteira(console.lerInteiro("entrada.idCarteira")));
 	}
 
 	private void listar() {
-		List<Carteira> carteiras = carteiraController.listarTodasCarteiras();
+		List<Carteira> carteiras = carteiraService.listarTodasCarteiras();
 		if (carteiras.isEmpty()) {
 			console.exibirAviso("carteira.listaVazia");
 			return;
@@ -51,14 +51,14 @@ public class CarteiraView {
 		String novoTitular = console.lerTexto("carteira.novoTitular");
 		String novaCorretora = console.lerTexto("carteira.novaCorretora");
 
-		carteiraController.editarCarteira(id, novoTitular, novaCorretora);
+		carteiraService.editarCarteira(id, novoTitular, novaCorretora);
 		console.exibirPositivo("carteira.atualizada", id);
 	}
 
 	private void excluir() {
 		int id = console.lerInteiro("entrada.idCarteira");
 
-		carteiraController.excluirCarteira(id);
+		carteiraService.excluirCarteira(id);
 		console.exibirPositivo("carteira.excluida", id);
 	}
 

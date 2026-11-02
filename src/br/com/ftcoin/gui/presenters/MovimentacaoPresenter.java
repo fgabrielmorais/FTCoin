@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
-import br.com.ftcoin.controllers.MovimentacaoController;
+import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
@@ -24,7 +24,7 @@ import br.com.ftcoin.models.TipoOperacao;
  *
  * <p>
  * Coordena validações rigorosas de interface, cálculos prévios de estimativa financeira
- * e submissão de ordens de Compra e Venda de FTCoins aos controladores de domínio.
+ * e submissão de ordens de Compra e Venda de FTCoins aos serviços do modelo.
  * </p>
  *
  * @author Grupo B.05
@@ -129,7 +129,7 @@ public class MovimentacaoPresenter {
     }
 
     /**
-     * Valida os campos da operação e submete o registro de compra ou venda ao controlador.
+     * Valida os campos da operação e submete o registro de compra ou venda ao serviço.
      *
      * @param idCarteira    Identificador da carteira selecionada
      * @param tipo          Tipo da operação ({@code COMPRA} ou {@code VENDA})
@@ -176,8 +176,8 @@ public class MovimentacaoPresenter {
         }
 
         try {
-            MovimentacaoController controller = AppContext.getInstancia().getMovimentacaoController();
-            controller.registrarOperacao(idCarteira, tipo, quantidade);
+            MovimentacaoService servico = AppContext.getInstancia().getMovimentacaoService();
+            servico.registrarOperacao(idCarteira, tipo, quantidade);
 
             view.limparFormulario();
             carregarCarteiras();

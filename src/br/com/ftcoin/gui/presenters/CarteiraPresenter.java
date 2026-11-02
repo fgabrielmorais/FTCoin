@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
-import br.com.ftcoin.controllers.CarteiraController;
+import br.com.ftcoin.services.CarteiraService;
 import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
@@ -20,7 +20,7 @@ import br.com.ftcoin.models.FTCoinException;
  *
  * <p>
  * Isola a interface gráfica das regras de negócio, coordenando a validação de dados de entrada,
- * operações de inclusão, alteração e exclusão de carteiras junto aos controladores do sistema.
+ * operações de inclusão, alteração e exclusão de carteiras junto aos serviços do modelo.
  * </p>
  *
  * @author Grupo B.05
@@ -89,8 +89,8 @@ public class CarteiraPresenter {
         }
 
         try {
-            CarteiraController controller = AppContext.getInstancia().getCarteiraController();
-            Carteira criada = controller.criarCarteira(titular.trim(), corretora.trim());
+            CarteiraService servico = AppContext.getInstancia().getCarteiraService();
+            Carteira criada = servico.criarCarteira(titular.trim(), corretora.trim());
             view.fecharModal();
             carregarCarteiras();
             view.exibirMensagemSucesso(mensagens.get("gui.carteira.sucesso.criada", criada.getId()));
@@ -127,8 +127,8 @@ public class CarteiraPresenter {
         }
 
         try {
-            CarteiraController controller = AppContext.getInstancia().getCarteiraController();
-            controller.editarCarteira(id, novoTitular.trim(), novaCorretora.trim());
+            CarteiraService servico = AppContext.getInstancia().getCarteiraService();
+            servico.editarCarteira(id, novoTitular.trim(), novaCorretora.trim());
             view.fecharModal();
             carregarCarteiras();
             view.exibirMensagemSucesso(mensagens.get("gui.carteira.sucesso.atualizada", id));
@@ -156,8 +156,8 @@ public class CarteiraPresenter {
         }
 
         try {
-            CarteiraController controller = AppContext.getInstancia().getCarteiraController();
-            controller.excluirCarteira(selecionada.id());
+            CarteiraService servico = AppContext.getInstancia().getCarteiraService();
+            servico.excluirCarteira(selecionada.id());
             carregarCarteiras();
             view.exibirMensagemSucesso(mensagens.get("gui.carteira.sucesso.excluida", selecionada.id()));
         } catch (FTCoinException e) {

@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import br.com.ftcoin.controllers.CarteiraController;
-import br.com.ftcoin.controllers.MovimentacaoController;
+import br.com.ftcoin.services.CarteiraService;
+import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.dto.MovimentacaoDTO;
@@ -28,7 +28,7 @@ import br.com.ftcoin.models.Posicao;
  * </p>
  *
  * <p>
- * Atua como ponte entre os controladores de domínio e os cinco relatórios especializados da {@code GUI},
+ * Atua como ponte entre os serviços do modelo e os cinco relatórios especializados da {@code GUI},
  * bem como fornece os dados agregados para os cartões de KPI do Dashboard principal.
  * </p>
  *
@@ -61,12 +61,12 @@ public class RelatoriosService {
      * @return O objeto {@link PosicaoRelatorioDTO} com as métricas financeiras
      */
     public PosicaoRelatorioDTO obterPosicaoCarteira(int idCarteira) {
-        CarteiraController carteiraController = AppContext.getInstancia().getCarteiraController();
-        MovimentacaoController movController = AppContext.getInstancia().getMovimentacaoController();
+        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
+        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
 
-        Carteira carteira = carteiraController.buscarCarteira(idCarteira);
-        Posicao posicao = movController.apurarPosicao(idCarteira);
-        BigDecimal cotacaoAtual = movController.buscarCotacaoAtual();
+        Carteira carteira = carteiraService.buscarCarteira(idCarteira);
+        Posicao posicao = movimentacaoService.apurarPosicao(idCarteira);
+        BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
         BigDecimal saldo = posicao.getSaldo();
         BigDecimal custoMedio = posicao.getCustoMedio();
@@ -106,16 +106,16 @@ public class RelatoriosService {
      * @return A lista cronológica decrescente de movimentações em {@link MovimentacaoDTO}
      */
     public List<MovimentacaoDTO> obterHistoricoOperacoes(int idCarteira) {
-        CarteiraController carteiraController = AppContext.getInstancia().getCarteiraController();
-        MovimentacaoController movController = AppContext.getInstancia().getMovimentacaoController();
+        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
+        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
 
-        Carteira carteira = carteiraController.buscarCarteira(idCarteira);
-        List<Movimentacao> movs = movController.buscarHistorico(idCarteira);
+        Carteira carteira = carteiraService.buscarCarteira(idCarteira);
+        List<Movimentacao> movs = movimentacaoService.buscarHistorico(idCarteira);
 
         List<MovimentacaoDTO> resultado = new ArrayList<>();
         for (Movimentacao m : movs) {
-            BigDecimal cotacao = movController.buscarCotacao(m.getDataOperacao());
-            BigDecimal total = movController.calcularValorDaOperacao(m);
+            BigDecimal cotacao = movimentacaoService.buscarCotacao(m.getDataOperacao());
+            BigDecimal total = movimentacaoService.calcularValorDaOperacao(m);
             resultado.add(new MovimentacaoDTO(
                     m.getIdMovimento(),
                     m.getIdCarteira(),
@@ -140,11 +140,11 @@ public class RelatoriosService {
      * @return A lista consolidada de itens em {@link RelatorioConsolidadoItemDTO}
      */
     public List<RelatorioConsolidadoItemDTO> obterConsolidadoCarteiras() {
-        CarteiraController carteiraController = AppContext.getInstancia().getCarteiraController();
-        MovimentacaoController movController = AppContext.getInstancia().getMovimentacaoController();
-        BigDecimal cotacaoAtual = movController.buscarCotacaoAtual();
+        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
+        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
+        BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
-        List<Carteira> carteiras = carteiraController.listarTodasCarteiras();
+        List<Carteira> carteiras = carteiraService.listarTodasCarteiras();
         if (carteiras.isEmpty()) {
             return Collections.emptyList();
         }
@@ -153,7 +153,7 @@ public class RelatoriosService {
         List<Posicao> posicoes = new ArrayList<>();
 
         for (Carteira c : carteiras) {
-            Posicao p = movController.apurarPosicao(c.getId());
+            Posicao p = movimentacaoService.apurarPosicao(c.getId());
             posicoes.add(p);
             patrimonioTotal = patrimonioTotal.add(p.calcularValorDeMercado(cotacaoAtual));
         }
@@ -194,15 +194,15 @@ public class RelatoriosService {
      * @return A lista de registros em formato {@link RelatorioDesempenhoDTO}
      */
     public List<RelatorioDesempenhoDTO> obterDesempenhoLucratividade() {
-        CarteiraController carteiraController = AppContext.getInstancia().getCarteiraController();
-        MovimentacaoController movController = AppContext.getInstancia().getMovimentacaoController();
-        BigDecimal cotacaoAtual = movController.buscarCotacaoAtual();
+        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
+        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
+        BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
-        List<Carteira> carteiras = carteiraController.listarTodasCarteiras();
+        List<Carteira> carteiras = carteiraService.listarTodasCarteiras();
         List<RelatorioDesempenhoDTO> resultado = new ArrayList<>();
 
         for (Carteira c : carteiras) {
-            Posicao p = movController.apurarPosicao(c.getId());
+            Posicao p = movimentacaoService.apurarPosicao(c.getId());
             BigDecimal investido = p.getValorACusto();
             BigDecimal valorAtual = p.calcularValorDeMercado(cotacaoAtual);
             BigDecimal lucroPrejuizo = p.calcularGanhoTotal(cotacaoAtual);
@@ -243,26 +243,26 @@ public class RelatoriosService {
      * @return O objeto {@link ResumoDashboardDTO} consolidado
      */
     public ResumoDashboardDTO obterResumoDashboard() {
-        CarteiraController carteiraController = AppContext.getInstancia().getCarteiraController();
-        MovimentacaoController movController = AppContext.getInstancia().getMovimentacaoController();
-        BigDecimal cotacaoAtual = movController.buscarCotacaoAtual();
+        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
+        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
+        BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
-        List<Carteira> carteiras = carteiraController.listarTodasCarteiras();
+        List<Carteira> carteiras = carteiraService.listarTodasCarteiras();
         BigDecimal patrimonioTotal = BigDecimal.ZERO;
         BigDecimal saldoTotalFTC = BigDecimal.ZERO;
         BigDecimal ganhoTotalConsolidado = BigDecimal.ZERO;
         List<MovimentacaoDTO> ultimasMovs = new ArrayList<>();
 
         for (Carteira c : carteiras) {
-            Posicao p = movController.apurarPosicao(c.getId());
+            Posicao p = movimentacaoService.apurarPosicao(c.getId());
             patrimonioTotal = patrimonioTotal.add(p.calcularValorDeMercado(cotacaoAtual));
             saldoTotalFTC = saldoTotalFTC.add(p.getSaldo());
             ganhoTotalConsolidado = ganhoTotalConsolidado.add(p.calcularGanhoTotal(cotacaoAtual));
 
-            List<Movimentacao> historico = movController.buscarHistorico(c.getId());
+            List<Movimentacao> historico = movimentacaoService.buscarHistorico(c.getId());
             for (Movimentacao m : historico) {
-                BigDecimal cotacao = movController.buscarCotacao(m.getDataOperacao());
-                BigDecimal total = movController.calcularValorDaOperacao(m);
+                BigDecimal cotacao = movimentacaoService.buscarCotacao(m.getDataOperacao());
+                BigDecimal total = movimentacaoService.calcularValorDaOperacao(m);
                 ultimasMovs.add(new MovimentacaoDTO(
                         m.getIdMovimento(),
                         c.getId(),
@@ -300,15 +300,15 @@ public class RelatoriosService {
      * @return A lista de carteiras cadastradas com saldo e valor de mercado atualizados
      */
     public List<CarteiraDTO> listarCarteirasDTO() {
-        CarteiraController carteiraController = AppContext.getInstancia().getCarteiraController();
-        MovimentacaoController movController = AppContext.getInstancia().getMovimentacaoController();
-        BigDecimal cotacaoAtual = movController.buscarCotacaoAtual();
+        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
+        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
+        BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
-        List<Carteira> lista = carteiraController.listarTodasCarteiras();
+        List<Carteira> lista = carteiraService.listarTodasCarteiras();
         List<CarteiraDTO> dtos = new ArrayList<>();
 
         for (Carteira c : lista) {
-            Posicao p = movController.apurarPosicao(c.getId());
+            Posicao p = movimentacaoService.apurarPosicao(c.getId());
             BigDecimal valorMercado = p.calcularValorDeMercado(cotacaoAtual);
             dtos.add(new CarteiraDTO(c.getId(), c.getNomeTitular(), c.getCorretora(), p.getSaldo(), valorMercado));
         }
