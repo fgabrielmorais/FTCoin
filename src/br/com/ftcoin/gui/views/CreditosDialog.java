@@ -9,7 +9,6 @@ import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.common.Info;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
@@ -31,6 +30,8 @@ import br.com.ftcoin.gui.views.components.ModernButton;
  */
 public class CreditosDialog extends JDialog {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Painel de exibição de texto formatado com tecnologia HTML.
      */
@@ -45,14 +46,13 @@ public class CreditosDialog extends JDialog {
      * Constrói o diálogo modal de créditos e dados de autoria.
      *
      * @param janelaPai Janela principal ({@link Frame}) proprietária deste diálogo
+     * @param mensagens textos da interface no idioma ativo
      */
-    public CreditosDialog(Frame janelaPai) {
-        super(janelaPai, AppContext.getInstancia().getMensagens().get("gui.creditos.dialog.titulo"), true);
+    public CreditosDialog(Frame janelaPai, MensagensGui mensagens) {
+        super(janelaPai, mensagens.get("gui.creditos.dialog.titulo"), true);
         setSize(560, 480);
         setLocationRelativeTo(janelaPai);
         setLayout(new BorderLayout());
-
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
 
         editorTexto = new JEditorPane();
         editorTexto.setEditable(false);
@@ -89,10 +89,10 @@ public class CreditosDialog extends JDialog {
                 <h2 style="color: #1a2b4c; margin-bottom: 2px;">""" + Info.NOME_SISTEMA + """
                 </h2>
                 <h4 style="color: #4f46e5; margin-top: 0;">Sistema de Gestão Financeira de Criptomoedas</h4>
-                <p style="font-size: 13px; color: #6b7280;"><b>Versão:</b> """ + Info.VERSAO + """
-                 &nbsp;|&nbsp; <b>Tecnologia:</b> """ + Info.PLATAFORMA_JAVA + """
+                <p style="font-size: 13px; color: #6b7280;"><b>Versão:</b>\s""" + Info.VERSAO + """
+                 &nbsp;|&nbsp; <b>Tecnologia:</b>\s""" + Info.PLATAFORMA_JAVA + """
                 </p>
-                <p style="font-size: 12px; color: #6b7280;"><b>Data de Lançamento:</b> """ + Info.DATA_LANCAMENTO + """
+                <p style="font-size: 12px; color: #6b7280;"><b>Data de Lançamento:</b>\s""" + Info.DATA_LANCAMENTO + """
                 </p>
                 <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
 
@@ -109,13 +109,12 @@ public class CreditosDialog extends JDialog {
                 </ul>
 
                 <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
-                <p style="font-size: 12px; color: #4b5563;"><b>Instituição:</b> """ + Info.INSTITUICAO + """
+                <p style="font-size: 12px; color: #4b5563;"><b>Instituição:</b>\s""" + Info.INSTITUICAO + """
                 <br>
                 """ + Info.CURSO + """
-                 - """ + Info.DISCIPLINA + """
+                 -\s""" + Info.DISCIPLINA + """
                 </p>
-                <p style="font-size: 11px; color: #9ca3af; margin-top: 15px;">
-                    """ + Info.COPYRIGHT + """
+                <p style="font-size: 11px; color: #9ca3af; margin-top: 15px;">""" + Info.COPYRIGHT + """
                     <br>
                     Desenvolvido com fins estritamente acadêmicos e profissionais.
                 </p>

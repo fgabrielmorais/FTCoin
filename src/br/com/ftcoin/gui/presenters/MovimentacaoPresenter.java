@@ -7,7 +7,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.services.MovimentacaoService;
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.dto.MovimentacaoDTO;
@@ -50,14 +50,18 @@ public class MovimentacaoPresenter {
      */
     private final CotacaoCacheService cotacaoService;
 
+    private final ContextoAplicacao contexto;
+
     /**
      * Constrói o apresentador de movimentações injetando visão e serviços requeridos.
      *
      * @param view             Visão que implementa o contrato {@link IMovimentacaoView}
      * @param relatoriosService Serviço de dados e carteiras
      * @param cotacaoService   Serviço de consulta de cotações
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public MovimentacaoPresenter(IMovimentacaoView view, RelatoriosService relatoriosService, CotacaoCacheService cotacaoService) {
+    public MovimentacaoPresenter(IMovimentacaoView view, RelatoriosService relatoriosService, CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
         this.view = view;
         this.relatoriosService = relatoriosService;
         this.cotacaoService = cotacaoService;
@@ -80,7 +84,7 @@ public class MovimentacaoPresenter {
             view.exibirCarteirasDisponiveis(carteiras);
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar carteiras", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -93,7 +97,7 @@ public class MovimentacaoPresenter {
             view.exibirHistoricoMovimentacoes(ultimas);
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar histórico de movimentações", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -137,7 +141,7 @@ public class MovimentacaoPresenter {
      * @param strQuantidade Quantidade informada em formato texto
      */
     public void registrarOperacao(Integer idCarteira, TipoOperacao tipo, LocalDate data, String strQuantidade) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         LOG.log(Level.FINE, "Usuário pediu: {0} de {1} FTC na carteira {2}", new Object[] { tipo, strQuantidade, idCarteira });
 
         if (idCarteira == null || idCarteira <= 0) {
@@ -176,7 +180,7 @@ public class MovimentacaoPresenter {
         }
 
         try {
-            MovimentacaoService servico = AppContext.getInstancia().getMovimentacaoService();
+            MovimentacaoService servico = contexto.getMovimentacaoService();
             servico.registrarOperacao(idCarteira, tipo, quantidade);
 
             view.limparFormulario();
@@ -190,7 +194,7 @@ public class MovimentacaoPresenter {
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "registrar " + tipo + " na carteira " + idCarteira, e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 }

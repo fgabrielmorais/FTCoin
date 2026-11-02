@@ -19,7 +19,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
@@ -48,10 +48,12 @@ import br.com.ftcoin.gui.views.contracts.ICotacaoView;
  */
 public class CotacaoPanel extends JPanel implements ICotacaoView {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Apresentador responsável pelas regras de apresentação da tela de cotações.
      */
-    private final CotacaoPresenter presenter;
+    private final transient CotacaoPresenter presenter;
 
     /**
      * Campo de entrada de texto para a data cronológica da cotação desejada.
@@ -103,14 +105,18 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
      */
     private final JTable tabelaHistoricoOscilacoes;
 
+    private final transient ContextoAplicacao contexto;
+
     /**
      * Constrói o painel de cotações inicializando componentes gráficos e o apresentador.
      *
      * @param cotacaoService Serviço de cache e cotações da aplicação
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public CotacaoPanel(CotacaoCacheService cotacaoService) {
-        this.presenter = new CotacaoPresenter(this, cotacaoService);
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+    public CotacaoPanel(CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
+        this.presenter = new CotacaoPresenter(this, cotacaoService, contexto);
+        MensagensGui mensagens = contexto.getMensagens();
 
         this.campoDataConsulta = new JTextField(LocalDate.now().toString(), 10);
         this.botaoConsultarCotacao = new ModernButton(mensagens.get("gui.cotacao.btn.consultar"), ModernButton.Variante.PRIMARIA);
@@ -231,15 +237,14 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         tabelaHistoricoOscilacoes.getTableHeader().setFont(TemaCores.FONTE_LABEL);
         tabelaHistoricoOscilacoes.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
 
-        GuiFormatador formatador = mensagens.getFormatador();
         tabelaHistoricoOscilacoes.getColumnModel().getColumn(1).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabelaHistoricoOscilacoes.getColumnModel().getColumn(2).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, contexto.getMensagens()));
         tabelaHistoricoOscilacoes.getColumnModel().getColumn(3).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, contexto.getMensagens()));
         tabelaHistoricoOscilacoes.getColumnModel().getColumn(4).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.ORIGEM_BADGE, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.ORIGEM_BADGE, contexto.getMensagens()));
 
         JScrollPane painelRolagemHistorico = new JScrollPane(tabelaHistoricoOscilacoes);
         painelRolagemHistorico.setBorder(BorderFactory.createLineBorder(TemaCores.BORDA_SUAVE));
@@ -255,7 +260,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
      * @param forcarOraculo Se {@code true}, ignora o cache e obriga consulta remota
      */
     private void executarConsultaCotacao(boolean forcarOraculo) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         LocalDate data;
         try {
             data = LocalDate.parse(campoDataConsulta.getText().trim());
@@ -285,7 +290,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
      */
     @Override
     public void exibirCotacao(CotacaoDTO cotacao) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         GuiFormatador formatador = mensagens.getFormatador();
 
         rotuloValorMoeda.setText(formatador.moeda(cotacao.valor()));
@@ -313,7 +318,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
     @Override
     public void exibirHistoricoOscilacoes(List<RelatorioHistoricoCotacaoDTO> historico) {
         modeloTabelaHistorico.setRowCount(0);
-        GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
         for (RelatorioHistoricoCotacaoDTO item : historico) {
             modeloTabelaHistorico.addRow(new Object[]{
                     formatador.data(item.data()),
@@ -332,7 +337,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
      */
     @Override
     public void exibirMensagemSucesso(String mensagem) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         JOptionPane.showMessageDialog(this, mensagem, mensagens.get("gui.comum.sucesso"), JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -343,7 +348,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
      */
     @Override
     public void exibirMensagemErro(String mensagem) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         JOptionPane.showMessageDialog(this, mensagem, mensagens.get("gui.cotacao.erroTitulo"), JOptionPane.ERROR_MESSAGE);
     }
 }

@@ -15,7 +15,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
@@ -35,39 +35,63 @@ import br.com.ftcoin.gui.views.contracts.IRelatoriosView;
  * View do Módulo de Relatórios (Padrão MVP).
  * Apresenta tabelas e painéis analíticos com destaque visual de cores (verde para lucro e vermelho para prejuízo)
  * para os 5 relatórios do sistema FTCoin.
+ *
+ * @author Grupo B.05
+ * @version 1.0.0
  */
 public class RelatoriosPanel extends JPanel implements IRelatoriosView {
 
-    private final RelatoriosPresenter presenter;
+    private static final long serialVersionUID = 1L;
 
+    private final transient RelatoriosPresenter presenter;
+
+    /** Seletor da carteira dos relatórios por carteira. */
     private final JComboBox<ItemFiltroCarteira> cmbCarteiraFiltro = new JComboBox<>();
+    /** Abas dos cinco relatórios. */
     private final JTabbedPane tabRelatorios = new JTabbedPane();
+    /** Evita gerar relatório enquanto o seletor de carteiras é preenchido. */
     private boolean carregandoFiltro = false;
 
     // Componentes do Relatório 1 (Cards de Posição CMP)
+    /** Cartão do saldo de FTCoins. */
     private final ModernCard cardSaldo = new ModernCard("Saldo em Carteira", "0.000 FTC", TemaCores.PRIMARIA);
+    /** Cartão do custo médio ponderado. */
     private final ModernCard cardCustoMedio = new ModernCard("Custo Médio (CMP)", "R$ 0,00", TemaCores.TEXTO_PRINCIPAL);
+    /** Cartão do valor a custo. */
     private final ModernCard cardValorCusto = new ModernCard("Total a Custo", "R$ 0,00", TemaCores.TEXTO_PRINCIPAL);
+    /** Cartão do valor de mercado. */
     private final ModernCard cardValorMercado = new ModernCard("Valor de Mercado", "R$ 0,00", TemaCores.SECUNDARIA);
+    /** Cartão do ganho realizado. */
     private final ModernCard cardGanhoRealizado = new ModernCard("Ganho Realizado", "R$ 0,00", TemaCores.POSITIVO_LUCRO);
+    /** Cartão do ganho não realizado. */
     private final ModernCard cardGanhoNaoRealizado = new ModernCard("Ganho Não Realizado", "R$ 0,00", TemaCores.POSITIVO_LUCRO);
+    /** Cartão do ganho total. */
     private final ModernCard cardGanhoTotal = new ModernCard("Ganho Total Líquido", "R$ 0,00", TemaCores.POSITIVO_LUCRO);
+    /** Cartão do retorno sobre o investimento. */
     private final ModernCard cardRoi = new ModernCard("Retorno (ROI)", "0,00%", TemaCores.POSITIVO_LUCRO);
 
     // Componentes do Relatório 2 (Histórico)
+    /** Dados do relatório 2 (histórico). */
     private final DefaultTableModel modelRel2;
+    /** Tabela do relatório 2 (histórico). */
     private final JTable tabelaRel2;
 
     // Componentes do Relatório 3 (Consolidado de Todas as Carteiras)
+    /** Dados do relatório 3 (consolidado). */
     private final DefaultTableModel modelRel3;
+    /** Tabela do relatório 3 (consolidado). */
     private final JTable tabelaRel3;
 
     // Componentes do Relatório 4 (Desempenho e Lucratividade)
+    /** Dados do relatório 4 (desempenho). */
     private final DefaultTableModel modelRel4;
+    /** Tabela do relatório 4 (desempenho). */
     private final JTable tabelaRel4;
 
     // Componentes do Relatório 5 (Histórico do Oráculo)
+    /** Dados do relatório 5 (oráculo). */
     private final DefaultTableModel modelRel5;
+    /** Tabela do relatório 5 (oráculo). */
     private final JTable tabelaRel5;
 
     private record ItemFiltroCarteira(int id, String descricao) {
@@ -77,8 +101,17 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         }
     }
 
-    public RelatoriosPanel(RelatoriosService relatoriosService) {
-        this.presenter = new RelatoriosPresenter(this, relatoriosService);
+    private final transient ContextoAplicacao contexto;
+
+    /**
+     * Monta as abas dos relatórios e o presenter da tela.
+     *
+     * @param relatoriosService serviço que monta os dados dos relatórios
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
+     */
+    public RelatoriosPanel(RelatoriosService relatoriosService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
+        this.presenter = new RelatoriosPresenter(this, relatoriosService, contexto);
 
         setLayout(new BorderLayout(15, 15));
         setBackground(TemaCores.FUNDO_APP);
@@ -124,7 +157,6 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         tabRelatorios.setFont(TemaCores.FONTE_LABEL);
 
         // Modelos e Tabelas
-        GuiFormatador fmt = AppContext.getInstancia().getMensagens().getFormatador();
 
         // 1. Posição da Carteira
         JPanel pnlRel1 = new JPanel(new GridLayout(2, 4, 14, 14));
@@ -147,13 +179,13 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         };
         tabelaRel2 = criarTabelaFormatada(modelRel2);
         tabelaRel2.getColumnModel().getColumn(1).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, contexto.getMensagens()));
         tabelaRel2.getColumnModel().getColumn(2).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, contexto.getMensagens()));
         tabelaRel2.getColumnModel().getColumn(3).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabelaRel2.getColumnModel().getColumn(4).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabRelatorios.addTab("  2. Histórico de Operações  ", new JScrollPane(tabelaRel2));
 
         // 3. Consolidado de Todas as Carteiras
@@ -163,13 +195,13 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         };
         tabelaRel3 = criarTabelaFormatada(modelRel3);
         tabelaRel3.getColumnModel().getColumn(3).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, contexto.getMensagens()));
         tabelaRel3.getColumnModel().getColumn(4).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabelaRel3.getColumnModel().getColumn(5).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, contexto.getMensagens()));
         tabelaRel3.getColumnModel().getColumn(6).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, contexto.getMensagens()));
         tabRelatorios.addTab("  3. Consolidado do Portfólio  ", new JScrollPane(tabelaRel3));
 
         // 4. Desempenho e Lucratividade
@@ -179,13 +211,13 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         };
         tabelaRel4 = criarTabelaFormatada(modelRel4);
         tabelaRel4.getColumnModel().getColumn(3).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabelaRel4.getColumnModel().getColumn(4).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabelaRel4.getColumnModel().getColumn(5).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, contexto.getMensagens()));
         tabelaRel4.getColumnModel().getColumn(6).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, contexto.getMensagens()));
         tabRelatorios.addTab("  4. Desempenho & Lucratividade  ", new JScrollPane(tabelaRel4));
 
         // 5. Histórico do Oráculo
@@ -195,13 +227,13 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         };
         tabelaRel5 = criarTabelaFormatada(modelRel5);
         tabelaRel5.getColumnModel().getColumn(1).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabelaRel5.getColumnModel().getColumn(2).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, contexto.getMensagens()));
         tabelaRel5.getColumnModel().getColumn(3).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, contexto.getMensagens()));
         tabelaRel5.getColumnModel().getColumn(4).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.ORIGEM_BADGE, fmt));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.ORIGEM_BADGE, contexto.getMensagens()));
         tabRelatorios.addTab("  5. Histórico do Oráculo  ", new JScrollPane(tabelaRel5));
 
         add(tabRelatorios, BorderLayout.CENTER);
@@ -216,6 +248,9 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         return table;
     }
 
+    /**
+     * Recarrega o seletor de carteiras e o relatório da aba ativa.
+     */
     public void inicializar() {
         presenter.inicializar();
     }
@@ -268,7 +303,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
             limparRelatoriosIndividuais();
             return;
         }
-        GuiFormatador fmt = AppContext.getInstancia().getMensagens().getFormatador();
+        GuiFormatador fmt = contexto.getMensagens().getFormatador();
 
         cardSaldo.setValor(fmt.quantidade(posicao.saldo()), TemaCores.PRIMARIA);
         cardCustoMedio.setValor(fmt.moeda(posicao.custoMedio()), TemaCores.TEXTO_PRINCIPAL);
@@ -297,7 +332,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     @Override
     public void exibirRelatorio2Historico(List<MovimentacaoDTO> historico) {
         modelRel2.setRowCount(0);
-        GuiFormatador fmt = AppContext.getInstancia().getMensagens().getFormatador();
+        GuiFormatador fmt = contexto.getMensagens().getFormatador();
         for (MovimentacaoDTO m : historico) {
             modelRel2.addRow(new Object[]{
                     fmt.data(m.dataOperacao()),
@@ -344,7 +379,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     @Override
     public void exibirRelatorio5Cotacoes(List<RelatorioHistoricoCotacaoDTO> cotacoes) {
         modelRel5.setRowCount(0);
-        GuiFormatador fmt = AppContext.getInstancia().getMensagens().getFormatador();
+        GuiFormatador fmt = contexto.getMensagens().getFormatador();
         for (RelatorioHistoricoCotacaoDTO c : cotacoes) {
             modelRel5.addRow(new Object[]{
                     fmt.data(c.data()),

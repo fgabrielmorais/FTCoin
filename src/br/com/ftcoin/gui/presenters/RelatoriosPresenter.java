@@ -3,7 +3,7 @@ package br.com.ftcoin.gui.presenters;
 import java.util.List;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.dto.MovimentacaoDTO;
 import br.com.ftcoin.gui.dto.PosicaoRelatorioDTO;
@@ -41,13 +41,17 @@ public class RelatoriosPresenter {
      */
     private final RelatoriosService relatoriosService;
 
+    private final ContextoAplicacao contexto;
+
     /**
      * Constrói o apresentador de relatórios injetando a visão e o serviço analítico.
      *
      * @param view             Visão que implementa o contrato {@link IRelatoriosView}
      * @param relatoriosService Serviço de cálculo e apuração financeira
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public RelatoriosPresenter(IRelatoriosView view, RelatoriosService relatoriosService) {
+    public RelatoriosPresenter(IRelatoriosView view, RelatoriosService relatoriosService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
         this.view = view;
         this.relatoriosService = relatoriosService;
     }
@@ -74,7 +78,7 @@ public class RelatoriosPresenter {
             }
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar o filtro de carteiras", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -99,7 +103,7 @@ public class RelatoriosPresenter {
             view.exibirRelatorio1Posicao(posicao);
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "gerar o relatório 1 (posição) da carteira " + idCarteira, e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -114,7 +118,7 @@ public class RelatoriosPresenter {
             view.exibirRelatorio2Historico(historico);
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "gerar o relatório 2 (histórico) da carteira " + idCarteira, e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -127,7 +131,7 @@ public class RelatoriosPresenter {
             view.exibirRelatorio3Consolidado(consolidado);
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "gerar o relatório 3 (consolidado)", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -140,7 +144,7 @@ public class RelatoriosPresenter {
             view.exibirRelatorio4Desempenho(desempenho);
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "gerar o relatório 4 (desempenho)", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -155,7 +159,7 @@ public class RelatoriosPresenter {
             view.exibirRelatorio5Cotacoes(cotacoes);
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "gerar o relatório 5 (cotações)", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 }

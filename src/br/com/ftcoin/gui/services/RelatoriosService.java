@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 
 import br.com.ftcoin.services.CarteiraService;
 import br.com.ftcoin.services.MovimentacaoService;
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.dto.MovimentacaoDTO;
 import br.com.ftcoin.gui.dto.PosicaoRelatorioDTO;
@@ -45,13 +45,17 @@ public class RelatoriosService {
      */
     private final CotacaoCacheService cotacaoService;
 
+    private final ContextoAplicacao contexto;
+
     /**
      * Constrói o serviço de relatórios injetando a dependência de cotações.
      *
      * @param cotacaoService Instância de {@link CotacaoCacheService}; se {@code null}, instancia padrão
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public RelatoriosService(CotacaoCacheService cotacaoService) {
-        this.cotacaoService = (cotacaoService != null) ? cotacaoService : new CotacaoCacheService();
+    public RelatoriosService(CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
+        this.cotacaoService = (cotacaoService != null) ? cotacaoService : new CotacaoCacheService(contexto);
     }
 
     /**
@@ -61,8 +65,8 @@ public class RelatoriosService {
      * @return O objeto {@link PosicaoRelatorioDTO} com as métricas financeiras
      */
     public PosicaoRelatorioDTO obterPosicaoCarteira(int idCarteira) {
-        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
-        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
+        CarteiraService carteiraService = contexto.getCarteiraService();
+        MovimentacaoService movimentacaoService = contexto.getMovimentacaoService();
 
         Carteira carteira = carteiraService.buscarCarteira(idCarteira);
         Posicao posicao = movimentacaoService.apurarPosicao(idCarteira);
@@ -106,8 +110,8 @@ public class RelatoriosService {
      * @return A lista cronológica decrescente de movimentações em {@link MovimentacaoDTO}
      */
     public List<MovimentacaoDTO> obterHistoricoOperacoes(int idCarteira) {
-        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
-        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
+        CarteiraService carteiraService = contexto.getCarteiraService();
+        MovimentacaoService movimentacaoService = contexto.getMovimentacaoService();
 
         Carteira carteira = carteiraService.buscarCarteira(idCarteira);
         List<Movimentacao> movs = movimentacaoService.buscarHistorico(idCarteira);
@@ -140,8 +144,8 @@ public class RelatoriosService {
      * @return A lista consolidada de itens em {@link RelatorioConsolidadoItemDTO}
      */
     public List<RelatorioConsolidadoItemDTO> obterConsolidadoCarteiras() {
-        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
-        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
+        CarteiraService carteiraService = contexto.getCarteiraService();
+        MovimentacaoService movimentacaoService = contexto.getMovimentacaoService();
         BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
         List<Carteira> carteiras = carteiraService.listarTodasCarteiras();
@@ -194,8 +198,8 @@ public class RelatoriosService {
      * @return A lista de registros em formato {@link RelatorioDesempenhoDTO}
      */
     public List<RelatorioDesempenhoDTO> obterDesempenhoLucratividade() {
-        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
-        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
+        CarteiraService carteiraService = contexto.getCarteiraService();
+        MovimentacaoService movimentacaoService = contexto.getMovimentacaoService();
         BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
         List<Carteira> carteiras = carteiraService.listarTodasCarteiras();
@@ -243,8 +247,8 @@ public class RelatoriosService {
      * @return O objeto {@link ResumoDashboardDTO} consolidado
      */
     public ResumoDashboardDTO obterResumoDashboard() {
-        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
-        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
+        CarteiraService carteiraService = contexto.getCarteiraService();
+        MovimentacaoService movimentacaoService = contexto.getMovimentacaoService();
         BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
         List<Carteira> carteiras = carteiraService.listarTodasCarteiras();
@@ -300,8 +304,8 @@ public class RelatoriosService {
      * @return A lista de carteiras cadastradas com saldo e valor de mercado atualizados
      */
     public List<CarteiraDTO> listarCarteirasDTO() {
-        CarteiraService carteiraService = AppContext.getInstancia().getCarteiraService();
-        MovimentacaoService movimentacaoService = AppContext.getInstancia().getMovimentacaoService();
+        CarteiraService carteiraService = contexto.getCarteiraService();
+        MovimentacaoService movimentacaoService = contexto.getMovimentacaoService();
         BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
         List<Carteira> lista = carteiraService.listarTodasCarteiras();

@@ -3,7 +3,7 @@ package br.com.ftcoin.gui.presenters;
 import java.util.logging.Logger;
 
 import br.com.ftcoin.config.RegistroDeFalhas;
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.dto.ResumoDashboardDTO;
 import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.contracts.IDashboardView;
@@ -36,13 +36,17 @@ public class DashboardPresenter {
      */
     private final RelatoriosService relatoriosService;
 
+    private final ContextoAplicacao contexto;
+
     /**
      * Constrói o apresentador do dashboard vinculando a visão e o serviço analítico.
      *
      * @param view             Visão que implementa o contrato {@link IDashboardView}
      * @param relatoriosService Serviço de cálculo e apuração de dados consolidados
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public DashboardPresenter(IDashboardView view, RelatoriosService relatoriosService) {
+    public DashboardPresenter(IDashboardView view, RelatoriosService relatoriosService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
         this.view = view;
         this.relatoriosService = relatoriosService;
     }
@@ -56,7 +60,7 @@ public class DashboardPresenter {
             view.exibirResumo(resumo);
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar o dashboard", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 }

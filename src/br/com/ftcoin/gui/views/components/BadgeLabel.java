@@ -26,6 +26,8 @@ import br.com.ftcoin.gui.common.TemaCores;
  */
 public class BadgeLabel extends JLabel {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Cor de preenchimento do fundo da etiqueta.
      */

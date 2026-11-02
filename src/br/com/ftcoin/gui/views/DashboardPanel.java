@@ -12,7 +12,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.ModoNavegacao;
@@ -42,15 +42,17 @@ import br.com.ftcoin.gui.views.contracts.IDashboardView;
  */
 public class DashboardPanel extends JPanel implements IDashboardView {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Apresentador responsável pelas regras de apresentação do dashboard.
      */
-    private final DashboardPresenter presenter;
+    private final transient DashboardPresenter presenter;
 
     /**
      * Função consumidora para solicitação de transição de abas na janela principal.
      */
-    private final Consumer<String> consumidorNavegacao;
+    private final transient Consumer<String> consumidorNavegacao;
 
     /**
      * Cartão de KPI para exibição do patrimônio financeiro total consolidado.
@@ -117,16 +119,20 @@ public class DashboardPanel extends JPanel implements IDashboardView {
      */
     private final JLabel rotuloFeedTitulo;
 
+    private final transient ContextoAplicacao contexto;
+
     /**
      * Constrói o painel de dashboard inicializando cartões, tabelas e botões de atalho.
      *
      * @param relatoriosService   Serviço analítico de dados e relatórios
      * @param consumidorNavegacao Ação consumidora para troca de telas na janela principal
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public DashboardPanel(RelatoriosService relatoriosService, Consumer<String> consumidorNavegacao) {
-        this.presenter = new DashboardPresenter(this, relatoriosService);
+    public DashboardPanel(RelatoriosService relatoriosService, Consumer<String> consumidorNavegacao, ContextoAplicacao contexto) {
+        this.contexto = contexto;
+        this.presenter = new DashboardPresenter(this, relatoriosService, contexto);
         this.consumidorNavegacao = consumidorNavegacao;
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
 
         setLayout(new BorderLayout(15, 15));
         setBackground(TemaCores.FUNDO_APP);
@@ -214,15 +220,14 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         tabelaFeedOperacoes.getTableHeader().setFont(TemaCores.FONTE_LABEL);
         tabelaFeedOperacoes.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
 
-        GuiFormatador formatador = mensagens.getFormatador();
         tabelaFeedOperacoes.getColumnModel().getColumn(2).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, contexto.getMensagens()));
         tabelaFeedOperacoes.getColumnModel().getColumn(3).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, contexto.getMensagens()));
         tabelaFeedOperacoes.getColumnModel().getColumn(4).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabelaFeedOperacoes.getColumnModel().getColumn(5).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
 
         JScrollPane painelRolagemFeed = new JScrollPane(tabelaFeedOperacoes);
         painelRolagemFeed.setBorder(BorderFactory.createLineBorder(TemaCores.BORDA_SUAVE));
@@ -257,7 +262,7 @@ public class DashboardPanel extends JPanel implements IDashboardView {
      */
     @Override
     public void exibirResumo(ResumoDashboardDTO resumo) {
-        GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
 
         cardPatrimonioTotal.setValor(formatador.moeda(resumo.patrimonioTotal()), TemaCores.PRIMARIA);
         cardSaldoConsolidado.setValor(formatador.quantidade(resumo.saldoTotalFTC()), TemaCores.TEXTO_PRINCIPAL);
@@ -290,7 +295,7 @@ public class DashboardPanel extends JPanel implements IDashboardView {
      */
     @Override
     public void exibirMensagemErro(String mensagem) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         JOptionPane.showMessageDialog(this, mensagem, mensagens.get("gui.dash.erro.titulo"), JOptionPane.ERROR_MESSAGE);
     }
 }

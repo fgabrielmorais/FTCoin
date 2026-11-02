@@ -3,6 +3,7 @@ package br.com.ftcoin.gui.main;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.math.BigDecimal;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
@@ -12,7 +13,8 @@ import br.com.ftcoin.config.ConfiguracaoLog;
 import br.com.ftcoin.services.CarteiraService;
 import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.daos.TipoPersistencia;
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
+import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.views.MainFrame;
 import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.TipoOperacao;
@@ -55,13 +57,13 @@ public class FTCoinGuiApp {
 
         SwingUtilities.invokeLater(() -> {
             try {
-                carregarMassaDadosDemonstracao();
+                ContextoAplicacao contexto = new ContextoAplicacao(new MensagensGui(Locale.getDefault()), TipoPersistencia.MEMORIA);
+                carregarMassaDadosDemonstracao(contexto);
 
-                MainFrame janelaPrincipal = new MainFrame();
-                registrarEncerramento(janelaPrincipal);
+                MainFrame janelaPrincipal = new MainFrame(contexto);
+                registrarEncerramento(janelaPrincipal, contexto);
                 janelaPrincipal.setVisible(true);
 
-                AppContext contexto = AppContext.getInstancia();
                 LOG.log(Level.INFO, "FTCoin Studio pronto (persistência={0}, idioma={1})", new Object[] {
                         contexto.getTipoPersistenciaAtual().getValorConfiguracao(),
                         contexto.getMensagens().getLocaleAtual() });
@@ -75,13 +77,14 @@ public class FTCoinGuiApp {
      * Registra o encerramento da aplicação quando a janela principal é fechada.
      *
      * @param janelaPrincipal Janela cujo fechamento encerra a aplicação
+     * @param contexto Contexto cuja persistência é fechada ao sair
      */
-    private static void registrarEncerramento(MainFrame janelaPrincipal) {
+    private static void registrarEncerramento(MainFrame janelaPrincipal, ContextoAplicacao contexto) {
         janelaPrincipal.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent evento) {
                 LOG.info("Encerrando FTCoin Studio");
-                AppContext.getInstancia().encerrar();
+                contexto.encerrar();
             }
         });
     }
@@ -101,9 +104,10 @@ public class FTCoinGuiApp {
 
     /**
      * Carrega carteiras e movimentações de teste caso a persistência inicial seja em memória e esteja vazia.
+     *
+     * @param contexto Contexto com os serviços da persistência inicial
      */
-    private static void carregarMassaDadosDemonstracao() {
-        AppContext contexto = AppContext.getInstancia();
+    private static void carregarMassaDadosDemonstracao(ContextoAplicacao contexto) {
         if (contexto.getTipoPersistenciaAtual() == TipoPersistencia.MEMORIA) {
             CarteiraService carteiraService = contexto.getCarteiraService();
             MovimentacaoService movimentacaoService = contexto.getMovimentacaoService();

@@ -20,8 +20,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 
-import br.com.ftcoin.gui.common.AppContext;
-import br.com.ftcoin.gui.common.GuiFormatador;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
@@ -47,10 +46,12 @@ import br.com.ftcoin.gui.views.contracts.ICarteiraView;
  */
 public class CarteirasPanel extends JPanel implements ICarteiraView {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Apresentador responsável pelas regras de apresentação do módulo.
      */
-    private final CarteiraPresenter presenter;
+    private final transient CarteiraPresenter presenter;
 
     /**
      * Modelo tabular que gerencia os dados de exibição da tabela de carteiras.
@@ -65,21 +66,25 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
     /**
      * Lista em memória das carteiras atualmente exibidas.
      */
-    private List<CarteiraDTO> carteirasCarregadas = List.of();
+    private transient List<CarteiraDTO> carteirasCarregadas = List.of();
 
     /**
      * Referência para a janela modal de formulário ativa.
      */
     private JDialog modalFormularioAtivo;
 
+    private final transient ContextoAplicacao contexto;
+
     /**
      * Constrói o painel de carteiras inicializando componentes visuais e apresentador.
      *
      * @param relatoriosService Serviço de dados e relatórios da aplicação
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public CarteirasPanel(RelatoriosService relatoriosService) {
-        this.presenter = new CarteiraPresenter(this, relatoriosService);
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+    public CarteirasPanel(RelatoriosService relatoriosService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
+        this.presenter = new CarteiraPresenter(this, relatoriosService, contexto);
+        MensagensGui mensagens = contexto.getMensagens();
 
         setLayout(new BorderLayout(15, 15));
         setBackground(TemaCores.FUNDO_APP);
@@ -139,11 +144,10 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         tabelaCarteiras.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
         tabelaCarteiras.getTableHeader().setForeground(TemaCores.TEXTO_PRINCIPAL);
 
-        GuiFormatador formatador = mensagens.getFormatador();
         tabelaCarteiras.getColumnModel().getColumn(3).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, contexto.getMensagens()));
         tabelaCarteiras.getColumnModel().getColumn(4).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
 
         JScrollPane painelRolagemTabela = new JScrollPane(tabelaCarteiras);
         painelRolagemTabela.setBorder(BorderFactory.createLineBorder(TemaCores.BORDA_SUAVE));
@@ -167,7 +171,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         if (selecionada != null) {
             abrirModalEdicao(selecionada);
         } else {
-            exibirMensagemErro(AppContext.getInstancia().getMensagens().get("gui.carteira.erro.selecione"));
+            exibirMensagemErro(contexto.getMensagens().get("gui.carteira.erro.selecione"));
         }
     }
 
@@ -177,7 +181,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
     private void tratarAcaoExcluir() {
         CarteiraDTO selecionada = getCarteiraSelecionada();
         if (selecionada != null) {
-            MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+            MensagensGui mensagens = contexto.getMensagens();
             int confirmacao = JOptionPane.showConfirmDialog(
                     this,
                     mensagens.get("gui.carteira.confirm.excluir", selecionada.id(), selecionada.nomeTitular()),
@@ -189,7 +193,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
                 presenter.excluirCarteira();
             }
         } else {
-            exibirMensagemErro(AppContext.getInstancia().getMensagens().get("gui.carteira.erro.selecione"));
+            exibirMensagemErro(contexto.getMensagens().get("gui.carteira.erro.selecione"));
         }
     }
 
@@ -220,7 +224,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
      */
     @Override
     public void exibirMensagemSucesso(String mensagem) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         JOptionPane.showMessageDialog(this, mensagem, mensagens.get("gui.comum.sucesso"), JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -231,7 +235,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
      */
     @Override
     public void exibirMensagemErro(String mensagem) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         JOptionPane.showMessageDialog(this, mensagem, mensagens.get("gui.comum.erro"), JOptionPane.ERROR_MESSAGE);
     }
 
@@ -285,7 +289,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
      */
     private void abrirDialogFormulario(CarteiraDTO existente) {
         Frame janelaMae = (Frame) SwingUtilities.getWindowAncestor(this);
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
 
         String tituloModal = (existente == null)
                 ? mensagens.get("gui.carteira.dialog.novoTitulo")

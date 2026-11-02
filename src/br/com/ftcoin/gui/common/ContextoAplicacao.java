@@ -2,112 +2,58 @@ package br.com.ftcoin.gui.common;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import br.com.ftcoin.services.CarteiraService;
-import br.com.ftcoin.services.MovimentacaoService;
+
 import br.com.ftcoin.daos.CarteiraDAO;
 import br.com.ftcoin.daos.DAOFactory;
 import br.com.ftcoin.daos.MovimentacaoDAO;
 import br.com.ftcoin.daos.OraculoDAO;
+import br.com.ftcoin.daos.PersistenciaException;
 import br.com.ftcoin.daos.TipoPersistencia;
+import br.com.ftcoin.services.CarteiraService;
+import br.com.ftcoin.services.MovimentacaoService;
 
 /**
+ * Estado compartilhado da interface gráfica: mensagens no idioma ativo, mecanismo de persistência
+ * em uso e os serviços montados sobre ele.
  * <p>
- * Contexto de execução e orquestrador de dependências da aplicação gráfica <b>FTCoin Studio</b>.
- * </p>
- *
- * <p>
- * Implementa o padrão <i>Singleton</i> para gerenciar o ciclo de vida dos serviços,
- * objetos de acesso a dados ({@code DAO}), serviços de internacionalização e a alternância
- * dinâmica de mecanismos de persistência (Memória versus MariaDB) em tempo de execução.
+ * Não é Singleton: é criado uma vez pelo {@code FTCoinGuiApp} e entregue pelo construtor à janela,
+ * aos painéis, aos presenters e aos serviços da interface. Quando o usuário troca de banco, o contexto
+ * recria a fábrica de DAOs e os serviços, e avisa as telas para recarregarem os dados.
  * </p>
  *
  * @author Grupo B.05
  * @version 1.0.0
- * @since 2026-10-20
  */
-public class AppContext {
+public class ContextoAplicacao {
 
-    private static final Logger LOG = Logger.getLogger(AppContext.class.getName());
+    private static final Logger LOG = Logger.getLogger(ContextoAplicacao.class.getName());
 
-    /**
-     * Instância única do contexto mantida pelo padrão Singleton.
-     */
-    private static AppContext instanciaUnica;
-
-    /**
-     * Provedor reativo de mensagens internacionalizadas para a interface gráfica.
-     */
     private final MensagensGui mensagens;
+    private final List<Runnable> ouvintesMudancaPersistencia = new ArrayList<>();
 
-    /**
-     * Mecanismo de persistência atualmente em operação na aplicação.
-     */
     private TipoPersistencia tipoPersistenciaAtual;
-
-    /**
-     * Fábrica abstrata responsável por instanciar a família de DAOs ativa.
-     */
     private DAOFactory daoFactoryAtual;
-
-    /**
-     * Objeto de acesso a dados para operações em carteiras.
-     */
     private CarteiraDAO carteiraDAO;
-
-    /**
-     * Objeto de acesso a dados para operações em movimentações financeiras.
-     */
     private MovimentacaoDAO movimentacaoDAO;
-
-    /**
-     * Objeto de acesso a dados para cotações fornecidas pelo oráculo.
-     */
     private OraculoDAO oraculoDAO;
-
-    /**
-     * Serviço responsável pelos casos de uso do domínio de carteiras.
-     */
     private CarteiraService carteiraService;
-
-    /**
-     * Serviço responsável pelos casos de uso de movimentações e cálculo de posição.
-     */
     private MovimentacaoService movimentacaoService;
 
     /**
-     * Lista de ouvintes notificados quando ocorre alternância na camada de persistência.
+     * Cria o contexto e monta a persistência inicial.
+     *
+     * @param mensagens textos da interface no idioma ativo
+     * @param tipoInicial mecanismo de persistência usado ao abrir a aplicação
+     * @throws PersistenciaException se a persistência inicial não puder ser criada
      */
-    private final List<Runnable> ouvintesMudancaPersistencia = new ArrayList<>();
-
-    /**
-     * Construtor privado para inicialização dos subsistemas do contexto.
-     */
-    private AppContext() {
-        this.mensagens = new MensagensGui(Locale.getDefault());
-        this.tipoPersistenciaAtual = TipoPersistencia.MEMORIA;
-        inicializarCamadaPersistencia(this.tipoPersistenciaAtual);
+    public ContextoAplicacao(MensagensGui mensagens, TipoPersistencia tipoInicial) {
+        this.mensagens = mensagens;
+        inicializarCamadaPersistencia(tipoInicial);
     }
 
-    /**
-     * Retorna a instância única do contexto da aplicação gráfica.
-     *
-     * @return A instância {@code AppContext} compartilhada
-     */
-    public static synchronized AppContext getInstancia() {
-        if (instanciaUnica == null) {
-            instanciaUnica = new AppContext();
-        }
-        return instanciaUnica;
-    }
-
-    /**
-     * Inicializa a fábrica abstrata de persistência, os DAOs e os serviços correspondentes.
-     *
-     * @param tipo Tipo de persistência a ser inicializado
-     */
+    // Recria fábrica, DAOs e serviços; só substitui o estado atual se a nova fábrica for criada
     private void inicializarCamadaPersistencia(TipoPersistencia tipo) {
         DAOFactory fabricaAnterior = this.daoFactoryAtual;
         this.daoFactoryAtual = DAOFactory.criar(tipo);
@@ -127,12 +73,12 @@ public class AppContext {
     }
 
     /**
-     * Alterna o mecanismo de persistência dinamicamente entre os modos suportados.
+     * Troca o mecanismo de persistência e avisa as telas registradas.
      *
-     * @param novoTipo Novo tipo de persistência desejado
-     * @throws Exception Em caso de falha de conectividade ou indisponibilidade do banco
+     * @param novoTipo mecanismo desejado; {@code null} ou o mecanismo atual não fazem nada
+     * @throws PersistenciaException se o MariaDB não estiver configurado ou não responder
      */
-    public synchronized void alternarPersistencia(TipoPersistencia novoTipo) throws Exception {
+    public synchronized void alternarPersistencia(TipoPersistencia novoTipo) {
         if (novoTipo == null || novoTipo == this.tipoPersistenciaAtual) {
             return;
         }
@@ -141,7 +87,7 @@ public class AppContext {
                 this.tipoPersistenciaAtual.getValorConfiguracao(), novoTipo.getValorConfiguracao() });
         inicializarCamadaPersistencia(novoTipo);
 
-        // Valida conectividade imediata com o banco relacional
+        // Valida a conexão logo na troca, em vez de deixar o erro para a primeira tela
         if (novoTipo == TipoPersistencia.MARIADB) {
             try {
                 carteiraDAO.listarTodas();
@@ -165,9 +111,9 @@ public class AppContext {
     }
 
     /**
-     * Registra um ouvinte para receber notificações após a troca de persistência.
+     * Registra uma ação a executar depois de cada troca de persistência.
      *
-     * @param ouvinte Ação executável a ser disparada
+     * @param ouvinte ação a executar, normalmente o recarregamento de uma tela
      */
     public synchronized void adicionarOuvintePersistencia(Runnable ouvinte) {
         if (ouvinte != null && !ouvintesMudancaPersistencia.contains(ouvinte)) {
@@ -175,9 +121,6 @@ public class AppContext {
         }
     }
 
-    /**
-     * Dispara as notificações a todos os ouvintes de persistência registrados.
-     */
     private void notificarOuvintesPersistencia() {
         for (Runnable ouvinte : new ArrayList<>(ouvintesMudancaPersistencia)) {
             try {
@@ -190,63 +133,63 @@ public class AppContext {
     }
 
     /**
-     * Retorna o provedor central de mensagens internacionalizadas da interface gráfica.
+     * Devolve os textos da interface no idioma ativo.
      *
-     * @return O objeto {@code MensagensGui}
+     * @return o provedor de mensagens
      */
     public MensagensGui getMensagens() {
         return mensagens;
     }
 
     /**
-     * Retorna o tipo de persistência atualmente ativo no contexto.
+     * Devolve o mecanismo de persistência em uso.
      *
-     * @return O {@code TipoPersistencia} ativo
+     * @return o tipo de persistência ativo
      */
     public synchronized TipoPersistencia getTipoPersistenciaAtual() {
         return tipoPersistenciaAtual;
     }
 
     /**
-     * Retorna o serviço de carteiras configurado no contexto.
+     * Devolve o serviço de carteiras da persistência ativa.
      *
-     * @return O serviço {@code CarteiraService}
+     * @return o serviço de carteiras
      */
     public synchronized CarteiraService getCarteiraService() {
         return carteiraService;
     }
 
     /**
-     * Retorna o serviço de movimentações configurado no contexto.
+     * Devolve o serviço de movimentações da persistência ativa.
      *
-     * @return O serviço {@code MovimentacaoService}
+     * @return o serviço de movimentações
      */
     public synchronized MovimentacaoService getMovimentacaoService() {
         return movimentacaoService;
     }
 
     /**
-     * Retorna o objeto de acesso a dados de carteiras.
+     * Devolve o DAO de carteiras da persistência ativa.
      *
-     * @return A instância ativa de {@code CarteiraDAO}
+     * @return o DAO de carteiras
      */
     public synchronized CarteiraDAO getCarteiraDAO() {
         return carteiraDAO;
     }
 
     /**
-     * Retorna o objeto de acesso a dados de movimentações.
+     * Devolve o DAO de movimentações da persistência ativa.
      *
-     * @return A instância ativa de {@code MovimentacaoDAO}
+     * @return o DAO de movimentações
      */
     public synchronized MovimentacaoDAO getMovimentacaoDAO() {
         return movimentacaoDAO;
     }
 
     /**
-     * Retorna o objeto de acesso a dados do oráculo de cotações.
+     * Devolve o DAO de cotações da persistência ativa.
      *
-     * @return A instância ativa de {@code OraculoDAO}
+     * @return o DAO de cotações
      */
     public synchronized OraculoDAO getOraculoDAO() {
         return oraculoDAO;

@@ -101,12 +101,12 @@ public enum OrigemCotacao {
 
     /**
      * Retorna a descrição devidamente internacionalizada conforme o {@link java.util.Locale}
-     * ativo no {@link AppContext} da aplicação.
+     * ativo no {@link MensagensGui} da aplicação.
      *
      * @return A descrição localizada correspondente a esta origem de cotação
+     * @param mensagens textos do idioma ativo; se {@code null}, usa o texto padrão
      */
-    public String getDescricaoLocalizada() {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+    public String getDescricaoLocalizada(MensagensGui mensagens) {
         if (mensagens != null) {
             String chave = (this == ORACULO) ? "gui.cotacao.badge.oraculo" : "gui.cotacao.badge.cache";
             return mensagens.get(chave);

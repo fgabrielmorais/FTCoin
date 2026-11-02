@@ -27,6 +27,8 @@ import br.com.ftcoin.gui.common.TemaCores;
  */
 public class ModernButton extends JButton {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * <p>
      * Enumeração das variantes semânticas de estilo visual do botão moderno.

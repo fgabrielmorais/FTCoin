@@ -27,6 +27,8 @@ import br.com.ftcoin.gui.common.TemaCores;
  */
 public class ModernCard extends JPanel {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Rótulo de texto para exibição do título superior do cartão.
      */

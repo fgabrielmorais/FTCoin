@@ -22,7 +22,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
@@ -52,10 +52,12 @@ import br.com.ftcoin.models.TipoOperacao;
  */
 public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Apresentador responsável pelas regras de apresentação do módulo.
      */
-    private final MovimentacaoPresenter presenter;
+    private final transient MovimentacaoPresenter presenter;
 
     /**
      * Caixa de seleção de carteiras para ordens de compra.
@@ -147,15 +149,19 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         }
     }
 
+    private final transient ContextoAplicacao contexto;
+
     /**
      * Constrói o painel de movimentações inicializando formulários e o apresentador.
      *
      * @param relatoriosService Serviço analítico de relatórios e carteiras
      * @param cotacaoService   Serviço de cotações para estimativas imediatas
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public MovimentacoesPanel(RelatoriosService relatoriosService, CotacaoCacheService cotacaoService) {
-        this.presenter = new MovimentacaoPresenter(this, relatoriosService, cotacaoService);
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+    public MovimentacoesPanel(RelatoriosService relatoriosService, CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
+        this.presenter = new MovimentacaoPresenter(this, relatoriosService, cotacaoService, contexto);
+        MensagensGui mensagens = contexto.getMensagens();
 
         setLayout(new BorderLayout(15, 15));
         setBackground(TemaCores.FUNDO_APP);
@@ -209,15 +215,14 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         tabelaHistoricoOperacoes.getTableHeader().setFont(TemaCores.FONTE_LABEL);
         tabelaHistoricoOperacoes.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
 
-        GuiFormatador formatador = mensagens.getFormatador();
         tabelaHistoricoOperacoes.getColumnModel().getColumn(2).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, contexto.getMensagens()));
         tabelaHistoricoOperacoes.getColumnModel().getColumn(3).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, contexto.getMensagens()));
         tabelaHistoricoOperacoes.getColumnModel().getColumn(4).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabelaHistoricoOperacoes.getColumnModel().getColumn(5).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
 
         JScrollPane painelRolagemHistorico = new JScrollPane(tabelaHistoricoOperacoes);
         painelRolagemHistorico.setBorder(BorderFactory.createLineBorder(TemaCores.BORDA_SUAVE));
@@ -239,7 +244,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     private JPanel criarPainelFormulario(TipoOperacao tipo) {
         boolean ehCompra = (tipo == TipoOperacao.COMPRA);
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
 
         JPanel painelForm = new JPanel(new GridBagLayout());
         painelForm.setBackground(TemaCores.SUPERFICIE_CARD);
@@ -358,7 +363,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         comboCarteiraVenda.addActionListener(e -> {
             ItemCarteiraCombo selecionado = (ItemCarteiraCombo) comboCarteiraVenda.getSelectedItem();
             if (selecionado != null) {
-                GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
+                GuiFormatador formatador = contexto.getMensagens().getFormatador();
                 rotuloSaldoDisponivelVenda.setText(formatador.quantidade(selecionado.saldo()));
             }
         });
@@ -396,7 +401,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         comboCarteiraCompra.removeAllItems();
         comboCarteiraVenda.removeAllItems();
 
-        GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
         for (CarteiraDTO carteira : carteiras) {
             String rotulo = "#" + carteira.id() + " - " + carteira.nomeTitular() + " (" + carteira.corretora() + ")";
             ItemCarteiraCombo item = new ItemCarteiraCombo(carteira.id(), rotulo, carteira.saldo());
@@ -418,7 +423,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     @Override
     public void exibirHistoricoMovimentacoes(List<MovimentacaoDTO> movimentacoes) {
         modeloTabelaHistorico.setRowCount(0);
-        GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
         for (MovimentacaoDTO movimentacao : movimentacoes) {
             modeloTabelaHistorico.addRow(new Object[]{
                     formatador.data(movimentacao.dataOperacao()),
@@ -439,7 +444,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     @Override
     public void atualizarEstimativas(BigDecimal cotacao, BigDecimal valorTotal) {
-        GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
         rotuloCotacaoEstimadaCompra.setText(formatador.moeda(cotacao));
         rotuloTotalEstimadoCompra.setText(formatador.moeda(valorTotal));
         rotuloCotacaoEstimadaVenda.setText(formatador.moeda(cotacao));
@@ -453,7 +458,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     @Override
     public void exibirMensagemSucesso(String mensagem) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         JOptionPane.showMessageDialog(this, mensagem, mensagens.get("gui.comum.sucesso"), JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -464,7 +469,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     @Override
     public void exibirMensagemErro(String mensagem) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         JOptionPane.showMessageDialog(this, mensagem, mensagens.get("gui.mov.avisoErroTitulo"), JOptionPane.WARNING_MESSAGE);
     }
 

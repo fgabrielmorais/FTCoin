@@ -18,7 +18,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import br.com.ftcoin.daos.TipoPersistencia;
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
@@ -29,33 +29,64 @@ import br.com.ftcoin.gui.views.components.ModernButton;
  * Janela Principal unificada da aplicação FTCoin Studio.
  * Gerencia a barra de menus com submenus, a barra de navegação superior,
  * os seletores dinâmicos de Idioma e Banco de Dados, e o CardLayout de telas.
+ *
+ * @author Grupo B.05
+ * @version 1.0.0
  */
 public class MainFrame extends JFrame {
 
+    private static final long serialVersionUID = 1L;
+
+    /** Identificador da tela de dashboard no {@link CardLayout}. */
     public static final String TELA_DASHBOARD = "DASHBOARD";
+    /** Identificador da tela de carteiras no {@link CardLayout}. */
     public static final String TELA_CARTEIRAS = "CARTEIRAS";
+    /** Identificador da tela de movimentações no {@link CardLayout}. */
     public static final String TELA_MOVIMENTACOES = "MOVIMENTACOES";
+    /** Identificador da tela de cotação no {@link CardLayout}. */
     public static final String TELA_COTACAO = "COTACAO";
+    /** Identificador da tela de relatórios no {@link CardLayout}. */
     public static final String TELA_RELATORIOS = "RELATORIOS";
 
+    /** Alterna entre as telas no painel de conteúdo. */
     private final CardLayout cardLayout = new CardLayout();
+    /** Painel central que exibe a tela ativa. */
     private final JPanel pnlConteudo = new JPanel(cardLayout);
 
+    /** Tela de dashboard. */
     private final DashboardPanel pnlDashboard;
+    /** Tela de carteiras. */
     private final CarteirasPanel pnlCarteiras;
+    /** Tela de compra e venda. */
     private final MovimentacoesPanel pnlMovimentacoes;
+    /** Tela de cotação e oráculo. */
     private final CotacaoPanel pnlCotacao;
+    /** Tela de relatórios. */
     private final RelatoriosPanel pnlRelatorios;
 
+    /** Rótulo da barra de status com o banco ativo. */
     private final JLabel lblStatusBanco = new JLabel();
+    /** Rótulo da barra de status com o idioma ativo. */
     private final JLabel lblStatusIdioma = new JLabel();
+    /** Rótulo da barra de status com a última mensagem. */
     private final JLabel lblStatusMensagem = new JLabel("");
 
+    /** Seletor de idioma. */
     private final JComboBox<String> cmbIdioma = new JComboBox<>(new String[]{"🇧🇷 Português (BR)", "🇺🇸 English (US)"});
+    /** Seletor do mecanismo de persistência. */
     private final JComboBox<String> cmbBanco = new JComboBox<>(new String[]{"💾 Memória Volátil", "🗄️ MariaDB (SQL)"});
 
-    public MainFrame() {
+    private final transient ContextoAplicacao contexto;
+
+    /**
+     * Monta a janela, as telas e os seletores de idioma e banco.
+     *
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
+     */
+    public MainFrame(ContextoAplicacao contexto) {
         super("FTCoin Studio - Gestão Financeira de Criptomoedas (Java 25 LTS)");
+
+        this.contexto = contexto;
 
         // Configurações da Janela
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -64,15 +95,15 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
 
         // Inicialização de Serviços
-        CotacaoCacheService cotacaoService = new CotacaoCacheService();
-        RelatoriosService relatoriosService = new RelatoriosService(cotacaoService);
+        CotacaoCacheService cotacaoService = new CotacaoCacheService(contexto);
+        RelatoriosService relatoriosService = new RelatoriosService(cotacaoService, contexto);
 
         // Instanciação dos Painéis de Conteúdo
-        pnlDashboard = new DashboardPanel(relatoriosService, this::navegarPara);
-        pnlCarteiras = new CarteirasPanel(relatoriosService);
-        pnlMovimentacoes = new MovimentacoesPanel(relatoriosService, cotacaoService);
-        pnlCotacao = new CotacaoPanel(cotacaoService);
-        pnlRelatorios = new RelatoriosPanel(relatoriosService);
+        pnlDashboard = new DashboardPanel(relatoriosService, this::navegarPara, contexto);
+        pnlCarteiras = new CarteirasPanel(relatoriosService, contexto);
+        pnlMovimentacoes = new MovimentacoesPanel(relatoriosService, cotacaoService, contexto);
+        pnlCotacao = new CotacaoPanel(cotacaoService, contexto);
+        pnlRelatorios = new RelatoriosPanel(relatoriosService, contexto);
 
         pnlConteudo.add(pnlDashboard, TELA_DASHBOARD);
         pnlConteudo.add(pnlCarteiras, TELA_CARTEIRAS);
@@ -92,8 +123,8 @@ public class MainFrame extends JFrame {
         configurarSeletores();
 
         // Ouvinte de mudança de persistência e idioma
-        AppContext.getInstancia().adicionarOuvintePersistencia(this::recarregarTodosPaineis);
-        AppContext.getInstancia().getMensagens().adicionarOuvinte(this::atualizarTextosInterface);
+        contexto.adicionarOuvintePersistencia(this::recarregarTodosPaineis);
+        contexto.getMensagens().adicionarOuvinte(this::atualizarTextosInterface);
 
         // Inicializa telas
         pnlDashboard.inicializar();
@@ -175,9 +206,9 @@ public class MainFrame extends JFrame {
         JMenu menuSistema = new JMenu("Sistema");
         menuSistema.setFont(TemaCores.FONTE_LABEL);
         JMenuItem itemAjuda = new JMenuItem("📖 Manual Estendido do Sistema");
-        itemAjuda.addActionListener(e -> new AjudaDialog(this).setVisible(true));
+        itemAjuda.addActionListener(e -> new AjudaDialog(this, contexto.getMensagens()).setVisible(true));
         JMenuItem itemCreditos = new JMenuItem("ℹ️ Créditos & Autores");
-        itemCreditos.addActionListener(e -> new CreditosDialog(this).setVisible(true));
+        itemCreditos.addActionListener(e -> new CreditosDialog(this, contexto.getMensagens()).setVisible(true));
         menuSistema.add(itemAjuda);
         menuSistema.add(itemCreditos);
 
@@ -240,10 +271,10 @@ public class MainFrame extends JFrame {
         cmbBanco.setPreferredSize(new Dimension(160, 30));
 
         ModernButton btnAjudaTop = new ModernButton("❓ Ajuda", ModernButton.Variante.NEUTRO);
-        btnAjudaTop.addActionListener(e -> new AjudaDialog(this).setVisible(true));
+        btnAjudaTop.addActionListener(e -> new AjudaDialog(this, contexto.getMensagens()).setVisible(true));
 
         ModernButton btnSobreTop = new ModernButton("ℹ️ Sobre", ModernButton.Variante.NEUTRO);
-        btnSobreTop.addActionListener(e -> new CreditosDialog(this).setVisible(true));
+        btnSobreTop.addActionListener(e -> new CreditosDialog(this, contexto.getMensagens()).setVisible(true));
 
         pnlConfig.add(lblIdioma);
         pnlConfig.add(cmbIdioma);
@@ -291,7 +322,7 @@ public class MainFrame extends JFrame {
         // Seletor de Idioma
         cmbIdioma.addActionListener(e -> {
             int idx = cmbIdioma.getSelectedIndex();
-            MensagensGui msg = AppContext.getInstancia().getMensagens();
+            MensagensGui msg = contexto.getMensagens();
             if (idx == 0) {
                 msg.setLocale(MensagensGui.LOCALE_PT);
             } else {
@@ -306,7 +337,7 @@ public class MainFrame extends JFrame {
             TipoPersistencia desejado = (idx == 0) ? TipoPersistencia.MEMORIA : TipoPersistencia.MARIADB;
 
             try {
-                AppContext.getInstancia().alternarPersistencia(desejado);
+                contexto.alternarPersistencia(desejado);
                 atualizarStatusBar();
                 lblStatusMensagem.setText("Mecanismo de persistência alterado para: " + desejado.getValorConfiguracao());
                 recarregarTodosPaineis();
@@ -323,6 +354,11 @@ public class MainFrame extends JFrame {
         });
     }
 
+    /**
+     * Exibe uma tela e recarrega os dados dela.
+     *
+     * @param tela identificador da tela, uma das constantes {@code TELA_*}
+     */
     public void navegarPara(String tela) {
         cardLayout.show(pnlConteudo, tela);
         switch (tela) {
@@ -359,8 +395,8 @@ public class MainFrame extends JFrame {
     }
 
     private void atualizarStatusBar() {
-        TipoPersistencia tipo = AppContext.getInstancia().getTipoPersistenciaAtual();
+        TipoPersistencia tipo = contexto.getTipoPersistenciaAtual();
         lblStatusBanco.setText("Persistência: " + (tipo == TipoPersistencia.MEMORIA ? "💾 MEMÓRIA (Ativa)" : "🗄️ MARIADB (Conectado)"));
-        lblStatusIdioma.setText("Idioma: " + AppContext.getInstancia().getMensagens().getLocaleAtual().getDisplayLanguage());
+        lblStatusIdioma.setText("Idioma: " + contexto.getMensagens().getLocaleAtual().getDisplayLanguage());
     }
 }

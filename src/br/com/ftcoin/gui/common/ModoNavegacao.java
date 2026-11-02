@@ -100,9 +100,9 @@ public enum ModoNavegacao {
      * Retorna o título localizado obtido a partir do provedor central de mensagens da GUI.
      *
      * @return O título internacionalizado {@code String}
+     * @param mensagens textos do idioma ativo; se {@code null}, usa o texto padrão
      */
-    public String getTituloLocalizado() {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+    public String getTituloLocalizado(MensagensGui mensagens) {
         if (mensagens != null) {
             return mensagens.get(chaveMensagem);
         }

@@ -87,9 +87,9 @@ public enum IdiomaSelector {
      * Retorna o texto formatado e internacionalizado para o seletor.
      *
      * @return O rótulo localizado do seletor {@code String}
+     * @param mensagens textos do idioma ativo; se {@code null}, usa o texto padrão
      */
-    public String getDescricaoLocalizada() {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+    public String getDescricaoLocalizada(MensagensGui mensagens) {
         if (mensagens != null) {
             String prefixo = (this == PORTUGUES) ? "🇧🇷 " : "🇺🇸 ";
             return prefixo + mensagens.get(chaveMensagem);
@@ -104,7 +104,7 @@ public enum IdiomaSelector {
      */
     @Override
     public String toString() {
-        return getDescricaoLocalizada();
+        return descricaoPadrao;
     }
 
     /**

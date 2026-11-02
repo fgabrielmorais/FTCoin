@@ -9,7 +9,6 @@ import javax.swing.JDialog;
 import javax.swing.JEditorPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.common.Info;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
@@ -31,6 +30,8 @@ import br.com.ftcoin.gui.views.components.ModernButton;
  */
 public class AjudaDialog extends JDialog {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Componente para exibição de texto com formatação HTML.
      */
@@ -45,14 +46,13 @@ public class AjudaDialog extends JDialog {
      * Constrói o diálogo modal do manual do sistema.
      *
      * @param janelaPai Janela principal proprietária deste diálogo
+     * @param mensagens textos da interface no idioma ativo
      */
-    public AjudaDialog(Frame janelaPai) {
-        super(janelaPai, AppContext.getInstancia().getMensagens().get("gui.ajuda.dialog.titulo"), true);
+    public AjudaDialog(Frame janelaPai, MensagensGui mensagens) {
+        super(janelaPai, mensagens.get("gui.ajuda.dialog.titulo"), true);
         setSize(720, 560);
         setLocationRelativeTo(janelaPai);
         setLayout(new BorderLayout());
-
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
 
         editorTexto = new JEditorPane();
         editorTexto.setEditable(false);

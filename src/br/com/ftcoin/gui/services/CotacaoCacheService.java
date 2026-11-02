@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 
 import br.com.ftcoin.daos.OraculoDAO;
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.OrigemCotacao;
 import br.com.ftcoin.gui.dto.CotacaoDTO;
 import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
@@ -91,10 +91,14 @@ public class CotacaoCacheService {
      */
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
+    private final ContextoAplicacao contexto;
+
     /**
      * Construtor padrão do serviço de cotações e cache.
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public CotacaoCacheService() {
+    public CotacaoCacheService(ContextoAplicacao contexto) {
+        this.contexto = contexto;
         // Inicialização padrão do serviço
     }
 
@@ -140,7 +144,7 @@ public class CotacaoCacheService {
                         new Object[] { dataAlvo, forcarOraculo ? "cache ignorado a pedido" : "cache vazio ou expirado" });
                 Thread.sleep(LATENCIA_SIMULADA_ORACULO_MS);
 
-                OraculoDAO oraculoDAO = AppContext.getInstancia().getOraculoDAO();
+                OraculoDAO oraculoDAO = contexto.getOraculoDAO();
                 BigDecimal cotacao = oraculoDAO.buscarCotacaoPorData(dataAlvo);
 
                 if (cotacao == null) {
@@ -191,7 +195,7 @@ public class CotacaoCacheService {
             return item.cotacao();
         }
 
-        BigDecimal cotacao = AppContext.getInstancia().getOraculoDAO().buscarCotacaoPorData(dataAlvo);
+        BigDecimal cotacao = contexto.getOraculoDAO().buscarCotacaoPorData(dataAlvo);
         if (cotacao != null) {
             mapaCache.put(dataAlvo, new EntradaCache(cotacao, Instant.now()));
             LOG.log(Level.FINEST, "Cotação de {0} = {1}, guardada no cache", new Object[] { dataAlvo, cotacao });
