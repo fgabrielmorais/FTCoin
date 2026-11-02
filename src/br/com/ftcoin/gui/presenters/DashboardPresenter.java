@@ -1,5 +1,9 @@
 package br.com.ftcoin.gui.presenters;
 
+import java.util.logging.Logger;
+
+import br.com.ftcoin.config.RegistroDeFalhas;
+import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.dto.ResumoDashboardDTO;
 import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.contracts.IDashboardView;
@@ -19,6 +23,8 @@ import br.com.ftcoin.gui.views.contracts.IDashboardView;
  * @since 2026-10-20
  */
 public class DashboardPresenter {
+
+    private static final Logger LOG = Logger.getLogger(DashboardPresenter.class.getName());
 
     /**
      * Interface de contrato para atualização dos componentes visuais do dashboard.
@@ -49,7 +55,8 @@ public class DashboardPresenter {
             ResumoDashboardDTO resumo = relatoriosService.obterResumoDashboard();
             view.exibirResumo(resumo);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            RegistroDeFalhas.registrar(LOG, "carregar o dashboard", e);
+            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
         }
     }
 }

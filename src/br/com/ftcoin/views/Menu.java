@@ -2,12 +2,17 @@ package br.com.ftcoin.views;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.models.FTCoinException;
 
 // Menu genérico: recebe o título e as opções (texto + ação) e cuida de exibir,
 // ler a escolha e executar. As opções são numeradas pela ordem em que foram adicionadas.
 public class Menu {
+
+	private static final Logger LOG = Logger.getLogger(Menu.class.getName());
 
 	private static final int OPCAO_SAIDA = 0;
 	private static final int PRIMEIRA_OPCAO = 1;
@@ -42,6 +47,7 @@ public class Menu {
 
 			int indice = escolha - PRIMEIRA_OPCAO;
 			if (indice < 0 || indice >= opcoes.size()) {
+				LOG.log(Level.FINE, "Entrada rejeitada: opção {0} inexistente no menu {1}", new Object[] { escolha, chaveTitulo });
 				console.exibirNegativo("menu.opcaoInvalida");
 				continue;
 			}
@@ -60,11 +66,14 @@ public class Menu {
 
 	//Erros de uma ação são exibidos e o menu continua
 	private void executar(Opcao opcao) {
+		LOG.log(Level.FINE, "Usuário escolheu: {0}", opcao.chaveRotulo());
 		try {
 			opcao.acao().run();
 		} catch (FTCoinException e) {
+			RegistroDeFalhas.registrar(LOG, "executar " + opcao.chaveRotulo(), e);
 			console.exibirNegativo(e.getChave(), e.getArgumentos());
 		} catch (RuntimeException e) {
+			RegistroDeFalhas.registrar(LOG, "executar " + opcao.chaveRotulo(), e);
 			console.exibirNegativo("erro.inesperado", e.getMessage());
 		}
 	}

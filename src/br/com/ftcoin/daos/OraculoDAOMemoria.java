@@ -2,8 +2,12 @@ package br.com.ftcoin.daos;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class OraculoDAOMemoria extends OraculoDAO {
+
+    private static final Logger LOG = Logger.getLogger(OraculoDAOMemoria.class.getName());
 
     private static final BigDecimal COTACAO_BASE = new BigDecimal("5.50");
     private static final int OSCILACAO_MAXIMA_CENTAVOS = 50;
@@ -14,6 +18,8 @@ public class OraculoDAOMemoria extends OraculoDAO {
     public BigDecimal buscarCotacaoPorData(LocalDate data) {
         int faixaCentavos = 2 * OSCILACAO_MAXIMA_CENTAVOS + 1;
         long oscilacaoCentavos = Math.floorMod(data.toEpochDay() * PASSO_DIARIO_CENTAVOS, faixaCentavos) - OSCILACAO_MAXIMA_CENTAVOS;
-        return COTACAO_BASE.add(BigDecimal.valueOf(oscilacaoCentavos, 2));
+        BigDecimal cotacao = COTACAO_BASE.add(BigDecimal.valueOf(oscilacaoCentavos, 2));
+        LOG.log(Level.FINEST, "Cotação simulada de {0} = {1}", new Object[] { data, cotacao });
+        return cotacao;
     }
 }

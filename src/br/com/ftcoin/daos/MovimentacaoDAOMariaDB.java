@@ -7,11 +7,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import br.com.ftcoin.models.Movimentacao;
 import br.com.ftcoin.models.TipoOperacao;
 
 public class MovimentacaoDAOMariaDB extends MovimentacaoDAO {
+
+	private static final Logger LOG = Logger.getLogger(MovimentacaoDAOMariaDB.class.getName());
 
 	@Override
     public void inserir(Movimentacao mov) {
@@ -27,7 +31,9 @@ public class MovimentacaoDAOMariaDB extends MovimentacaoDAO {
             stmt.setDate(4, Date.valueOf(mov.getDataOperacao()));
 
             stmt.executeUpdate();
+            LOG.log(Level.FINE, "INSERT MOVIMENTACAO: {0} na carteira {1}", new Object[] { mov.getTipoOperacao(), mov.getIdCarteira() });
         } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Falha ao inserir movimentação da carteira " + mov.getIdCarteira() + " no MariaDB", e);
             throw new PersistenciaException("erro.persistencia.movimentacao.salvar", e);
         }
     }
@@ -46,7 +52,9 @@ public class MovimentacaoDAOMariaDB extends MovimentacaoDAO {
                     lista.add(mapear(rs));
                 }
             }
+            LOG.log(Level.FINE, "SELECT MOVIMENTACAO: {0} registro(s) da carteira {1}", new Object[] { lista.size(), idCarteira });
         } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Falha ao buscar movimentações da carteira " + idCarteira + " no MariaDB", e);
             throw new PersistenciaException("erro.persistencia.movimentacao.buscar", e);
         }
         return lista;
@@ -64,7 +72,9 @@ public class MovimentacaoDAOMariaDB extends MovimentacaoDAO {
             while (rs.next()) {
                 lista.add(mapear(rs));
             }
+            LOG.log(Level.FINE, "SELECT MOVIMENTACAO: {0} registro(s)", lista.size());
         } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Falha ao listar movimentações no MariaDB", e);
             throw new PersistenciaException("erro.persistencia.movimentacao.listar", e);
         }
         return lista;
@@ -78,6 +88,9 @@ public class MovimentacaoDAOMariaDB extends MovimentacaoDAO {
         mov.setTipoOperacao(TipoOperacao.fromCodigo(rs.getString("TipoOperacao")));
         mov.setQuantidadeMovimentada(rs.getBigDecimal("Quantidade"));
         mov.setDataOperacao(rs.getDate("Data").toLocalDate());
+        LOG.finest(() -> "Linha lida: IdMovimento=" + mov.getIdMovimento() + ", IdCarteira=" + mov.getIdCarteira()
+                + ", Tipo=" + mov.getTipoOperacao() + ", Quantidade=" + mov.getQuantidadeMovimentada()
+                + ", Data=" + mov.getDataOperacao());
         return mov;
     }
 }

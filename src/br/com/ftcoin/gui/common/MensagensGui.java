@@ -2,10 +2,16 @@ package br.com.ftcoin.gui.common;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import br.com.ftcoin.models.FTCoinException;
 
 /**
  * <p>
@@ -22,6 +28,8 @@ import java.util.ResourceBundle;
  * @since 2026-10-20
  */
 public class MensagensGui {
+
+    private static final Logger LOG = Logger.getLogger(MensagensGui.class.getName());
 
     /**
      * Nome base dos arquivos de propriedades (bundle).
@@ -59,6 +67,11 @@ public class MensagensGui {
     private final List<Runnable> ouvintesMudancaIdioma = new ArrayList<>();
 
     /**
+     * Chaves sem tradução já avisadas no log; a tela redesenha muitas vezes e o aviso sai uma vez só.
+     */
+    private final Set<String> chavesAusentesAvisadas = new HashSet<>();
+
+    /**
      * Constrói o provedor de mensagens com a localidade inicial fornecida.
      *
      * @param localeInicial Localidade de inicialização; se {@code null}, adota {@code LOCALE_PT}
@@ -77,6 +90,7 @@ public class MensagensGui {
                 ? LOCALE_EN : LOCALE_PT;
         this.bundle = ResourceBundle.getBundle(BUNDLE_BASE_NAME, this.localeAtual);
         this.formatador = new GuiFormatador(this.localeAtual);
+        LOG.log(Level.INFO, "Idioma da interface: {0}", this.localeAtual);
         notificarOuvintes();
     }
 
@@ -95,8 +109,25 @@ public class MensagensGui {
             }
             return new MessageFormat(padrao, localeAtual).format(argumentos);
         } catch (MissingResourceException e) {
+            if (chavesAusentesAvisadas.add(localeAtual + ":" + chave)) {
+                LOG.log(Level.WARNING, "Chave de tradução ausente em {0}: {1}", new Object[] { localeAtual, chave });
+            }
             return "!" + chave + "!";
         }
+    }
+
+    /**
+     * Converte uma exceção no texto a exibir ao usuário, no idioma atual.
+     *
+     * @param erro Exceção capturada pelo presenter
+     * @return O texto da chave da {@link FTCoinException}; para outras exceções, a mensagem de erro inesperado
+     */
+    public String descreverErro(Throwable erro) {
+        if (erro instanceof FTCoinException falhaPrevista) {
+            return get(falhaPrevista.getChave(), falhaPrevista.getArgumentos());
+        }
+        String detalhe = (erro.getMessage() != null) ? erro.getMessage() : erro.getClass().getSimpleName();
+        return get("erro.inesperado", detalhe);
     }
 
     /**
@@ -144,7 +175,9 @@ public class MensagensGui {
         for (Runnable ouvinte : new ArrayList<>(ouvintesMudancaIdioma)) {
             try {
                 ouvinte.run();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // Uma tela que falha ao traduzir não impede as demais
+                LOG.log(Level.SEVERE, "Falha ao avisar uma tela sobre a troca de idioma", e);
             }
         }
     }
