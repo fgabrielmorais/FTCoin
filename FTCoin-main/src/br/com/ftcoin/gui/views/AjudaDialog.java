@@ -40,6 +40,9 @@ public class AjudaDialog extends JDialog {
      * Botão para fechamento da janela de manual.
      */
     private final ModernButton botaoFechar;
+    private final JScrollPane painelRolagem;
+
+    private final Runnable ouvinteIdioma = this::atualizarTextosInterface;
 
     /**
      * Constrói o diálogo modal do manual do sistema.
@@ -51,6 +54,7 @@ public class AjudaDialog extends JDialog {
         setSize(720, 560);
         setLocationRelativeTo(janelaPai);
         setLayout(new BorderLayout());
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
         MensagensGui mensagens = AppContext.getInstancia().getMensagens();
 
@@ -61,7 +65,7 @@ public class AjudaDialog extends JDialog {
         editorTexto.setText(gerarConteudoManualHtml());
         editorTexto.setCaretPosition(0);
 
-        JScrollPane painelRolagem = new JScrollPane(editorTexto);
+        painelRolagem = new JScrollPane(editorTexto);
         painelRolagem.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(painelRolagem, BorderLayout.CENTER);
 
@@ -75,6 +79,84 @@ public class AjudaDialog extends JDialog {
         painelBotoes.add(botaoFechar);
 
         add(painelBotoes, BorderLayout.SOUTH);
+    }
+
+        @Override
+    public void addNotify() {
+        super.addNotify();
+
+        AppContext.getInstancia().getMensagens()
+                .adicionarOuvinte(ouvinteIdioma);
+
+        atualizarTextosInterface();
+    }
+
+    @Override
+    public void removeNotify() {
+        AppContext.getInstancia().getMensagens()
+                .removerOuvinte(ouvinteIdioma);
+
+        super.removeNotify();
+    }
+
+    private void atualizarTextosInterface() {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+            javax.swing.SwingUtilities.invokeLater(
+                    this::atualizarTextosInterface
+            );
+            return;
+        }
+
+        MensagensGui mensagens =
+                AppContext.getInstancia().getMensagens();
+
+        javax.swing.JScrollBar barraVertical =
+                painelRolagem.getVerticalScrollBar();
+
+        int alcanceAnterior = Math.max(
+                0,
+                barraVertical.getMaximum()
+                        - barraVertical.getVisibleAmount()
+        );
+
+        double proporcaoLeitura = alcanceAnterior == 0
+                ? 0.0
+                : (double) barraVertical.getValue() / alcanceAnterior;
+
+        setTitle(mensagens.get("gui.ajuda.dialog.titulo"));
+        botaoFechar.setText(mensagens.get("gui.ajuda.btn.fechar"));
+
+        botaoFechar.setPreferredSize(null);
+        Dimension tamanhoNatural = botaoFechar.getPreferredSize();
+
+        botaoFechar.setPreferredSize(
+                new Dimension(
+                        Math.max(140, tamanhoNatural.width),
+                        Math.max(34, tamanhoNatural.height)
+                )
+        );
+
+        editorTexto.setText(gerarConteudoManualHtml());
+        editorTexto.setCaretPosition(0);
+
+        revalidate();
+        repaint();
+
+        javax.swing.SwingUtilities.invokeLater(() -> {
+            if (!isDisplayable()) {
+                return;
+            }
+
+            int novoAlcance = Math.max(
+                    0,
+                    barraVertical.getMaximum()
+                            - barraVertical.getVisibleAmount()
+            );
+
+            barraVertical.setValue(
+                    (int) Math.round(proporcaoLeitura * novoAlcance)
+            );
+        });
     }
 
     /**
