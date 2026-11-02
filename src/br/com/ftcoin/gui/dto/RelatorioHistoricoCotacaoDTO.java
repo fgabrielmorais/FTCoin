@@ -19,7 +19,7 @@ import br.com.ftcoin.gui.common.OrigemCotacao;
  * @param variacaoAbsoluta   Oscilação nominal em relação ao fechamento anterior
  * @param variacaoPercentual Taxa percentual de oscilação em relação ao dia anterior
  * @param origem             Identificador da fonte de dados ({@code OrigemCotacao})
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

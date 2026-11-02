@@ -25,7 +25,7 @@ import java.math.BigDecimal;
  * @param ganhoNaoRealizado Lucro ou prejuízo potencial não realizado das moedas em custódia
  * @param ganhoTotal        Resultado financeiro líquido consolidado
  * @param roiPercentual     Taxa de retorno sobre o investimento percentual apurada
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

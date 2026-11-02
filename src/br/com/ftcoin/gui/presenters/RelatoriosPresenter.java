@@ -23,7 +23,7 @@ import br.com.ftcoin.gui.views.contracts.IRelatoriosView;
  * alimentando tabelas analíticas, séries temporais e cartões de rentabilidade (ROI).
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

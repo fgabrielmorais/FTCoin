@@ -32,7 +32,7 @@ import br.com.ftcoin.models.Posicao;
  * bem como fornece os dados agregados para os cartões de KPI do Dashboard principal.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

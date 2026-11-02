@@ -25,7 +25,7 @@ import br.com.ftcoin.gui.views.components.ModernButton;
  * integração com o Oráculo de cotações e modos de persistência.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

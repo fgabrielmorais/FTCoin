@@ -23,7 +23,7 @@ import br.com.ftcoin.models.FTCoinException;
  * de preços sem bloqueio da interface gráfica ({@code EDT}), enviando dados e telemetria à visão.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

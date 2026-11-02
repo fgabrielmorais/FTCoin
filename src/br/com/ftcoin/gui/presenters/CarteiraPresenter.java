@@ -23,7 +23,7 @@ import br.com.ftcoin.models.FTCoinException;
  * operações de inclusão, alteração e exclusão de carteiras junto aos controladores do sistema.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

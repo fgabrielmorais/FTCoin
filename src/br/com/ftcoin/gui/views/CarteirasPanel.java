@@ -41,7 +41,7 @@ import br.com.ftcoin.gui.views.contracts.ICarteiraView;
  * diálogos modais para criação e edição com validações rigorosas de preenchimento.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

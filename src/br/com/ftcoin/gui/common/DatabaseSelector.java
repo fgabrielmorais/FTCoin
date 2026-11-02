@@ -12,7 +12,7 @@ import br.com.ftcoin.daos.TipoPersistencia;
  * {@code JComboBox} da barra de navegação da {@code GUI}.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

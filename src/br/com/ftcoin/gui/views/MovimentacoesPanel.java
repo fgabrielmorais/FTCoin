@@ -46,7 +46,7 @@ import br.com.ftcoin.models.TipoOperacao;
  * prévio de estimativa financeira em tempo real e visualização tabular do histórico geral de transações.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -130,7 +130,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      * @param id        Identificador numérico da carteira
      * @param descricao Texto formatado para exibição visual
      * @param saldo     Saldo quantitativo de moedas disponível
-     * @author Equipe FTCoin
+     * @author Grupo B.05
      * @version 1.0.0
      * @since 2026-10-20
      */

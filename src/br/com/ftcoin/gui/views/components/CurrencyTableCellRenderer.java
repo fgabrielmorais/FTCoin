@@ -23,7 +23,7 @@ import br.com.ftcoin.models.TipoOperacao;
  * alternância de linhas em estilo zebrado e destaque cromático (verde para lucros e vermelho para prejuízos).
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -34,7 +34,7 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
      * Modos de exibição suportados pelo renderizador para células de dados.
      * </p>
      *
-     * @author Equipe FTCoin
+     * @author Grupo B.05
      * @version 1.0.0
      * @since 2026-10-20
      */

@@ -21,7 +21,7 @@ import br.com.ftcoin.gui.common.TemaCores;
  * e valores financeiros com destaque tipográfico em negrito.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

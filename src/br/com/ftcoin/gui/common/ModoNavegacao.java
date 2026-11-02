@@ -10,7 +10,7 @@ package br.com.ftcoin.gui.common;
  * {@code MainFrame} e os rótulos de navegação internacionalizados.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

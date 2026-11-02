@@ -17,7 +17,7 @@ import java.math.BigDecimal;
  * @param corretora    Nome da corretora ou instituição custodiante
  * @param saldo        Saldo quantitativo de moedas em custódia
  * @param valorMercado Avaliação financeira estimada a preço de mercado
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

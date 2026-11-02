@@ -27,7 +27,7 @@ import br.com.ftcoin.models.TipoOperacao;
  * e submissão de ordens de Compra e Venda de FTCoins aos controladores de domínio.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

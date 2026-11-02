@@ -19,7 +19,7 @@ import java.math.BigDecimal;
  * @param valorMercado     Valor financeiro total avaliado a mercado
  * @param participacaoPerc Percentual de participação da carteira no portfólio global
  * @param ganhoTotal       Resultado financeiro líquido total apurado
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

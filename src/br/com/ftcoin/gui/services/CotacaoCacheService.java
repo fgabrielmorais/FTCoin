@@ -35,7 +35,7 @@ import br.com.ftcoin.models.RegraNegocioException;
  * por meio de um cache temporal em memória.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -65,7 +65,7 @@ public class CotacaoCacheService {
      *
      * @param cotacao        Valor unitário da cotação
      * @param momentoCriacao Instante exato do registro em memória
-     * @author Equipe FTCoin
+     * @author Grupo B.05
      * @version 1.0.0
      * @since 2026-10-20
      */

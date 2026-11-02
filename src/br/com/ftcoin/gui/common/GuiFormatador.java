@@ -18,7 +18,7 @@ import java.util.Locale;
  * tabelas, cartões de KPI e campos de formulário.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

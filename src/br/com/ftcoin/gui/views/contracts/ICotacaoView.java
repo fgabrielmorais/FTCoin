@@ -14,7 +14,7 @@ import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
  * (Oráculo versus Cache), controle da barra de carregamento assíncrono e histórico de oscilações.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

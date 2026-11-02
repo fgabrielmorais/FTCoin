@@ -12,7 +12,7 @@ import java.awt.Color;
  * a partir do <b>Cache Local</b> em memória de alta velocidade.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

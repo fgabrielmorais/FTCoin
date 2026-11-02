@@ -24,7 +24,7 @@ import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
  *     <li><b>Relatório 5:</b> Histórico de Oscilação do Oráculo de Cotações.</li>
  * </ul>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

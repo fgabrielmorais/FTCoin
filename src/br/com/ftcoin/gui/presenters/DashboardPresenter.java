@@ -18,7 +18,7 @@ import br.com.ftcoin.gui.views.contracts.IDashboardView;
  * saldo total de moedas, cotação corrente e histórico de transações recentes para o feed.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

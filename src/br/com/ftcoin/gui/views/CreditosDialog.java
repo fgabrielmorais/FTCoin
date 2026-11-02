@@ -25,7 +25,7 @@ import br.com.ftcoin.gui.views.components.ModernButton;
  * papéis da equipe e copyright institucional da aplicação.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

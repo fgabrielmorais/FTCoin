@@ -20,7 +20,7 @@ import java.util.List;
  * @param quantidadeCarteiras   Número total de carteiras cadastradas no sistema
  * @param ganhoTotalConsolidado Soma de todos os ganhos e perdas realizados e potenciais
  * @param ultimasMovimentacoes  Lista imutável com as transações recentes para o feed
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

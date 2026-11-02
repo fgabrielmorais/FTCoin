@@ -21,7 +21,7 @@ import br.com.ftcoin.gui.common.TemaCores;
  * do sistema, dispensando bordas quadradas nativas e aplicando antialiasing gráfico.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -32,7 +32,7 @@ public class ModernButton extends JButton {
      * Enumeração das variantes semânticas de estilo visual do botão moderno.
      * </p>
      *
-     * @author Equipe FTCoin
+     * @author Grupo B.05
      * @version 1.0.0
      * @since 2026-10-20
      */

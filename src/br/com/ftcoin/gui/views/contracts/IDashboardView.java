@@ -12,7 +12,7 @@ import br.com.ftcoin.gui.dto.ResumoDashboardDTO;
  * e histórico das movimentações recentes do sistema.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

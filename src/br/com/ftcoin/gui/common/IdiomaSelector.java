@@ -12,7 +12,7 @@ import java.util.Locale;
  * pelo usuário nos componentes da {@code GUI}.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

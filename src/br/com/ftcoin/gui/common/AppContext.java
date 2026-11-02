@@ -9,8 +9,6 @@ import br.com.ftcoin.controllers.CarteiraController;
 import br.com.ftcoin.controllers.MovimentacaoController;
 import br.com.ftcoin.daos.CarteiraDAO;
 import br.com.ftcoin.daos.DAOFactory;
-import br.com.ftcoin.daos.DAOFactoryMariaDB;
-import br.com.ftcoin.daos.DAOFactoryMemoria;
 import br.com.ftcoin.daos.MovimentacaoDAO;
 import br.com.ftcoin.daos.OraculoDAO;
 import br.com.ftcoin.daos.TipoPersistencia;
@@ -26,7 +24,7 @@ import br.com.ftcoin.daos.TipoPersistencia;
  * dinâmica de mecanismos de persistência (Memória versus MariaDB) em tempo de execução.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -111,10 +109,12 @@ public class AppContext {
      * @param tipo Tipo de persistência a ser inicializado
      */
     private void inicializarCamadaPersistencia(TipoPersistencia tipo) {
-        this.daoFactoryAtual = switch (tipo) {
-            case MEMORIA -> new DAOFactoryMemoria();
-            case MARIADB -> new DAOFactoryMariaDB();
-        };
+        DAOFactory fabricaAnterior = this.daoFactoryAtual;
+        this.daoFactoryAtual = DAOFactory.criar(tipo);
+        if (fabricaAnterior != null) {
+            // Libera a conexão do mecanismo que deixou de ser usado
+            fabricaAnterior.fechar();
+        }
 
         this.carteiraDAO = daoFactoryAtual.criarCarteiraDAO();
         this.movimentacaoDAO = daoFactoryAtual.criarMovimentacaoDAO();
@@ -153,6 +153,15 @@ public class AppContext {
         }
 
         notificarOuvintesPersistencia();
+    }
+
+    /**
+     * Libera os recursos da persistência ativa, como a conexão com o MariaDB. Chamado ao fechar a aplicação.
+     */
+    public synchronized void encerrar() {
+        if (daoFactoryAtual != null) {
+            daoFactoryAtual.fechar();
+        }
     }
 
     /**

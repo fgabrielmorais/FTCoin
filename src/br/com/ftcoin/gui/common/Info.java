@@ -11,7 +11,7 @@ package br.com.ftcoin.gui.common;
  * pela camada de interface gráfica ({@code GUI}).
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

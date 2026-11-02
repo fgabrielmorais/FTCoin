@@ -20,7 +20,7 @@ import br.com.ftcoin.gui.common.TemaCores;
  * do <b>Cache Local</b> por meio de cores temáticas de alto contraste.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

@@ -15,7 +15,7 @@ import br.com.ftcoin.gui.dto.MovimentacaoDTO;
  * histórico de ordens executadas e limpeza de formulários.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

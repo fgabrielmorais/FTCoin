@@ -42,7 +42,7 @@ import br.com.ftcoin.gui.views.contracts.ICotacaoView;
  * etiqueta colorida ({@link BadgeLabel}) identificando a procedência (Oráculo versus Cache) e telemetria de rede.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

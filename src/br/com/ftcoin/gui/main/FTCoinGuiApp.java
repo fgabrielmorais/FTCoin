@@ -27,7 +27,7 @@ import br.com.ftcoin.models.TipoOperacao;
  * carrega massa de dados de demonstração em modo volátil e instancia a janela principal ({@link MainFrame}).
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -81,6 +81,7 @@ public class FTCoinGuiApp {
             @Override
             public void windowClosing(WindowEvent evento) {
                 LOG.info("Encerrando FTCoin Studio");
+                AppContext.getInstancia().encerrar();
             }
         });
     }

@@ -23,7 +23,7 @@ import br.com.ftcoin.models.TipoOperacao;
  * @param quantidade         Quantidade de moedas movimentadas
  * @param cotacaoAplicada    Preço unitário aplicado conforme o oráculo na data
  * @param valorTotalOperacao Montante financeiro total liquidado na operação
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

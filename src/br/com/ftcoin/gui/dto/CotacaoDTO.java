@@ -20,7 +20,7 @@ import br.com.ftcoin.gui.common.OrigemCotacao;
  * @param origem          Identificador da procedência do dado ({@code OrigemCotacao})
  * @param horaConsulta    Horário exato em que a cotação foi recuperada
  * @param tempoRespostaMs Tempo total despendido na requisição em milissegundos
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

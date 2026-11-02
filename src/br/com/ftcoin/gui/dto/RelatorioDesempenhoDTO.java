@@ -19,7 +19,7 @@ import java.math.BigDecimal;
  * @param valorAtual     Avaliação de mercado atualizada da carteira
  * @param lucroPrejuizo  Resultado financeiro nominal apurado (positivo para lucro, negativo para prejuízo)
  * @param roiPercentual  Taxa de retorno percentual sobre o capital investido
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
