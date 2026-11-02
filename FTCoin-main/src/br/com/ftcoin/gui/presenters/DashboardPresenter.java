@@ -3,6 +3,7 @@ package br.com.ftcoin.gui.presenters;
 import br.com.ftcoin.gui.dto.ResumoDashboardDTO;
 import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.contracts.IDashboardView;
+import br.com.ftcoin.gui.common.AppContext;
 
 /**
  * <p>
@@ -49,7 +50,10 @@ public class DashboardPresenter {
             ResumoDashboardDTO resumo = relatoriosService.obterResumoDashboard();
             view.exibirResumo(resumo);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 }

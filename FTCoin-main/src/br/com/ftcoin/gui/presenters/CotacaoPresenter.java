@@ -78,7 +78,9 @@ public class CotacaoPresenter {
                     if (erro instanceof FTCoinException fe) {
                         view.exibirMensagemErro(mensagens.get(fe.getChave(), fe.getArgumentos()));
                     } else {
-                        view.exibirMensagemErro(erro.getMessage());
+                        view.exibirMensagemErro(
+                                mensagens.mensagemErro(erro)
+                        );
                     }
                 }
         );
@@ -102,7 +104,10 @@ public class CotacaoPresenter {
             List<RelatorioHistoricoCotacaoDTO> historico = cotacaoService.obterHistoricoRecente(10);
             view.exibirHistoricoOscilacoes(historico);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 }

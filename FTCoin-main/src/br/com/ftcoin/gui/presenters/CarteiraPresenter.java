@@ -55,7 +55,10 @@ public class CarteiraPresenter {
             List<CarteiraDTO> carteiras = relatoriosService.listarCarteirasDTO();
             view.exibirCarteiras(carteiras);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 
@@ -88,7 +91,10 @@ public class CarteiraPresenter {
         } catch (FTCoinException e) {
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 
@@ -121,7 +127,10 @@ public class CarteiraPresenter {
         } catch (FTCoinException e) {
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 
@@ -145,7 +154,10 @@ public class CarteiraPresenter {
         } catch (FTCoinException e) {
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 }

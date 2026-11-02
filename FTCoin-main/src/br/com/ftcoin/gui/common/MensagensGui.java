@@ -114,6 +114,21 @@ public class MensagensGui {
     }
 
     /**
+     * Obtém uma mensagem de erro no idioma ativo.
+     * Preserva as chaves e os argumentos das exceções do sistema.
+     *
+     * @param erro Falha recebida pela interface
+     * @return Mensagem destinada ao usuário
+     */
+    public String mensagemErro(Throwable erro) {
+        if (erro instanceof br.com.ftcoin.models.FTCoinException falha) {
+            return get(falha.getChave(), falha.getArgumentos());
+        }
+
+        return get("gui.erro.inesperado");
+    }
+
+    /**
      * Retorna o formatador de números e datas do idioma ativo.
      *
      * @return formatador atual

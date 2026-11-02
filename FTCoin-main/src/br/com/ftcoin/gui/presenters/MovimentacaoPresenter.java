@@ -74,7 +74,10 @@ public class MovimentacaoPresenter {
             List<CarteiraDTO> carteiras = relatoriosService.listarCarteirasDTO();
             view.exibirCarteirasDisponiveis(carteiras);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 
@@ -86,7 +89,10 @@ public class MovimentacaoPresenter {
             List<MovimentacaoDTO> ultimas = relatoriosService.obterResumoDashboard().ultimasMovimentacoes();
             view.exibirHistoricoMovimentacoes(ultimas);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 
@@ -174,7 +180,10 @@ public class MovimentacaoPresenter {
         } catch (FTCoinException e) {
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 }

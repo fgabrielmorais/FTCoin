@@ -9,6 +9,7 @@ import br.com.ftcoin.gui.dto.RelatorioDesempenhoDTO;
 import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
 import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.contracts.IRelatoriosView;
+import br.com.ftcoin.gui.common.AppContext;
 
 /**
  * <p>
@@ -68,7 +69,10 @@ public class RelatoriosPresenter {
                 gerarRelatoriosCarteiraEspecifica(carteiras.getFirst().id());
             }
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 
@@ -92,7 +96,10 @@ public class RelatoriosPresenter {
             PosicaoRelatorioDTO posicao = relatoriosService.obterPosicaoCarteira(idCarteira);
             view.exibirRelatorio1Posicao(posicao);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 
@@ -106,7 +113,10 @@ public class RelatoriosPresenter {
             List<MovimentacaoDTO> historico = relatoriosService.obterHistoricoOperacoes(idCarteira);
             view.exibirRelatorio2Historico(historico);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 
@@ -118,7 +128,10 @@ public class RelatoriosPresenter {
             List<RelatorioConsolidadoItemDTO> consolidado = relatoriosService.obterConsolidadoCarteiras();
             view.exibirRelatorio3Consolidado(consolidado);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 
@@ -130,7 +143,10 @@ public class RelatoriosPresenter {
             List<RelatorioDesempenhoDTO> desempenho = relatoriosService.obterDesempenhoLucratividade();
             view.exibirRelatorio4Desempenho(desempenho);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 
@@ -144,7 +160,10 @@ public class RelatoriosPresenter {
             List<RelatorioHistoricoCotacaoDTO> cotacoes = relatoriosService.obterHistoricoCotacoes(dias);
             view.exibirRelatorio5Cotacoes(cotacoes);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            view.exibirMensagemErro(
+                    AppContext.getInstancia().getMensagens()
+                            .mensagemErro(e)
+            );
         }
     }
 }
