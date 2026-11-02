@@ -2,7 +2,6 @@ package br.com.ftcoin.gui.views;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import javax.swing.BorderFactory;
@@ -10,9 +9,6 @@ import javax.swing.Box;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
@@ -26,9 +22,9 @@ import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.components.ModernButton;
 
 /**
- * Janela Principal unificada da aplicação FTCoin Studio.
- * Gerencia a barra de menus com submenus, a barra de navegação superior,
- * os seletores dinâmicos de Idioma e Banco de Dados, e o CardLayout de telas.
+ * Janela principal da aplicação FTCoin Studio.
+ * Gerencia a barra de navegação superior, os seletores de idioma
+ * e armazenamento, a barra de status e a navegação entre telas.
  */
 public class MainFrame extends JFrame {
 
@@ -132,89 +128,6 @@ public class MainFrame extends JFrame {
         atualizarTextosInterface();
     }
 
-    private JMenuBar criarBarraMenus() {
-        JMenuBar menuBar = new JMenuBar();
-        menuBar.setBackground(TemaCores.SUPERFICIE_HEADER);
-        menuBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, TemaCores.BORDA_SUAVE));
-
-        // Submenu: Arquivo
-        JMenu menuArquivo = new JMenu("Arquivo");
-        menuArquivo.setFont(TemaCores.FONTE_LABEL);
-        JMenuItem itemDash = new JMenuItem("Dashboard Principal");
-        itemDash.addActionListener(e -> navegarPara(TELA_DASHBOARD));
-        JMenuItem itemRecarregar = new JMenuItem("Atualizar Todos os Dados");
-        itemRecarregar.addActionListener(e -> recarregarTodosPaineis());
-        JMenuItem itemSair = new JMenuItem("Sair do Sistema");
-        itemSair.addActionListener(e -> System.exit(0));
-        menuArquivo.add(itemDash);
-        menuArquivo.add(itemRecarregar);
-        menuArquivo.addSeparator();
-        menuArquivo.add(itemSair);
-
-        // Submenu: Carteiras
-        JMenu menuCarteiras = new JMenu("Carteiras");
-        menuCarteiras.setFont(TemaCores.FONTE_LABEL);
-        JMenuItem itemGerenciarCart = new JMenuItem("Gerenciar Carteiras");
-        itemGerenciarCart.addActionListener(e -> navegarPara(TELA_CARTEIRAS));
-        JMenuItem itemNovaCart = new JMenuItem("+ Nova Carteira");
-        itemNovaCart.addActionListener(e -> {
-            navegarPara(TELA_CARTEIRAS);
-            pnlCarteiras.abrirModalCadastro();
-        });
-        menuCarteiras.add(itemGerenciarCart);
-        menuCarteiras.add(itemNovaCart);
-
-        // Submenu: Movimentações
-        JMenu menuMov = new JMenu("Movimentações");
-        menuMov.setFont(TemaCores.FONTE_LABEL);
-        JMenuItem itemComprar = new JMenuItem("🛒 Registrar Compra");
-        itemComprar.addActionListener(e -> navegarPara(TELA_MOVIMENTACOES));
-        JMenuItem itemVender = new JMenuItem("💰 Registrar Venda");
-        itemVender.addActionListener(e -> navegarPara(TELA_MOVIMENTACOES));
-        JMenuItem itemCotacao = new JMenuItem("🌐 Cotações & Oráculo");
-        itemCotacao.addActionListener(e -> navegarPara(TELA_COTACAO));
-        menuMov.add(itemComprar);
-        menuMov.add(itemVender);
-        menuMov.addSeparator();
-        menuMov.add(itemCotacao);
-
-        // Submenu: Relatórios
-        JMenu menuRel = new JMenu("Relatórios");
-        menuRel.setFont(TemaCores.FONTE_LABEL);
-        JMenuItem itemRel1 = new JMenuItem("1. Posição da Carteira (CMP)");
-        itemRel1.addActionListener(e -> navegarParaRelatorio(0));
-        JMenuItem itemRel2 = new JMenuItem("2. Histórico de Operações");
-        itemRel2.addActionListener(e -> navegarParaRelatorio(1));
-        JMenuItem itemRel3 = new JMenuItem("3. Consolidado do Portfólio");
-        itemRel3.addActionListener(e -> navegarParaRelatorio(2));
-        JMenuItem itemRel4 = new JMenuItem("4. Desempenho e Lucratividade");
-        itemRel4.addActionListener(e -> navegarParaRelatorio(3));
-        JMenuItem itemRel5 = new JMenuItem("5. Histórico do Oráculo");
-        itemRel5.addActionListener(e -> navegarParaRelatorio(4));
-        menuRel.add(itemRel1);
-        menuRel.add(itemRel2);
-        menuRel.add(itemRel3);
-        menuRel.add(itemRel4);
-        menuRel.add(itemRel5);
-
-        // Submenu: Sistema & Ajuda
-        JMenu menuSistema = new JMenu("Sistema");
-        menuSistema.setFont(TemaCores.FONTE_LABEL);
-        JMenuItem itemAjuda = new JMenuItem("📖 Manual Estendido do Sistema");
-        itemAjuda.addActionListener(e -> new AjudaDialog(this).setVisible(true));
-        JMenuItem itemCreditos = new JMenuItem("ℹ️ Créditos & Autores");
-        itemCreditos.addActionListener(e -> new CreditosDialog(this).setVisible(true));
-        menuSistema.add(itemAjuda);
-        menuSistema.add(itemCreditos);
-
-        menuBar.add(menuArquivo);
-        menuBar.add(menuCarteiras);
-        menuBar.add(menuMov);
-        menuBar.add(menuRel);
-        menuBar.add(menuSistema);
-
-        return menuBar;
-    }
 
         private JPanel criarBarraNavegacaoSuperior() {
         JPanel pnlBarra = new JPanel(new BorderLayout(0, 8));
@@ -425,7 +338,14 @@ public class MainFrame extends JFrame {
         atualizarStatusBar();
     }
 
-            private void atualizarTextosInterface() {
+    private void atualizarTextosInterface() {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+            javax.swing.SwingUtilities.invokeLater(
+                    this::atualizarTextosInterface
+            );
+            return;
+        }
+
         MensagensGui mensagens = AppContext.getInstancia().getMensagens();
 
         setTitle(mensagens.get("gui.app.titulo"));
@@ -451,6 +371,10 @@ public class MainFrame extends JFrame {
 
         cmbIdioma.repaint();
         cmbBanco.repaint();
+
+        // O aviso da última troca de armazenamento é transitório.
+        // O banco ativo continua indicado na barra de status.
+        lblStatusMensagem.setText("");
 
         atualizarStatusBar();
         revalidate();
