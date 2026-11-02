@@ -3,6 +3,8 @@ package br.com.ftcoin.gui.common;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import br.com.ftcoin.controllers.CarteiraController;
 import br.com.ftcoin.controllers.MovimentacaoController;
 import br.com.ftcoin.daos.CarteiraDAO;
@@ -29,6 +31,8 @@ import br.com.ftcoin.daos.TipoPersistencia;
  * @since 2026-10-20
  */
 public class AppContext {
+
+    private static final Logger LOG = Logger.getLogger(AppContext.class.getName());
 
     /**
      * Instância única do contexto mantida pelo padrão Singleton.
@@ -119,6 +123,7 @@ public class AppContext {
         this.carteiraController = new CarteiraController(this.carteiraDAO, this.movimentacaoDAO);
         this.movimentacaoController = new MovimentacaoController(this.movimentacaoDAO, this.carteiraDAO, this.oraculoDAO);
         this.tipoPersistenciaAtual = tipo;
+        LOG.log(Level.INFO, "Persistência ativa: {0}", tipo.getValorConfiguracao());
     }
 
     /**
@@ -132,11 +137,19 @@ public class AppContext {
             return;
         }
 
+        LOG.log(Level.FINE, "Alternando persistência de {0} para {1}", new Object[] {
+                this.tipoPersistenciaAtual.getValorConfiguracao(), novoTipo.getValorConfiguracao() });
         inicializarCamadaPersistencia(novoTipo);
 
         // Valida conectividade imediata com o banco relacional
         if (novoTipo == TipoPersistencia.MARIADB) {
-            carteiraDAO.listarTodas();
+            try {
+                carteiraDAO.listarTodas();
+            } catch (RuntimeException e) {
+                // O stack trace do banco é registrado pelo DAO; aqui fica só o efeito na aplicação
+                LOG.log(Level.WARNING, "MariaDB indisponível ao trocar a persistência: {0}", e.getMessage());
+                throw e;
+            }
         }
 
         notificarOuvintesPersistencia();
@@ -160,7 +173,9 @@ public class AppContext {
         for (Runnable ouvinte : new ArrayList<>(ouvintesMudancaPersistencia)) {
             try {
                 ouvinte.run();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // Uma tela que falha ao recarregar não impede as demais
+                LOG.log(Level.SEVERE, "Falha ao avisar uma tela sobre a troca de persistência", e);
             }
         }
     }

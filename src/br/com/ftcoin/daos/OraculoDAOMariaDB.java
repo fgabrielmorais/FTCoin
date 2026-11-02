@@ -7,8 +7,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class OraculoDAOMariaDB extends OraculoDAO {
+
+	private static final Logger LOG = Logger.getLogger(OraculoDAOMariaDB.class.getName());
 	
 	@Override
 	    public BigDecimal buscarCotacaoPorData(LocalDate data) {
@@ -21,10 +25,14 @@ public class OraculoDAOMariaDB extends OraculoDAO {
 	            
 	            try (ResultSet rs = stmt.executeQuery()) {
 	                if (rs.next()) {
-	                    return rs.getBigDecimal("Cotacao"); 
+	                    BigDecimal cotacao = rs.getBigDecimal("Cotacao");
+	                    LOG.log(Level.FINE, "SELECT Oraculo: cotação de {0} = {1}", new Object[] { data, cotacao });
+	                    return cotacao;
 	                }
 	            }
+	            LOG.log(Level.FINE, "SELECT Oraculo: sem cotação cadastrada para {0}", data);
 	        } catch (SQLException e) {
+	            LOG.log(Level.SEVERE, "Falha ao buscar a cotação de " + data + " no MariaDB", e);
 	            throw new PersistenciaException("erro.persistencia.oraculo.buscar", e);
 	        }
 	        

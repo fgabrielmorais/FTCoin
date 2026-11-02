@@ -2,6 +2,9 @@ package br.com.ftcoin.gui.presenters;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.dto.CotacaoDTO;
@@ -25,6 +28,8 @@ import br.com.ftcoin.models.FTCoinException;
  * @since 2026-10-20
  */
 public class CotacaoPresenter {
+
+    private static final Logger LOG = Logger.getLogger(CotacaoPresenter.class.getName());
 
     /**
      * Interface de contrato para atualização dos componentes visuais de cotação.
@@ -62,6 +67,8 @@ public class CotacaoPresenter {
      * @param forcarOraculo Se {@code true}, ignora o cache e força chamada direta ao oráculo
      */
     public void consultarCotacao(LocalDate data, boolean forcarOraculo) {
+        LOG.log(Level.FINE, "Usuário pediu: cotação de {0} (ignorar cache={1})",
+                new Object[] { data != null ? data : LocalDate.now(), forcarOraculo });
         view.exibirCarregando(true);
 
         cotacaoService.buscarCotacaoAssincrona(
@@ -75,11 +82,11 @@ public class CotacaoPresenter {
                 erro -> {
                     view.exibirCarregando(false);
                     MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+                    // Erros inesperados já foram registrados com stack trace pelo serviço, na thread de fundo
                     if (erro instanceof FTCoinException fe) {
-                        view.exibirMensagemErro(mensagens.get(fe.getChave(), fe.getArgumentos()));
-                    } else {
-                        view.exibirMensagemErro(erro.getMessage());
+                        RegistroDeFalhas.registrar(LOG, "consultar a cotação", fe);
                     }
+                    view.exibirMensagemErro(mensagens.descreverErro(erro));
                 }
         );
     }
@@ -88,6 +95,7 @@ public class CotacaoPresenter {
      * Limpa o cache local em memória e executa nova consulta direta ao oráculo para o dia atual.
      */
     public void limparCache() {
+        LOG.fine("Usuário pediu: limpar o cache de cotações");
         cotacaoService.limparCache();
         MensagensGui mensagens = AppContext.getInstancia().getMensagens();
         view.exibirMensagemSucesso(mensagens.get("gui.cotacao.sucessoCache"));
@@ -102,7 +110,8 @@ public class CotacaoPresenter {
             List<RelatorioHistoricoCotacaoDTO> historico = cotacaoService.obterHistoricoRecente(10);
             view.exibirHistoricoOscilacoes(historico);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            RegistroDeFalhas.registrar(LOG, "carregar histórico de cotações", e);
+            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
         }
     }
 }

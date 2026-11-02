@@ -5,6 +5,8 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import br.com.ftcoin.controllers.CarteiraController;
 import br.com.ftcoin.controllers.MovimentacaoController;
@@ -35,6 +37,8 @@ import br.com.ftcoin.models.Posicao;
  * @since 2026-10-20
  */
 public class RelatoriosService {
+
+    private static final Logger LOG = Logger.getLogger(RelatoriosService.class.getName());
 
     /**
      * Serviço de cotações com cache utilizado para valorização a mercado.
@@ -77,6 +81,8 @@ public class RelatoriosService {
             roi = ganhoTotal.multiply(BigDecimal.valueOf(100)).divide(valorACusto, 2, RoundingMode.HALF_EVEN);
         }
 
+        LOG.log(Level.FINE, "Relatório de posição da carteira {0} gerado (ganho total={1}, ROI={2}%)",
+                new Object[] { idCarteira, ganhoTotal, roi });
         return new PosicaoRelatorioDTO(
                 carteira.getId(),
                 carteira.getNomeTitular(),
@@ -123,6 +129,8 @@ public class RelatoriosService {
             ));
         }
 
+        LOG.log(Level.FINE, "Histórico de operações da carteira {0} gerado: {1} operação(ões)",
+                new Object[] { idCarteira, resultado.size() });
         return resultado.reversed();
     }
 
@@ -175,6 +183,8 @@ public class RelatoriosService {
             ));
         }
 
+        LOG.log(Level.FINE, "Relatório consolidado gerado: {0} carteira(s), patrimônio={1}",
+                new Object[] { itens.size(), patrimonioTotal });
         return itens;
     }
 
@@ -213,6 +223,7 @@ public class RelatoriosService {
             ));
         }
 
+        LOG.log(Level.FINE, "Relatório de desempenho gerado: {0} carteira(s)", resultado.size());
         return resultado;
     }
 
@@ -271,6 +282,8 @@ public class RelatoriosService {
             ultimasMovs = ultimasMovs.subList(0, 8);
         }
 
+        LOG.log(Level.FINE, "Resumo do dashboard gerado: {0} carteira(s), patrimônio={1}",
+                new Object[] { carteiras.size(), patrimonioTotal });
         return new ResumoDashboardDTO(
                 patrimonioTotal,
                 saldoTotalFTC,

@@ -3,6 +3,9 @@ package br.com.ftcoin.gui.presenters;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.controllers.MovimentacaoController;
 import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.common.MensagensGui;
@@ -29,6 +32,8 @@ import br.com.ftcoin.models.TipoOperacao;
  * @since 2026-10-20
  */
 public class MovimentacaoPresenter {
+
+    private static final Logger LOG = Logger.getLogger(MovimentacaoPresenter.class.getName());
 
     /**
      * Interface de contrato para atualização da visão de movimentações.
@@ -74,7 +79,8 @@ public class MovimentacaoPresenter {
             List<CarteiraDTO> carteiras = relatoriosService.listarCarteirasDTO();
             view.exibirCarteirasDisponiveis(carteiras);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            RegistroDeFalhas.registrar(LOG, "carregar carteiras", e);
+            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
         }
     }
 
@@ -86,7 +92,8 @@ public class MovimentacaoPresenter {
             List<MovimentacaoDTO> ultimas = relatoriosService.obterResumoDashboard().ultimasMovimentacoes();
             view.exibirHistoricoMovimentacoes(ultimas);
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            RegistroDeFalhas.registrar(LOG, "carregar histórico de movimentações", e);
+            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
         }
     }
 
@@ -116,6 +123,7 @@ public class MovimentacaoPresenter {
 
             view.atualizarEstimativas(cotacao, total);
         } catch (NumberFormatException e) {
+            LOG.log(Level.FINEST, "Estimativa ignorada: quantidade digitada ainda não é um número ({0})", strQuantidade);
             view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
         }
     }
@@ -130,8 +138,10 @@ public class MovimentacaoPresenter {
      */
     public void registrarOperacao(Integer idCarteira, TipoOperacao tipo, LocalDate data, String strQuantidade) {
         MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        LOG.log(Level.FINE, "Usuário pediu: {0} de {1} FTC na carteira {2}", new Object[] { tipo, strQuantidade, idCarteira });
 
         if (idCarteira == null || idCarteira <= 0) {
+            LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.mov.erro.carteiraObrigatoria");
             view.exibirMensagemErro(mensagens.get("gui.mov.erro.carteiraObrigatoria"));
             return;
         }
@@ -139,11 +149,13 @@ public class MovimentacaoPresenter {
         if (data == null) {
             data = LocalDate.now();
         } else if (data.isAfter(LocalDate.now())) {
+            LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.mov.erro.dataFutura");
             view.exibirMensagemErro(mensagens.get("gui.mov.erro.dataFutura"));
             return;
         }
 
         if (strQuantidade == null || strQuantidade.trim().isEmpty()) {
+            LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.mov.erro.formatoNumero");
             view.exibirMensagemErro(mensagens.get("gui.mov.erro.formatoNumero"));
             return;
         }
@@ -153,10 +165,12 @@ public class MovimentacaoPresenter {
             String sanitizada = strQuantidade.trim().replace(",", ".");
             quantidade = new BigDecimal(sanitizada);
             if (quantidade.signum() <= 0) {
+                LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.mov.erro.quantidadeZero");
                 view.exibirMensagemErro(mensagens.get("gui.mov.erro.quantidadeZero"));
                 return;
             }
         } catch (NumberFormatException e) {
+            LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.mov.erro.formatoNumero");
             view.exibirMensagemErro(mensagens.get("gui.mov.erro.formatoNumero"));
             return;
         }
@@ -172,9 +186,11 @@ public class MovimentacaoPresenter {
             String chaveSucesso = (tipo == TipoOperacao.COMPRA) ? "gui.mov.sucesso.compra" : "gui.mov.sucesso.venda";
             view.exibirMensagemSucesso(mensagens.get(chaveSucesso, quantidade, idCarteira));
         } catch (FTCoinException e) {
+            RegistroDeFalhas.registrar(LOG, "registrar " + tipo + " na carteira " + idCarteira, e);
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
-            view.exibirMensagemErro(e.getMessage());
+            RegistroDeFalhas.registrar(LOG, "registrar " + tipo + " na carteira " + idCarteira, e);
+            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
         }
     }
 }

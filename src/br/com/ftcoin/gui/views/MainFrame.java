@@ -5,6 +5,7 @@ import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.WindowEvent;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.JComboBox;
@@ -117,7 +118,8 @@ public class MainFrame extends JFrame {
         JMenuItem itemRecarregar = new JMenuItem("Atualizar Todos os Dados");
         itemRecarregar.addActionListener(e -> recarregarTodosPaineis());
         JMenuItem itemSair = new JMenuItem("Sair do Sistema");
-        itemSair.addActionListener(e -> System.exit(0));
+        // Fecha pela janela para que "Sair" e o X sigam o mesmo caminho de encerramento
+        itemSair.addActionListener(e -> dispatchEvent(new WindowEvent(this, WindowEvent.WINDOW_CLOSING)));
         menuArquivo.add(itemDash);
         menuArquivo.add(itemRecarregar);
         menuArquivo.addSeparator();

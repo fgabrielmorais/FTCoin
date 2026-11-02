@@ -12,6 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 
 import br.com.ftcoin.daos.OraculoDAO;
@@ -19,6 +21,7 @@ import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.common.OrigemCotacao;
 import br.com.ftcoin.gui.dto.CotacaoDTO;
 import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
+import br.com.ftcoin.models.FTCoinException;
 import br.com.ftcoin.models.RegraNegocioException;
 
 /**
@@ -37,6 +40,13 @@ import br.com.ftcoin.models.RegraNegocioException;
  * @since 2026-10-20
  */
 public class CotacaoCacheService {
+
+    private static final Logger LOG = Logger.getLogger(CotacaoCacheService.class.getName());
+
+    /**
+     * Cotação usada quando o Oráculo não tem valor para a data pedida.
+     */
+    private static final BigDecimal COTACAO_PADRAO = BigDecimal.valueOf(5.50);
 
     /**
      * Tempo de vida limite (TTL) de uma cotação armazenada no cache local.
@@ -112,6 +122,7 @@ public class CotacaoCacheService {
                     EntradaCache itemCache = mapaCache.get(dataAlvo);
                     if (itemCache != null && itemCache.estaValida()) {
                         long tempoMs = Math.max(1, System.currentTimeMillis() - instanteInicio);
+                        LOG.log(Level.FINE, "Cotação de {0} servida pelo cache ({1} ms)", new Object[] { dataAlvo, tempoMs });
                         CotacaoDTO dto = new CotacaoDTO(
                                 dataAlvo,
                                 itemCache.cotacao(),
@@ -125,6 +136,8 @@ public class CotacaoCacheService {
                 }
 
                 // 2. Consulta ao Oráculo com simulação de latência de I/O em thread virtual
+                LOG.log(Level.FINE, "Cotação de {0}: consultando o Oráculo ({1})",
+                        new Object[] { dataAlvo, forcarOraculo ? "cache ignorado a pedido" : "cache vazio ou expirado" });
                 Thread.sleep(LATENCIA_SIMULADA_ORACULO_MS);
 
                 OraculoDAO oraculoDAO = AppContext.getInstancia().getOraculoDAO();
@@ -137,6 +150,8 @@ public class CotacaoCacheService {
                 mapaCache.put(dataAlvo, new EntradaCache(cotacao, Instant.now()));
 
                 long tempoMs = System.currentTimeMillis() - instanteInicio;
+                LOG.log(Level.FINE, "Cotação de {0} = {1}, respondida pelo Oráculo em {2} ms",
+                        new Object[] { dataAlvo, cotacao, tempoMs });
                 CotacaoDTO dto = new CotacaoDTO(
                         dataAlvo,
                         cotacao,
@@ -148,9 +163,15 @@ public class CotacaoCacheService {
                 SwingUtilities.invokeLater(() -> onSucesso.accept(dto));
 
             } catch (InterruptedException e) {
+                LOG.log(Level.WARNING, "Consulta da cotação de {0} interrompida", dataAlvo);
                 Thread.currentThread().interrupt();
                 SwingUtilities.invokeLater(() -> onErro.accept(e));
+            } catch (FTCoinException e) {
+                // Erro previsto (ex.: sem cotação para a data): quem o registra é o presenter
+                SwingUtilities.invokeLater(() -> onErro.accept(e));
             } catch (Throwable e) {
+                // Erro inesperado em thread de fundo: registrado aqui, onde o stack trace ainda existe
+                LOG.log(Level.SEVERE, "Falha inesperada na consulta da cotação de " + dataAlvo, e);
                 SwingUtilities.invokeLater(() -> onErro.accept(e));
             }
         });
@@ -166,21 +187,25 @@ public class CotacaoCacheService {
         LocalDate dataAlvo = (data != null) ? data : LocalDate.now();
         EntradaCache item = mapaCache.get(dataAlvo);
         if (item != null && item.estaValida()) {
+            LOG.log(Level.FINEST, "Cotação de {0} servida pelo cache", dataAlvo);
             return item.cotacao();
         }
 
         BigDecimal cotacao = AppContext.getInstancia().getOraculoDAO().buscarCotacaoPorData(dataAlvo);
         if (cotacao != null) {
             mapaCache.put(dataAlvo, new EntradaCache(cotacao, Instant.now()));
+            LOG.log(Level.FINEST, "Cotação de {0} = {1}, guardada no cache", new Object[] { dataAlvo, cotacao });
             return cotacao;
         }
-        return BigDecimal.valueOf(5.50);
+        LOG.log(Level.WARNING, "Oráculo sem cotação para {0}; usando o valor padrão {1}", new Object[] { dataAlvo, COTACAO_PADRAO });
+        return COTACAO_PADRAO;
     }
 
     /**
      * Limpa todas as entradas de cotação armazenadas na memória cache.
      */
     public void limparCache() {
+        LOG.log(Level.FINE, "Cache de cotações limpo ({0} entrada(s) descartada(s))", mapaCache.size());
         mapaCache.clear();
     }
 
@@ -212,6 +237,7 @@ public class CotacaoCacheService {
             cotacaoAnterior = cotacao;
         }
 
+        LOG.log(Level.FINE, "Histórico de cotações montado: {0} dia(s)", lista.size());
         return lista.reversed();
     }
 }
