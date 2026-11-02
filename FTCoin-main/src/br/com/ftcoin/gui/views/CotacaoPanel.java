@@ -76,7 +76,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
     /**
      * Rótulo de destaque tipográfico para o preço da moeda.
      */
-    private final JLabel rotuloValorMoeda = new JLabel("R$ --,--");
+        private final JLabel rotuloValorMoeda = new JLabel("—");
 
     /**
      * Etiqueta com cantos arredondados indicando a procedência dos dados (Oráculo ou Cache).
@@ -102,6 +102,15 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
      * Tabela visual para renderização das oscilações recentes.
      */
     private final JTable tabelaHistoricoOscilacoes;
+    private final JLabel rotuloTitulo = new JLabel();
+    private final JLabel rotuloData = new JLabel();
+    private final JLabel rotuloFTC = new JLabel();
+    private final JLabel rotuloHistTitulo = new JLabel();
+
+    private CotacaoDTO ultimaCotacao;
+    private List<RelatorioHistoricoCotacaoDTO> historicoCarregado = List.of();
+
+    private final Runnable ouvinteIdioma = this::atualizarTextosInterface;
 
     /**
      * Constrói o painel de cotações inicializando componentes gráficos e o apresentador.
@@ -127,7 +136,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         JPanel painelTopo = new JPanel(new BorderLayout(10, 10));
         painelTopo.setOpaque(false);
 
-        JLabel rotuloTitulo = new JLabel(mensagens.get("gui.cotacao.painel.titulo"));
+        rotuloTitulo.setText(mensagens.get("gui.cotacao.painel.titulo"));
         rotuloTitulo.setFont(TemaCores.FONTE_TITULO_GRANDE);
         rotuloTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         painelTopo.add(rotuloTitulo, BorderLayout.NORTH);
@@ -135,7 +144,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         JPanel painelBarraConsulta = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         painelBarraConsulta.setOpaque(false);
 
-        JLabel rotuloData = new JLabel(mensagens.get("gui.cotacao.label.data"));
+        rotuloData.setText(mensagens.get("gui.cotacao.label.data"));
         rotuloData.setFont(TemaCores.FONTE_LABEL);
         painelBarraConsulta.add(rotuloData);
 
@@ -172,7 +181,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         restricoes.insets = new Insets(6, 10, 6, 10);
         restricoes.gridx = 0;
 
-        JLabel rotuloFTC = new JLabel(mensagens.get("gui.cotacao.rotuloFTC"));
+        rotuloFTC.setText(mensagens.get("gui.cotacao.rotuloFTC"));
         rotuloFTC.setFont(TemaCores.FONTE_LABEL);
         rotuloFTC.setForeground(TemaCores.TEXTO_SECUNDARIO);
         restricoes.gridy = 0;
@@ -205,7 +214,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         JPanel painelHistorico = new JPanel(new BorderLayout(8, 8));
         painelHistorico.setOpaque(false);
 
-        JLabel rotuloHistTitulo = new JLabel(mensagens.get("gui.cotacao.historico.titulo"));
+        rotuloHistTitulo.setText(mensagens.get("gui.cotacao.historico.titulo"));
         rotuloHistTitulo.setFont(TemaCores.FONTE_TITULO_MEDIO);
         rotuloHistTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         painelHistorico.add(rotuloHistTitulo, BorderLayout.NORTH);
@@ -278,6 +287,155 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         presenter.inicializar();
     }
 
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        AppContext.getInstancia().getMensagens()
+                .adicionarOuvinte(ouvinteIdioma);
+        atualizarTextosInterface();
+    }
+
+    @Override
+    public void removeNotify() {
+        AppContext.getInstancia().getMensagens()
+                .removerOuvinte(ouvinteIdioma);
+        super.removeNotify();
+    }
+
+    private void atualizarTextosInterface() {
+        if (!javax.swing.SwingUtilities.isEventDispatchThread()) {
+            javax.swing.SwingUtilities.invokeLater(
+                    this::atualizarTextosInterface
+            );
+            return;
+        }
+
+        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        GuiFormatador formatador = mensagens.getFormatador();
+
+        rotuloTitulo.setText(mensagens.get("gui.cotacao.painel.titulo"));
+        rotuloData.setText(mensagens.get("gui.cotacao.label.data"));
+        rotuloFTC.setText(mensagens.get("gui.cotacao.rotuloFTC"));
+        rotuloHistTitulo.setText(
+                mensagens.get("gui.cotacao.historico.titulo")
+        );
+
+        botaoConsultarCotacao.setText(
+                mensagens.get("gui.cotacao.btn.consultar")
+        );
+        botaoLimparCacheOraculo.setText(
+                mensagens.get("gui.cotacao.btn.limparCache")
+        );
+
+        String[] chavesColunas = {
+                "gui.cotacao.col.data",
+                "gui.cotacao.col.cotacao",
+                "gui.cotacao.col.varAbs",
+                "gui.cotacao.col.varPerc",
+                "gui.cotacao.col.fonte"
+        };
+
+        for (int i = 0;
+                i < tabelaHistoricoOscilacoes.getColumnCount();
+                i++) {
+            javax.swing.table.TableColumn coluna =
+                    tabelaHistoricoOscilacoes.getColumnModel()
+                            .getColumn(i);
+
+            coluna.setHeaderValue(
+                    mensagens.get(chavesColunas[coluna.getModelIndex()])
+            );
+        }
+
+        tabelaHistoricoOscilacoes.getTableHeader().repaint();
+
+        for (int i = 0; i < historicoCarregado.size(); i++) {
+            modeloTabelaHistorico.setValueAt(
+                    formatador.data(historicoCarregado.get(i).data()),
+                    i,
+                    0
+            );
+        }
+
+        if (ultimaCotacao == null) {
+            rotuloValorMoeda.setText("—");
+            etiquetaOrigemDado.setText(
+                    mensagens.get("gui.cotacao.aguardando")
+            );
+            rotuloLatenciaResposta.setText(
+                    mensagens.get("gui.cotacao.latencia", "-")
+            );
+            rotuloHorarioConsulta.setText(
+                    mensagens.get("gui.cotacao.horario", "--:--:--")
+            );
+        } else {
+            apresentarUltimaCotacao();
+        }
+
+        ajustarTamanhoEtiqueta();
+        tabelaHistoricoOscilacoes.repaint();
+        revalidate();
+        repaint();
+    }
+
+    private void apresentarUltimaCotacao() {
+        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        GuiFormatador formatador = mensagens.getFormatador();
+
+        rotuloValorMoeda.setText(
+                formatador.moeda(ultimaCotacao.valor())
+        );
+
+        etiquetaOrigemDado.configurarOrigem(ultimaCotacao.origem());
+
+        if (ultimaCotacao.origem() == null) {
+            etiquetaOrigemDado.setText("—");
+        } else {
+            etiquetaOrigemDado.setText(
+                    ultimaCotacao.origem().getIcone() + " "
+                            + ultimaCotacao.origem()
+                                    .getDescricaoLocalizada()
+            );
+        }
+
+        rotuloLatenciaResposta.setText(
+                mensagens.get(
+                        "gui.cotacao.latencia",
+                        ultimaCotacao.tempoRespostaMs()
+                )
+        );
+
+        java.time.format.DateTimeFormatter formatoHorario =
+                java.time.format.DateTimeFormatter
+                        .ofLocalizedTime(
+                                java.time.format.FormatStyle.MEDIUM
+                        )
+                        .withLocale(mensagens.getLocaleAtual());
+
+        rotuloHorarioConsulta.setText(
+                mensagens.get(
+                        "gui.cotacao.horario",
+                        formatoHorario.format(
+                                ultimaCotacao.horaConsulta()
+                        )
+                )
+        );
+
+        ajustarTamanhoEtiqueta();
+    }
+
+    private void ajustarTamanhoEtiqueta() {
+        etiquetaOrigemDado.setPreferredSize(null);
+        Dimension tamanhoNatural = etiquetaOrigemDado.getPreferredSize();
+
+        etiquetaOrigemDado.setPreferredSize(
+                new Dimension(
+                        Math.max(190, tamanhoNatural.width),
+                        Math.max(32, tamanhoNatural.height)
+                )
+        );
+    }
+
     /**
      * Atualiza os componentes visuais da tela com os dados da cotação consultada.
      *
@@ -285,13 +443,8 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
      */
     @Override
     public void exibirCotacao(CotacaoDTO cotacao) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
-        GuiFormatador formatador = mensagens.getFormatador();
-
-        rotuloValorMoeda.setText(formatador.moeda(cotacao.valor()));
-        etiquetaOrigemDado.configurarOrigem(cotacao.origem());
-        rotuloLatenciaResposta.setText(mensagens.get("gui.cotacao.latencia", cotacao.tempoRespostaMs()));
-        rotuloHorarioConsulta.setText(mensagens.get("gui.cotacao.horario", cotacao.horaConsulta().toString().substring(0, 8)));
+        this.ultimaCotacao = cotacao;
+        atualizarTextosInterface();
     }
 
     /**
@@ -312,6 +465,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
      */
     @Override
     public void exibirHistoricoOscilacoes(List<RelatorioHistoricoCotacaoDTO> historico) {
+        this.historicoCarregado = List.copyOf(historico);
         modeloTabelaHistorico.setRowCount(0);
         GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
         for (RelatorioHistoricoCotacaoDTO item : historico) {
