@@ -97,22 +97,26 @@ public class MovimentacaoPresenter {
     }
 
     /**
-     * Calcula dinamicamente o valor estimado da operação com base na quantidade e data informadas.
+     * Calcula a estimativa do formulário da operação informada.
      *
+     * @param tipo          Operação cujo formulário receberá a estimativa
      * @param data          Data informada para apuração da cotação
      * @param strQuantidade Quantidade digitada no campo de texto
      */
-    public void calcularEstimativas(LocalDate data, String strQuantidade) {
+    public void calcularEstimativas(
+            TipoOperacao tipo, LocalDate data, String strQuantidade) {
+
         if (strQuantidade == null || strQuantidade.trim().isEmpty()) {
-            view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+            view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
             return;
         }
 
         try {
             String sanitizada = strQuantidade.trim().replace(",", ".");
             BigDecimal qtd = new BigDecimal(sanitizada);
+
             if (qtd.signum() <= 0) {
-                view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+                view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
                 return;
             }
 
@@ -120,9 +124,9 @@ public class MovimentacaoPresenter {
             BigDecimal cotacao = cotacaoService.obterCotacaoSincrona(dataAlvo);
             BigDecimal total = qtd.multiply(cotacao);
 
-            view.atualizarEstimativas(cotacao, total);
+            view.atualizarEstimativas(tipo, cotacao, total);
         } catch (NumberFormatException e) {
-            view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+            view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
         }
     }
 

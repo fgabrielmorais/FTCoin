@@ -132,8 +132,10 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
     private List<MovimentacaoDTO> historicoCarregado = List.of();
 
-    private BigDecimal ultimaCotacaoEstimada;
-    private BigDecimal ultimoTotalEstimado;
+    private BigDecimal ultimaCotacaoEstimadaCompra;
+    private BigDecimal ultimoTotalEstimadoCompra;
+    private BigDecimal ultimaCotacaoEstimadaVenda;
+    private BigDecimal ultimoTotalEstimadoVenda;
 
     /**
      * <p>
@@ -359,10 +361,12 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
             private void recalcular() {
                 LocalDate data = converterTextoEmData(campoDataCompra.getText());
-                presenter.calcularEstimativas(data, campoQuantidadeCompra.getText());
+                presenter.calcularEstimativas(
+                        TipoOperacao.COMPRA, data, campoQuantidadeCompra.getText());
             }
         };
         campoQuantidadeCompra.getDocument().addDocumentListener(ouvinteDocCompra);
+        campoDataCompra.getDocument().addDocumentListener(ouvinteDocCompra);
 
         DocumentListener ouvinteDocVenda = new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { recalcular(); }
@@ -371,10 +375,12 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
             private void recalcular() {
                 LocalDate data = converterTextoEmData(campoDataVenda.getText());
-                presenter.calcularEstimativas(data, campoQuantidadeVenda.getText());
+                presenter.calcularEstimativas(
+                        TipoOperacao.VENDA, data, campoQuantidadeVenda.getText());
             }
         };
         campoQuantidadeVenda.getDocument().addDocumentListener(ouvinteDocVenda);
+        campoDataVenda.getDocument().addDocumentListener(ouvinteDocVenda);
 
         comboCarteiraVenda.addActionListener(e -> {
             ItemCarteiraCombo selecionado = (ItemCarteiraCombo) comboCarteiraVenda.getSelectedItem();
@@ -496,10 +502,21 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
             );
         }
 
-        if (ultimaCotacaoEstimada != null && ultimoTotalEstimado != null) {
+        if (ultimaCotacaoEstimadaCompra != null
+                && ultimoTotalEstimadoCompra != null) {
             atualizarEstimativas(
-                    ultimaCotacaoEstimada,
-                    ultimoTotalEstimado
+                    TipoOperacao.COMPRA,
+                    ultimaCotacaoEstimadaCompra,
+                    ultimoTotalEstimadoCompra
+            );
+        }
+
+        if (ultimaCotacaoEstimadaVenda != null
+                && ultimoTotalEstimadoVenda != null) {
+            atualizarEstimativas(
+                    TipoOperacao.VENDA,
+                    ultimaCotacaoEstimadaVenda,
+                    ultimoTotalEstimadoVenda
             );
         }
 
@@ -523,11 +540,19 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     /**
      * Inicializa a tela disparando a carga de carteiras e a estimativa inicial.
      */
-    public void inicializar() {
+        public void inicializar() {
         presenter.inicializar();
+
         presenter.calcularEstimativas(
-                LocalDate.now(),
+                TipoOperacao.COMPRA,
+                converterTextoEmData(campoDataCompra.getText()),
                 campoQuantidadeCompra.getText()
+        );
+
+        presenter.calcularEstimativas(
+                TipoOperacao.VENDA,
+                converterTextoEmData(campoDataVenda.getText()),
+                campoQuantidadeVenda.getText()
         );
     }
 
@@ -578,20 +603,32 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     }
 
     /**
-     * Atualiza os rótulos de prévia financeira com os valores estimados calculados.
+     * Guarda e apresenta a estimativa do formulário correspondente.
      *
+     * @param tipo       Operação cujo formulário deve ser atualizado
      * @param cotacao    Valor da cotação
      * @param valorTotal Valor financeiro total calculado
      */
     @Override
-    public void atualizarEstimativas(BigDecimal cotacao, BigDecimal valorTotal) {
-        this.ultimaCotacaoEstimada = cotacao;
-        this.ultimoTotalEstimado = valorTotal;
-        GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
-        rotuloCotacaoEstimadaCompra.setText(formatador.moeda(cotacao));
-        rotuloTotalEstimadoCompra.setText(formatador.moeda(valorTotal));
-        rotuloCotacaoEstimadaVenda.setText(formatador.moeda(cotacao));
-        rotuloTotalEstimadoVenda.setText(formatador.moeda(valorTotal));
+    public void atualizarEstimativas(
+            TipoOperacao tipo, BigDecimal cotacao, BigDecimal valorTotal) {
+
+        GuiFormatador formatador =
+                AppContext.getInstancia().getMensagens().getFormatador();
+
+        if (tipo == TipoOperacao.COMPRA) {
+            ultimaCotacaoEstimadaCompra = cotacao;
+            ultimoTotalEstimadoCompra = valorTotal;
+
+            rotuloCotacaoEstimadaCompra.setText(formatador.moeda(cotacao));
+            rotuloTotalEstimadoCompra.setText(formatador.moeda(valorTotal));
+        } else {
+            ultimaCotacaoEstimadaVenda = cotacao;
+            ultimoTotalEstimadoVenda = valorTotal;
+
+            rotuloCotacaoEstimadaVenda.setText(formatador.moeda(cotacao));
+            rotuloTotalEstimadoVenda.setText(formatador.moeda(valorTotal));
+        }
     }
 
     /**
