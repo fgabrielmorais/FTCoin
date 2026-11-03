@@ -4,7 +4,24 @@
 [![Maven](https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apache-maven&logoColor=white)](https://maven.apache.org/)
 [![MariaDB](https://img.shields.io/badge/MariaDB-003545?style=for-the-badge&logo=mariadb&logoColor=white)](https://mariadb.org/)
 
-O **FTCoin** é um sistema de linha de comando para acompanhar carteiras de uma moeda virtual. O projeto foi desenvolvido na disciplina de Programação Orientada a Objetos do curso de **Sistemas de Informação da UNICAMP (Campus Limeira)**.
+O **FTCoin** é um sistema acadêmico para acompanhar carteiras de uma moeda virtual, com versões de terminal e interface gráfica Swing. O projeto foi desenvolvido na disciplina de Programação Orientada a Objetos do curso de **Sistemas de Informação da UNICAMP (Campus Limeira)**.
+
+## Interface gráfica: FTCoin Studio
+
+A interface gráfica está no projeto Maven da pasta **`FTCoin-main/`**. Ela oferece português, inglês e espanhol, com troca de idioma durante a execução, manual de ajuda e créditos traduzidos.
+
+Consulte [as instruções da interface gráfica](FTCoin-main/README.md) para compilar, executar e conhecer as limitações atuais.
+
+No Windows, o arquivo `iniciar_interface.bat`, localizado na raiz, compila o projeto da GUI pelo Maven e executa o resultado de `FTCoin-main/target/classes`. É necessário ter JDK 21 e Maven configurados no PATH ou por JAVA_HOME e MAVEN_HOME, respectivamente.
+
+### Atenção às duas árvores de código
+
+- `src/` e `pom.xml` da raiz correspondem à versão de terminal.
+- `FTCoin-main/src/` e `FTCoin-main/pom.xml` correspondem ao projeto que contém a GUI.
+- Compilar com Maven na raiz não valida a interface gráfica.
+- As duas árvores são separadas; alterações em uma não são replicadas automaticamente na outra.
+
+As seções abaixo documentam a versão de terminal da raiz. Seu mecanismo de idiomas é separado do seletor da GUI; as instruções de português e inglês abaixo não descrevem o suporte a três idiomas da interface gráfica.
 
 O sistema cadastra carteiras, registra compras e vendas de FTCoins e apura o resultado de cada carteira com base nas cotações fornecidas pelo Oráculo.
 
