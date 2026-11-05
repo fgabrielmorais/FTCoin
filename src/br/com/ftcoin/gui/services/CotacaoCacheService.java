@@ -135,9 +135,11 @@ public class CotacaoCacheService {
         LocalDate hoje = LocalDate.now();
         BigDecimal cotacaoAnterior = null;
 
-        for (int i = dias; i >= 0; i--) {
-            LocalDate data = hoje.minusDays(i);
-            OraculoDAOCache.Consulta consulta = AppContext.getInstancia().getOraculoDAO().consultar(data);
+        // Uma única consulta de faixa ao oráculo (em vez de uma por dia)
+        var consultas = AppContext.getInstancia().getOraculoDAO().consultarPeriodo(hoje.minusDays(dias), hoje);
+        for (var item : consultas.entrySet()) {
+            LocalDate data = item.getKey();
+            OraculoDAOCache.Consulta consulta = item.getValue();
             BigDecimal cotacao = consulta.valor();
             if (cotacao == null) {
                 LOG.log(Level.FINE, "Histórico: {0} sem cotação, dia omitido", data);

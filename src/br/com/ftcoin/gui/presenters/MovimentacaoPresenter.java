@@ -3,11 +3,13 @@ package br.com.ftcoin.gui.presenters;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.controllers.MovimentacaoController;
 import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.TarefaEmSegundoPlano;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.dto.MovimentacaoDTO;
@@ -50,6 +52,11 @@ public class MovimentacaoPresenter {
      * Serviço de cotações para cálculo imediato de estimativas financeiras.
      */
     private final CotacaoCacheService cotacaoService;
+
+    /**
+     * Número da última estimativa pedida; respostas de pedidos anteriores são descartadas.
+     */
+    private final AtomicLong ultimoPedidoEstimativa = new AtomicLong();
 
     /**
      * Constrói o apresentador de movimentações injetando visão e serviços requeridos.
@@ -105,6 +112,8 @@ public class MovimentacaoPresenter {
      * @param strQuantidade Quantidade digitada no campo de texto
      */
     public void calcularEstimativas(LocalDate data, String strQuantidade) {
+        // Invalida qualquer consulta anterior ainda em andamento
+        long pedido = ultimoPedidoEstimativa.incrementAndGet();
         if (strQuantidade == null || strQuantidade.trim().isEmpty()) {
             view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
             return;
@@ -119,19 +128,28 @@ public class MovimentacaoPresenter {
             }
 
             LocalDate dataAlvo = (data != null) ? data : LocalDate.now();
-            BigDecimal cotacao = cotacaoService.obterCotacaoSincrona(dataAlvo);
-            if (cotacao == null) {
-                MensagensGui mensagens = AppContext.getInstancia().getMensagens();
-                view.informarCotacaoIndisponivel(mensagens.descreverErro(new RegraNegocioException("erro.oraculo.semCotacao", dataAlvo)));
-                return;
-            }
-            BigDecimal total = qtd.multiply(cotacao);
-
-            view.atualizarEstimativas(cotacao, total);
-        } catch (FTCoinException e) {
-            //Falha do oráculo (rede, autenticação): avisa na prévia sem derrubar a tela
-            RegistroDeFalhas.registrar(LOG, "calcular estimativa", e);
-            view.informarCotacaoIndisponivel(AppContext.getInstancia().getMensagens().descreverErro(e));
+            // Consulta fora da thread do Swing; só a resposta da última digitação é exibida
+            TarefaEmSegundoPlano.executar(
+                    () -> cotacaoService.obterCotacaoSincrona(dataAlvo),
+                    cotacao -> {
+                        if (pedido != ultimoPedidoEstimativa.get()) {
+                            return;
+                        }
+                        if (cotacao == null) {
+                            MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+                            view.informarCotacaoIndisponivel(mensagens.descreverErro(new RegraNegocioException("erro.oraculo.semCotacao", dataAlvo)));
+                        } else {
+                            view.atualizarEstimativas(cotacao, qtd.multiply(cotacao));
+                        }
+                    },
+                    e -> {
+                        if (pedido != ultimoPedidoEstimativa.get()) {
+                            return;
+                        }
+                        //Falha do oráculo (rede, autenticação): avisa na prévia sem derrubar a tela
+                        RegistroDeFalhas.registrar(LOG, "calcular estimativa", e);
+                        view.informarCotacaoIndisponivel(AppContext.getInstancia().getMensagens().descreverErro(e));
+                    });
         } catch (NumberFormatException e) {
             LOG.log(Level.FINEST, "Estimativa ignorada: quantidade digitada ainda não é um número ({0})", strQuantidade);
             view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);

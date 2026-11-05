@@ -14,6 +14,6 @@ public class OraculoException extends FTCoinException {
 
 	//O detalhe técnico da causa vira o argumento da mensagem
 	public OraculoException(String chave, Throwable causa) {
-		super(chave, causa, causa.getMessage());
+		super(chave, causa, causa.getMessage() != null ? causa.getMessage() : causa.getClass().getSimpleName());
 	}
 }
