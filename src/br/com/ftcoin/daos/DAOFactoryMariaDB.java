@@ -13,7 +13,7 @@ public class DAOFactoryMariaDB extends DAOFactory {
 	}
 
 	@Override
-	public OraculoDAO criarOraculoDAO() {
+	protected OraculoDAO criarOraculoSimulado() {
 		return new OraculoDAOMariaDB();
 	}
 }

@@ -17,7 +17,13 @@ public abstract class DAOFactory {
 
 	public abstract CarteiraDAO criarCarteiraDAO();
 	public abstract MovimentacaoDAO criarMovimentacaoDAO();
-	public abstract OraculoDAO criarOraculoDAO();
+	//Oráculo usado quando oracle.provider=simulado
+	protected abstract OraculoDAO criarOraculoSimulado();
+
+	//Simulado ou API, conforme oracle.provider em application.properties
+	public final OraculoDAO criarOraculoDAO() {
+		return FabricaOraculo.criar(criarOraculoSimulado());
+	}
 
 	//Único ponto do sistema que decide entre memória e banco de dados
 	public static DAOFactory getInstancia() {

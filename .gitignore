@@ -19,3 +19,6 @@ logs/
 database.properties
 # Configurações locais do VS Code
 .vscode/
+
+#Credenciais do servidor de cotações
+oracle.properties

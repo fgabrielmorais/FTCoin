@@ -1,0 +1,8 @@
+# Copie este arquivo para oracle.properties (mesma pasta) e preencha os valores.
+# O oracle.properties está no .gitignore e não deve ser versionado.
+oracle.host=localhost
+oracle.port=1234
+oracle.group=NOME_DO_GRUPO
+oracle.password=SENHA_DO_GRUPO
+# Tempo máximo de conexão e de espera pela resposta, em milissegundos
+oracle.timeoutMs=5000
