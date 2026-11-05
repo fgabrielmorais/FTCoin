@@ -15,6 +15,7 @@ import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.contracts.IMovimentacaoView;
 import br.com.ftcoin.models.FTCoinException;
+import br.com.ftcoin.models.RegraNegocioException;
 import br.com.ftcoin.models.TipoOperacao;
 
 /**
@@ -119,9 +120,18 @@ public class MovimentacaoPresenter {
 
             LocalDate dataAlvo = (data != null) ? data : LocalDate.now();
             BigDecimal cotacao = cotacaoService.obterCotacaoSincrona(dataAlvo);
+            if (cotacao == null) {
+                MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+                view.informarCotacaoIndisponivel(mensagens.descreverErro(new RegraNegocioException("erro.oraculo.semCotacao", dataAlvo)));
+                return;
+            }
             BigDecimal total = qtd.multiply(cotacao);
 
             view.atualizarEstimativas(cotacao, total);
+        } catch (FTCoinException e) {
+            //Falha do oráculo (rede, autenticação): avisa na prévia sem derrubar a tela
+            RegistroDeFalhas.registrar(LOG, "calcular estimativa", e);
+            view.informarCotacaoIndisponivel(AppContext.getInstancia().getMensagens().descreverErro(e));
         } catch (NumberFormatException e) {
             LOG.log(Level.FINEST, "Estimativa ignorada: quantidade digitada ainda não é um número ({0})", strQuantidade);
             view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);

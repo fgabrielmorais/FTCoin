@@ -40,11 +40,6 @@ public class CotacaoCacheService {
     private static final Logger LOG = Logger.getLogger(CotacaoCacheService.class.getName());
 
     /**
-     * Cotação usada quando o Oráculo não tem valor para a data pedida.
-     */
-    private static final BigDecimal COTACAO_PADRAO = BigDecimal.valueOf(5.50);
-
-    /**
      * Executor baseado em Virtual Threads para processamento simultâneo e não bloqueante.
      */
     private final ExecutorService virtualThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
@@ -106,19 +101,19 @@ public class CotacaoCacheService {
     }
 
     /**
-     * Retorna a cotação síncrona com fallback ao cache local para apuração dos relatórios.
+     * Retorna a cotação da data, consultando o oráculo (com cache).
      *
      * @param data Data de apuração desejada
-     * @return O valor de cotação apurado em {@code BigDecimal}
+     * @return O valor da cotação, ou {@code null} se o oráculo não tem cotação para a data
+     *         (não é erro; quem chama decide o que mostrar)
      */
     public BigDecimal obterCotacaoSincrona(LocalDate data) {
         LocalDate dataAlvo = (data != null) ? data : LocalDate.now();
         BigDecimal cotacao = AppContext.getInstancia().getOraculoDAO().buscarCotacaoPorData(dataAlvo);
-        if (cotacao != null) {
-            return cotacao;
+        if (cotacao == null) {
+            LOG.log(Level.FINE, "Oráculo sem cotação para {0}", dataAlvo);
         }
-        LOG.log(Level.WARNING, "Oráculo sem cotação para {0}; usando o valor padrão {1}", new Object[] { dataAlvo, COTACAO_PADRAO });
-        return COTACAO_PADRAO;
+        return cotacao;
     }
 
     /**
@@ -130,6 +125,7 @@ public class CotacaoCacheService {
 
     /**
      * Retorna a lista cronológica das cotações dos últimos dias para renderização do histórico.
+     * Dias sem cotação ficam de fora; a variação é calculada contra o último dia que tem cotação.
      *
      * @param dias Quantidade de dias passados a serem consultados
      * @return A lista de registros em formato {@link RelatorioHistoricoCotacaoDTO}
@@ -142,7 +138,11 @@ public class CotacaoCacheService {
         for (int i = dias; i >= 0; i--) {
             LocalDate data = hoje.minusDays(i);
             OraculoDAOCache.Consulta consulta = AppContext.getInstancia().getOraculoDAO().consultar(data);
-            BigDecimal cotacao = consulta.valor() != null ? consulta.valor() : obterCotacaoSincrona(data);
+            BigDecimal cotacao = consulta.valor();
+            if (cotacao == null) {
+                LOG.log(Level.FINE, "Histórico: {0} sem cotação, dia omitido", data);
+                continue;
+            }
             BigDecimal variacaoAbs = BigDecimal.ZERO;
             BigDecimal variacaoPerc = BigDecimal.ZERO;
 

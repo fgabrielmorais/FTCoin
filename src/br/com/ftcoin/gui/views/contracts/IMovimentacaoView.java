@@ -44,6 +44,14 @@ public interface IMovimentacaoView {
     void atualizarEstimativas(BigDecimal cotacao, BigDecimal valorTotal);
 
     /**
+     * Mostra nos rótulos de prévia que não há cotação disponível, com o motivo
+     * (data sem cotação ou falha ao consultar o oráculo).
+     *
+     * @param motivo Texto já traduzido explicando por que não há estimativa
+     */
+    void informarCotacaoIndisponivel(String motivo);
+
+    /**
      * Exibe um diálogo modal com mensagem de confirmação de compra ou venda registrada.
      *
      * @param mensagem Texto formatado com o sucesso da transação

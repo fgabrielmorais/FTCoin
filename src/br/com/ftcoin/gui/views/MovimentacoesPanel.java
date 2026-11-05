@@ -444,6 +444,25 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         rotuloTotalEstimadoCompra.setText(formatador.moeda(valorTotal));
         rotuloCotacaoEstimadaVenda.setText(formatador.moeda(cotacao));
         rotuloTotalEstimadoVenda.setText(formatador.moeda(valorTotal));
+        rotuloCotacaoEstimadaCompra.setToolTipText(null);
+        rotuloCotacaoEstimadaVenda.setToolTipText(null);
+    }
+
+    /**
+     * Mostra que não há cotação para a estimativa, sem abrir diálogo
+     * (a prévia é recalculada a cada digitação).
+     *
+     * @param motivo Texto traduzido com o motivo
+     */
+    @Override
+    public void informarCotacaoIndisponivel(String motivo) {
+        String rotulo = AppContext.getInstancia().getMensagens().get("gui.mov.semCotacao");
+        rotuloCotacaoEstimadaCompra.setText(rotulo);
+        rotuloCotacaoEstimadaVenda.setText(rotulo);
+        rotuloCotacaoEstimadaCompra.setToolTipText(motivo);
+        rotuloCotacaoEstimadaVenda.setToolTipText(motivo);
+        rotuloTotalEstimadoCompra.setText("—");
+        rotuloTotalEstimadoVenda.setText("—");
     }
 
     /**
