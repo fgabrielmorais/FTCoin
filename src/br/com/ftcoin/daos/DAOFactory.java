@@ -20,9 +20,9 @@ public abstract class DAOFactory {
 	//Oráculo usado quando oracle.provider=simulado
 	protected abstract OraculoDAO criarOraculoSimulado();
 
-	//Simulado ou API, conforme oracle.provider em application.properties
-	public final OraculoDAO criarOraculoDAO() {
-		return FabricaOraculo.criar(criarOraculoSimulado());
+	//Simulado ou API, conforme oracle.provider em application.properties, sempre com cache
+	public final OraculoDAOCache criarOraculoDAO() {
+		return new OraculoDAOCache(FabricaOraculo.criar(criarOraculoSimulado()));
 	}
 
 	//Único ponto do sistema que decide entre memória e banco de dados

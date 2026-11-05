@@ -12,7 +12,7 @@ import br.com.ftcoin.daos.DAOFactory;
 import br.com.ftcoin.daos.DAOFactoryMariaDB;
 import br.com.ftcoin.daos.DAOFactoryMemoria;
 import br.com.ftcoin.daos.MovimentacaoDAO;
-import br.com.ftcoin.daos.OraculoDAO;
+import br.com.ftcoin.daos.OraculoDAOCache;
 import br.com.ftcoin.daos.TipoPersistencia;
 
 /**
@@ -67,7 +67,7 @@ public class AppContext {
     /**
      * Objeto de acesso a dados para cotações fornecidas pelo oráculo.
      */
-    private OraculoDAO oraculoDAO;
+    private OraculoDAOCache oraculoDAO;
 
     /**
      * Controlador responsável pelos casos de uso do domínio de carteiras.
@@ -237,9 +237,9 @@ public class AppContext {
     /**
      * Retorna o objeto de acesso a dados do oráculo de cotações.
      *
-     * @return A instância ativa de {@code OraculoDAO}
+     * @return O oráculo ativo, com cache
      */
-    public synchronized OraculoDAO getOraculoDAO() {
+    public synchronized OraculoDAOCache getOraculoDAO() {
         return oraculoDAO;
     }
 }
