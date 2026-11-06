@@ -1,10 +1,15 @@
 package br.com.ftcoin.gui.common;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -23,7 +28,7 @@ import br.com.ftcoin.models.FTCoinException;
  * com notificação automática a componentes observadores registrados.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -37,6 +42,11 @@ public class MensagensGui {
     private static final String BUNDLE_BASE_NAME = "Messages";
 
     /**
+     * Pasta dos textos longos em HTML (manual e créditos), um arquivo por idioma.
+     */
+    private static final String PASTA_DOCUMENTOS = "/br/com/ftcoin/gui/textos/";
+
+    /**
      * Localização padrão para o idioma Português (Brasil).
      */
     public static final Locale LOCALE_PT = Locale.of("pt", "BR");
@@ -45,6 +55,11 @@ public class MensagensGui {
      * Localização padrão para o idioma Inglês (Estados Unidos).
      */
     public static final Locale LOCALE_EN = Locale.of("en", "US");
+
+    /**
+     * Localização padrão para o idioma Espanhol (Espanha).
+     */
+    public static final Locale LOCALE_ES = Locale.of("es", "ES");
 
     /**
      * Localidade atualmente aplicada aos textos da interface.
@@ -83,11 +98,11 @@ public class MensagensGui {
     /**
      * Define a nova localidade da interface, recarregando bundles e notificando ouvintes.
      *
-     * @param novoLocale Nova localidade desejada para a interface
+     * @param novoLocale Nova localidade desejada; idiomas sem tradução usam o português
      */
     public synchronized void setLocale(Locale novoLocale) {
-        this.localeAtual = (novoLocale != null && "en".equalsIgnoreCase(novoLocale.getLanguage()))
-                ? LOCALE_EN : LOCALE_PT;
+        // Idiomas sem tradução caem no português
+        this.localeAtual = IdiomaSelector.porLocale(novoLocale).getLocale();
         this.bundle = ResourceBundle.getBundle(BUNDLE_BASE_NAME, this.localeAtual);
         this.formatador = new GuiFormatador(this.localeAtual);
         LOG.log(Level.INFO, "Idioma da interface: {0}", this.localeAtual);
@@ -128,6 +143,38 @@ public class MensagensGui {
         }
         String detalhe = (erro.getMessage() != null) ? erro.getMessage() : erro.getClass().getSimpleName();
         return get("erro.inesperado", detalhe);
+    }
+
+    /**
+     * Carrega um texto longo em HTML no idioma ativo e preenche as marcações {@code ${nome}}.
+     * O arquivo procurado é {@code <documento>_<idioma>.html}; sem a versão do idioma, usa a em português.
+     *
+     * @param documento nome base do arquivo, como {@code "ajuda"}
+     * @param valores   valores das marcações, indexados pelo nome usado dentro de {@code ${...}}
+     * @return o HTML pronto para exibição
+     * @throws UncheckedIOException se o arquivo não existir em nenhum idioma ou não puder ser lido
+     */
+    public String carregarDocumento(String documento, Map<String, String> valores) {
+        String html = lerDocumento(documento, getLocaleAtual().getLanguage());
+        if (html == null) {
+            html = lerDocumento(documento, LOCALE_PT.getLanguage());
+        }
+        if (html == null) {
+            throw new UncheckedIOException(new IOException("Documento não encontrado: " + documento));
+        }
+        for (Map.Entry<String, String> valor : valores.entrySet()) {
+            html = html.replace("${" + valor.getKey() + "}", valor.getValue());
+        }
+        return html;
+    }
+
+    private static String lerDocumento(String documento, String idioma) {
+        String caminho = PASTA_DOCUMENTOS + documento + "_" + idioma + ".html";
+        try (InputStream entrada = MensagensGui.class.getResourceAsStream(caminho)) {
+            return (entrada == null) ? null : new String(entrada.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /**

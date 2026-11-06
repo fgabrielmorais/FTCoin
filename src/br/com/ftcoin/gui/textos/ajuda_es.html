@@ -1,0 +1,31 @@
+<html>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 15px; color: #1f2937;">
+    <h1 style="color: #1a2b4c; margin-bottom: 5px;">Manual del usuario</h1>
+    <p style="color: #6b7280; font-size: 13px;">${sistema} - Versión ${versao} | Arquitectura POO &amp; MVP</p>
+    <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
+
+    <h3 style="color: #2563eb;">1. Visión general</h3>
+    <p>FTCoin Studio es una aplicación académica para gestionar carteras de la moneda virtual FTCoin, registrar compras y ventas, consultar cotizaciones y seguir los resultados. Use los botones de la barra superior para abrir cada pantalla.</p>
+
+    <h3 style="color: #2563eb;">2. Carteras</h3>
+    <ul><li><b>Crear:</b> abra Carteras, pulse Nueva cartera, indique el titular y la plataforma y confirme.</li><li><b>Editar:</b> seleccione una cartera en la tabla y pulse Editar para modificar sus datos.</li><li><b>Eliminar:</b> seleccione la cartera y confirme la eliminación. No se pueden eliminar carteras con operaciones registradas.</li></ul>
+
+    <h3 style="color: #2563eb;">3. Compras, ventas y fechas</h3>
+    <p>Abra Operaciones, elija Compra o Venta, seleccione la cartera e introduzca una cantidad positiva. Use punto o coma como separador decimal, sin separadores de miles: por ejemplo, <b>10.5</b> o <b>10,5</b>. Revise los datos y confirme la operación. Se rechazan las ventas que superen el saldo disponible.</p><p>Introduzca las fechas con el formato <b>AAAA-MM-DD</b>, por ejemplo, <b>2026-11-01</b>, independientemente del idioma. El formulario de operaciones rechaza fechas futuras.</p><p><b>Limitación actual:</b> la fecha indicada puede utilizarse en la estimación, pero la compra o venta se registra con la fecha actual del equipo y se valida con la cotización actual. Para mantener la estimación coherente con el registro, use la fecha de hoy. El formulario no permite registrar una operación con fecha anterior.</p>
+
+    <h3 style="color: #2563eb;">4. Cotizaciones y caché</h3>
+    <p>En la pantalla Cotización, introduzca la fecha con el formato AAAA-MM-DD y pulse Consultar. La pantalla muestra el valor, el origen de la respuesta, el tiempo de respuesta y la hora de consulta.</p><ul><li><b>Oráculo:</b> consulta a la fuente de cotizaciones configurada. En memoria, los valores son simulados; en MariaDB, se leen de la base de datos. No es una integración con una bolsa ni con un servicio financiero externo.</li><li><b>Caché:</b> reutilización temporal de una cotización ya consultada, con una validez de 60 segundos. La caché se vacía cuando se cambia la base de datos.</li><li><b>Vaciar caché:</b> elimina las entradas temporales y vuelve a consultar la fecha actual.</li></ul><p>Si no hay una cotización para la fecha solicitada, el sistema lo avisa en lugar de inventar un valor. Los días sin cotización no aparecen en el historial reciente.</p>
+
+    <h3 style="color: #2563eb;">5. Uso de los informes</h3>
+    <p>Abra Informes y seleccione una cartera para los informes 1 y 2. Use Actualizar todos para recargar los datos.</p><ol><li><b>Posición consolidada:</b> saldo, coste medio, valor al coste, valor de mercado, ganancias y ROI de la cartera seleccionada.</li><li><b>Historial de operaciones:</b> fechas, compras y ventas, cantidades, cotizaciones e importes de la cartera seleccionada.</li><li><b>Resumen de la cartera de inversiones:</b> todas las carteras y su participación en el valor de mercado total.</li><li><b>Rendimiento y rentabilidad:</b> valor al coste, valor actual, resultado total y ROI por cartera. La tabla no está necesariamente ordenada por rentabilidad.</li><li><b>Historial del Oráculo:</b> tabla de cotizaciones recientes, variaciones absolutas y porcentuales y origen indicado por el sistema.</li></ol>
+
+    <h3 style="color: #2563eb;">6. Coste medio y resultados</h3>
+    <p><b>Coste medio ponderado (CMP):</b> valor al coste dividido por el saldo de FTC. La compra aumenta el saldo y el valor al coste, recalculando el CMP. La venta reduce el saldo y el valor al coste proporcionalmente, manteniendo el CMP, sujeto a redondeos.</p><ul><li><b>Resultado realizado:</b> suma de los resultados de las ventas. Cada venta calcula cantidad vendida × (cotización de venta − coste medio).</li><li><b>Resultado no realizado:</b> valor de mercado de la posición restante menos su valor al coste.</li><li><b>Resultado total:</b> realizado más no realizado.</li><li><b>ROI en esta aplicación:</b> resultado total dividido por el valor al coste de la posición restante, multiplicado por 100. Cuando ese valor al coste es cero, el sistema muestra un ROI de cero.</li></ul><p>Los resultados negativos representan pérdidas. Los colores facilitan la lectura, pero compruebe también el signo y el valor mostrados.</p>
+
+    <h3 style="color: #2563eb;">7. Idioma y almacenamiento</h3>
+    <p>Use el selector Idioma de la barra superior para elegir portugués, inglés o español sin reiniciar. Cierre los diálogos modales, como este manual, para acceder al selector; después vuelva a abrir la ayuda. El idioma modifica la presentación de textos, números y fechas, sin representar una conversión monetaria.</p><p>El selector de base de datos alterna entre Memoria y MariaDB. El cambio selecciona otra fuente de datos; no transfiere automáticamente los registros entre modos.</p><ul><li><b>Memoria:</b> destinada a pruebas y simulaciones. Los datos no se guardan de forma permanente y se pierden al cerrar el programa.</li><li><b>MariaDB:</b> los registros se guardan en la base de datos configurada. Si falla la conexión, compruebe que el servidor está disponible y pida al responsable de la instalación que revise la dirección, la base de datos, las credenciales y los permisos. No comparta contraseñas en capturas de pantalla.</li></ul>
+
+    <h3 style="color: #2563eb;">8. Cierre</h3>
+    <p>Para cerrar solo este manual, use Cerrar manual o la X de esta ventana. Para salir del programa, use la X de la ventana principal. Complete las operaciones antes de salir: los campos sin confirmar no son registros guardados y los datos del modo memoria no estarán disponibles en una nueva ejecución.</p>
+</body>
+</html>

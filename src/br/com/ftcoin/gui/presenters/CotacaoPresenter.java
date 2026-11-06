@@ -1,15 +1,12 @@
 package br.com.ftcoin.gui.presenters;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.TarefaEmSegundoPlano;
 import br.com.ftcoin.gui.common.MensagensGui;
-import br.com.ftcoin.gui.dto.CotacaoDTO;
-import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.views.contracts.ICotacaoView;
 import br.com.ftcoin.models.FTCoinException;
@@ -24,13 +21,16 @@ import br.com.ftcoin.models.FTCoinException;
  * de preços sem bloqueio da interface gráfica ({@code EDT}), enviando dados e telemetria à visão.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
 public class CotacaoPresenter {
 
     private static final Logger LOG = Logger.getLogger(CotacaoPresenter.class.getName());
+
+    /** Quantos dias para trás o histórico de oscilações mostra. */
+    private static final int DIAS_HISTORICO = 10;
 
     /**
      * Interface de contrato para atualização dos componentes visuais de cotação.
@@ -42,13 +42,17 @@ public class CotacaoPresenter {
      */
     private final CotacaoCacheService cotacaoService;
 
+    private final ContextoAplicacao contexto;
+
     /**
      * Constrói o apresentador de cotações associando a visão e o serviço especializado.
      *
      * @param view           Visão que implementa o contrato {@link ICotacaoView}
      * @param cotacaoService Serviço assíncrono de cotações e cache
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public CotacaoPresenter(ICotacaoView view, CotacaoCacheService cotacaoService) {
+    public CotacaoPresenter(ICotacaoView view, CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
         this.view = view;
         this.cotacaoService = cotacaoService;
     }
@@ -75,14 +79,14 @@ public class CotacaoPresenter {
         cotacaoService.buscarCotacaoAssincrona(
                 data,
                 forcarOraculo,
-                dto -> {
+                (cotacao, origem, tempoRespostaMs) -> {
                     view.exibirCarregando(false);
-                    view.exibirCotacao(dto);
+                    view.exibirCotacao(cotacao, origem, tempoRespostaMs);
                     carregarHistorico();
                 },
                 erro -> {
                     view.exibirCarregando(false);
-                    MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+                    MensagensGui mensagens = contexto.getMensagens();
                     // Erros inesperados já foram registrados com stack trace pelo serviço, na thread de fundo
                     if (erro instanceof FTCoinException fe) {
                         RegistroDeFalhas.registrar(LOG, "consultar a cotação", fe);
@@ -98,7 +102,7 @@ public class CotacaoPresenter {
     public void limparCache() {
         LOG.fine("Usuário pediu: limpar o cache de cotações");
         cotacaoService.limparCache();
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         view.exibirMensagemSucesso(mensagens.get("gui.cotacao.sucessoCache"));
         consultarCotacao(LocalDate.now(), true);
     }
@@ -109,11 +113,11 @@ public class CotacaoPresenter {
     public void carregarHistorico() {
         // Consulta o oráculo fora da thread do Swing para a tela não travar
         TarefaEmSegundoPlano.executar(
-                () -> cotacaoService.obterHistoricoRecente(10),
+                () -> cotacaoService.obterHistoricoRecente(DIAS_HISTORICO),
                 view::exibirHistoricoOscilacoes,
                 e -> {
                     RegistroDeFalhas.registrar(LOG, "carregar histórico de cotações", e);
-                    view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+                    view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
                 });
     }
 }

@@ -6,7 +6,6 @@ import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
-import br.com.ftcoin.gui.common.AppContext;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.OrigemCotacao;
@@ -23,18 +22,20 @@ import br.com.ftcoin.models.TipoOperacao;
  * alternância de linhas em estilo zebrado e destaque cromático (verde para lucros e vermelho para prejuízos).
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
 public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * <p>
      * Modos de exibição suportados pelo renderizador para células de dados.
      * </p>
      *
-     * @author Equipe FTCoin
+     * @author Grupo B.05
      * @version 1.0.0
      * @since 2026-10-20
      */
@@ -76,37 +77,23 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
      */
     private final ModoRenderizacao modo;
 
-    /**
-     * Utilitário de formatação de valores respeitando o {@code Locale} ativo.
-     */
-    private final GuiFormatador formatador;
+    // Transiente: o renderizador é serializável, mas as mensagens não precisam ser
+    private final transient MensagensGui mensagens;
 
     /**
-     * Constrói o renderizador de células especificando o modo e o formatador.
+     * Constrói o renderizador de células especificando o modo e as mensagens do idioma ativo.
      *
-     * @param modo       Modo de exibição pretendido; se {@code null}, adota {@code MOEDA}
-     * @param formatador Utilitário gráfico de formatação
+     * @param modo      Modo de exibição pretendido; se {@code null}, adota {@code MOEDA}
+     * @param mensagens Textos e formatador do idioma ativo
      */
-    public CurrencyTableCellRenderer(ModoRenderizacao modo, GuiFormatador formatador) {
+    public CurrencyTableCellRenderer(ModoRenderizacao modo, MensagensGui mensagens) {
         this.modo = modo != null ? modo : ModoRenderizacao.MOEDA;
-        this.formatador = formatador;
+        this.mensagens = mensagens;
     }
 
-    /**
-     * Obtém o utilitário de formatação ativo, priorizando o formatador sincronizado
-     * com o contexto global {@link AppContext} para suporte imediato à alternância
-     * dinâmica de idioma em tempo de execução.
-     *
-     * @return O {@link GuiFormatador} configurado para a localidade corrente
-     */
+    // Consultado a cada célula, para acompanhar a troca de idioma em tempo de execução
     private GuiFormatador obterFormatadorAtivo() {
-        if (AppContext.getInstancia() != null && AppContext.getInstancia().getMensagens() != null) {
-            GuiFormatador formatadorContexto = AppContext.getInstancia().getMensagens().getFormatador();
-            if (formatadorContexto != null) {
-                return formatadorContexto;
-            }
-        }
-        return this.formatador;
+        return mensagens.getFormatador();
     }
 
     /**
@@ -197,7 +184,7 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
             case ORIGEM_BADGE -> {
                 rotulo.setHorizontalAlignment(SwingConstants.CENTER);
                 if (value instanceof OrigemCotacao origem) {
-                    rotulo.setText(origem.getIcone() + " " + origem.getDescricaoLocalizada());
+                    rotulo.setText(origem.getIcone() + " " + origem.getDescricaoLocalizada(mensagens));
                     if (!isSelected) {
                         rotulo.setForeground(origem.getCorTexto());
                     }
@@ -208,15 +195,14 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
             case TIPO_OPERACAO -> {
                 rotulo.setHorizontalAlignment(SwingConstants.CENTER);
                 if (value instanceof TipoOperacao tipo) {
-                    MensagensGui msg = AppContext.getInstancia().getMensagens();
                     if (tipo == TipoOperacao.COMPRA) {
-                        String textoCompra = (msg != null) ? msg.get("operacao.compra").toUpperCase() : "COMPRA";
+                        String textoCompra = mensagens.get("operacao.compra").toUpperCase();
                         rotulo.setText("🛒 " + textoCompra);
                         if (!isSelected) {
                             rotulo.setForeground(TemaCores.POSITIVO_LUCRO);
                         }
                     } else {
-                        String textoVenda = (msg != null) ? msg.get("operacao.venda").toUpperCase() : "VENDA";
+                        String textoVenda = mensagens.get("operacao.venda").toUpperCase();
                         rotulo.setText("💰 " + textoVenda);
                         if (!isSelected) {
                             rotulo.setForeground(TemaCores.PRIMARIA);

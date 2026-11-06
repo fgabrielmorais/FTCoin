@@ -6,14 +6,15 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-// Decide qual oráculo usar a partir de oracle.provider (application.properties):
+// Decide qual oráculo usar a partir de oracle.provider, em oracle.properties:
 //   simulado - oráculo da fábrica de persistência (padrão; funciona sem rede)
-//   api      - servidor de cotações, com endereço e credenciais em oracle.properties
+//   api      - servidor de cotações, com endereço e credenciais no mesmo arquivo
+// Sem oracle.properties (ele não é versionado), o oráculo é o simulado.
 final class FabricaOraculo {
 
-	private static final String ARQUIVO_CONFIGURACAO = "application.properties";
-	private static final String ARQUIVO_API = "oracle.properties";
+	private static final String ARQUIVO_CONFIGURACAO = "oracle.properties";
 	private static final String CHAVE_PROVEDOR = "oracle.provider";
+	private static final String PROVEDOR_PADRAO = "simulado";
 	private static final int TIMEOUT_PADRAO_MS = 5000;
 
 	private static final Logger LOG = Logger.getLogger(FabricaOraculo.class.getName());
@@ -21,18 +22,18 @@ final class FabricaOraculo {
 	private FabricaOraculo() {}
 
 	static OraculoDAO criar(OraculoDAO simulado) {
-		String provedor = ler(ARQUIVO_CONFIGURACAO, true).getProperty(CHAVE_PROVEDOR, "simulado").trim();
+		Properties configuracao = lerConfiguracao();
+		String provedor = configuracao.getProperty(CHAVE_PROVEDOR, PROVEDOR_PADRAO).trim();
 		LOG.log(Level.INFO, "Oráculo definido em {0}: {1}", new Object[] { ARQUIVO_CONFIGURACAO, provedor });
 
 		return switch (provedor.toLowerCase()) {
 			case "simulado" -> simulado;
-			case "api" -> criarApi();
+			case "api" -> criarApi(configuracao);
 			default -> throw new PersistenciaException("erro.configuracao.oraculoInvalido", provedor, "simulado, api");
 		};
 	}
 
-	private static OraculoDAO criarApi() {
-		Properties p = ler(ARQUIVO_API, true);
+	private static OraculoDAO criarApi(Properties p) {
 		try {
 			return new OraculoDAOApi(
 					obrigatoria(p, "oracle.host"),
@@ -48,25 +49,24 @@ final class FabricaOraculo {
 	private static String obrigatoria(Properties p, String chave) {
 		String valor = p.getProperty(chave);
 		if (valor == null || valor.isBlank()) {
-			LOG.log(Level.SEVERE, "Chave {0} ausente em {1}", new Object[] { chave, ARQUIVO_API });
-			throw new PersistenciaException("erro.configuracao.chaveAusente", chave, ARQUIVO_API);
+			LOG.log(Level.SEVERE, "Chave {0} ausente em {1}", new Object[] { chave, ARQUIVO_CONFIGURACAO });
+			throw new PersistenciaException("erro.configuracao.chaveAusente", chave, ARQUIVO_CONFIGURACAO);
 		}
 		return valor;
 	}
 
-	private static Properties ler(String arquivo, boolean obrigatorio) {
+	// Arquivo ausente não é erro: devolve propriedades vazias e o oráculo fica no padrão
+	private static Properties lerConfiguracao() {
 		Properties propriedades = new Properties();
-		try (InputStream input = FabricaOraculo.class.getClassLoader().getResourceAsStream(arquivo)) {
+		try (InputStream input = FabricaOraculo.class.getClassLoader().getResourceAsStream(ARQUIVO_CONFIGURACAO)) {
 			if (input == null) {
-				if (obrigatorio) {
-					LOG.log(Level.SEVERE, "Arquivo {0} não encontrado no classpath", arquivo);
-					throw new PersistenciaException("erro.configuracao.arquivoAusente", arquivo);
-				}
+				LOG.log(Level.INFO, "{0} não encontrado; usando o oráculo {1}",
+						new Object[] { ARQUIVO_CONFIGURACAO, PROVEDOR_PADRAO });
 				return propriedades;
 			}
 			propriedades.load(input);
 		} catch (IOException e) {
-			LOG.log(Level.SEVERE, "Falha ao ler " + arquivo, e);
+			LOG.log(Level.SEVERE, "Falha ao ler " + ARQUIVO_CONFIGURACAO, e);
 			throw new PersistenciaException("erro.configuracao.leitura", e);
 		}
 		return propriedades;

@@ -1,9 +1,14 @@
 package br.com.ftcoin.gui.views.contracts;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
-import br.com.ftcoin.gui.dto.MovimentacaoDTO;
+import java.util.Map;
+
+import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.models.Movimentacao;
+import br.com.ftcoin.models.Posicao;
+import br.com.ftcoin.models.TipoOperacao;
 
 /**
  * <p>
@@ -15,41 +20,46 @@ import br.com.ftcoin.gui.dto.MovimentacaoDTO;
  * histórico de ordens executadas e limpeza de formulários.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
 public interface IMovimentacaoView {
 
     /**
-     * Atualiza as caixas de seleção de carteiras disponíveis para operações de compra e venda.
+     * Atualiza as caixas de seleção de carteiras dos formulários de compra e venda.
      *
-     * @param carteiras Lista de carteiras ativas para preenchimento dos componentes
+     * @param posicoes posição de cada carteira; o saldo aparece no formulário de venda
      */
-    void exibirCarteirasDisponiveis(List<CarteiraDTO> carteiras);
+    void exibirCarteirasDisponiveis(Map<Carteira, Posicao> posicoes);
 
     /**
-     * Renderiza o histórico de transações na tabela da tela de movimentações.
+     * Exibe as movimentações mais recentes de todas as carteiras.
      *
-     * @param movimentacoes Lista contendo as movimentações mais recentes em formato {@link MovimentacaoDTO}
+     * @param movimentacoes movimentações da mais recente para a mais antiga
+     * @param carteiras     carteiras indexadas pelo identificador, para mostrar o titular de cada operação
+     * @param cotacoes      cotação de cada data das movimentações, usada no valor de cada operação
      */
-    void exibirHistoricoMovimentacoes(List<MovimentacaoDTO> movimentacoes);
+    void exibirHistoricoMovimentacoes(List<Movimentacao> movimentacoes, Map<Integer, Carteira> carteiras,
+            Map<LocalDate, BigDecimal> cotacoes);
 
     /**
-     * Atualiza os rótulos de prévia financeira com a cotação estimada e o montante total calculado.
+     * Atualiza a prévia financeira de um dos formulários com a cotação estimada e o montante total.
      *
+     * @param tipo       operação cujo formulário deve ser atualizado
      * @param cotacao    Valor unitário da cotação aplicada
      * @param valorTotal Valor financeiro total resultante do produto entre quantidade e cotação
      */
-    void atualizarEstimativas(BigDecimal cotacao, BigDecimal valorTotal);
+    void atualizarEstimativas(TipoOperacao tipo, BigDecimal cotacao, BigDecimal valorTotal);
 
     /**
-     * Mostra nos rótulos de prévia que não há cotação disponível, com o motivo
+     * Mostra nos rótulos de prévia da operação que não há cotação disponível, com o motivo
      * (data sem cotação ou falha ao consultar o oráculo).
      *
+     * @param tipo   Operação cuja prévia é atualizada ({@code COMPRA} ou {@code VENDA})
      * @param motivo Texto já traduzido explicando por que não há estimativa
      */
-    void informarCotacaoIndisponivel(String motivo);
+    void informarCotacaoIndisponivel(TipoOperacao tipo, String motivo);
 
     /**
      * Exibe um diálogo modal com mensagem de confirmação de compra ou venda registrada.

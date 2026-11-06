@@ -1,34 +1,31 @@
 package br.com.ftcoin.daos;
 
+/**
+ * Mecanismos de persistência disponíveis e o nome curto de cada um, usado nos logs.
+ *
+ * @author Grupo B.05
+ * @version 1.0.0
+ */
 public enum TipoPersistencia {
+
+	/** Dados em memória, perdidos ao encerrar. */
 	MEMORIA("memory"),
+
+	/** Dados no banco relacional MariaDB. */
 	MARIADB("mariadb");
 
-	private final String valorConfiguracao;
+	private final String nome;
 
-	TipoPersistencia(String valorConfiguracao) {
-		this.valorConfiguracao = valorConfiguracao;
+	TipoPersistencia(String nome) {
+		this.nome = nome;
 	}
 
-	public String getValorConfiguracao() {
-		return valorConfiguracao;
-	}
-
-	public static TipoPersistencia fromString(String entrada) {
-		if (entrada == null || entrada.trim().isEmpty()) {
-			throw new PersistenciaException("erro.configuracao.persistenciaAusente", valoresAceitos());
-		}
-
-		for (TipoPersistencia tipo : values()) {
-			if (tipo.valorConfiguracao.equalsIgnoreCase(entrada.trim())) {
-				return tipo;
-			}
-		}
-
-		throw new PersistenciaException("erro.configuracao.persistenciaInvalida", entrada, valoresAceitos());
-	}
-	
-	private static String valoresAceitos() {
-		return MEMORIA.valorConfiguracao + ", " + MARIADB.valorConfiguracao;
+	/**
+	 * Devolve o nome curto do mecanismo, usado nos logs.
+	 *
+	 * @return o nome, como {@code memory} ou {@code mariadb}
+	 */
+	public String getNome() {
+		return nome;
 	}
 }

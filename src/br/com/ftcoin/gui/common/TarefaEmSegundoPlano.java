@@ -8,7 +8,7 @@ import javax.swing.SwingUtilities;
  * Roda um trabalho demorado (ex.: consulta ao oráculo pela rede) numa virtual thread
  * e entrega o resultado, ou o erro, na thread do Swing (EDT). Assim a tela não trava.
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-11-05
  */

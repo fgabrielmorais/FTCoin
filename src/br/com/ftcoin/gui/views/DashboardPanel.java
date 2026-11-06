@@ -3,6 +3,10 @@ package br.com.ftcoin.gui.views;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -12,19 +16,20 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.ModoNavegacao;
 import br.com.ftcoin.gui.common.TemaCores;
-import br.com.ftcoin.gui.dto.MovimentacaoDTO;
-import br.com.ftcoin.gui.dto.ResumoDashboardDTO;
+import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.presenters.DashboardPresenter;
-import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.components.ModernCard;
 import br.com.ftcoin.gui.views.contracts.IDashboardView;
+import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.models.Movimentacao;
+import br.com.ftcoin.models.Posicao;
 
 /**
  * <p>
@@ -36,21 +41,23 @@ import br.com.ftcoin.gui.views.contracts.IDashboardView;
  * atalhos rápidos para execução de ordens e feed das operações registradas recentemente.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
 public class DashboardPanel extends JPanel implements IDashboardView {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Apresentador responsável pelas regras de apresentação do dashboard.
      */
-    private final DashboardPresenter presenter;
+    private final transient DashboardPresenter presenter;
 
     /**
      * Função consumidora para solicitação de transição de abas na janela principal.
      */
-    private final Consumer<String> consumidorNavegacao;
+    private final transient Consumer<String> consumidorNavegacao;
 
     /**
      * Cartão de KPI para exibição do patrimônio financeiro total consolidado.
@@ -117,33 +124,45 @@ public class DashboardPanel extends JPanel implements IDashboardView {
      */
     private final JLabel rotuloFeedTitulo;
 
+    private final transient ContextoAplicacao contexto;
+    private final transient TextosTraduzidos textos;
+
     /**
      * Constrói o painel de dashboard inicializando cartões, tabelas e botões de atalho.
      *
-     * @param relatoriosService   Serviço analítico de dados e relatórios
      * @param consumidorNavegacao Ação consumidora para troca de telas na janela principal
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public DashboardPanel(RelatoriosService relatoriosService, Consumer<String> consumidorNavegacao) {
-        this.presenter = new DashboardPresenter(this, relatoriosService);
+    public DashboardPanel(Consumer<String> consumidorNavegacao, ContextoAplicacao contexto) {
+        this.contexto = contexto;
+        this.presenter = new DashboardPresenter(this, contexto);
         this.consumidorNavegacao = consumidorNavegacao;
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
+        this.textos = new TextosTraduzidos(mensagens);
 
         setLayout(new BorderLayout(15, 15));
         setBackground(TemaCores.FUNDO_APP);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Inicialização dos cartões com textos internacionalizados
-        cardPatrimonioTotal = new ModernCard(mensagens.get("gui.dash.card.patrimonio"), "R$ 0,00", TemaCores.PRIMARIA);
-        cardSaldoConsolidado = new ModernCard(mensagens.get("gui.dash.card.saldoConsolidado"), "0.000 FTC", TemaCores.TEXTO_PRINCIPAL);
-        cardCotacaoHoje = new ModernCard(mensagens.get("gui.dash.card.cotacaoHoje"), "R$ 0,00", TemaCores.SECUNDARIA);
-        cardCarteirasAtivas = new ModernCard(mensagens.get("gui.dash.card.carteirasAtivas"), "0", TemaCores.ACCENT);
-        cardResultadoTotal = new ModernCard(mensagens.get("gui.dash.card.resultadoTotal"), "R$ 0,00", TemaCores.POSITIVO_LUCRO);
+        GuiFormatador formatadorInicial = mensagens.getFormatador();
+        cardPatrimonioTotal = new ModernCard(null, formatadorInicial.moeda(BigDecimal.ZERO), TemaCores.PRIMARIA);
+        textos.vincular(cardPatrimonioTotal::setTitulo, "gui.dash.card.patrimonio");
+        cardSaldoConsolidado = new ModernCard(null, formatadorInicial.quantidade(BigDecimal.ZERO), TemaCores.TEXTO_PRINCIPAL);
+        textos.vincular(cardSaldoConsolidado::setTitulo, "gui.dash.card.saldoConsolidado");
+        cardCotacaoHoje = new ModernCard(null, formatadorInicial.moeda(BigDecimal.ZERO), TemaCores.SECUNDARIA);
+        textos.vincular(cardCotacaoHoje::setTitulo, "gui.dash.card.cotacaoHoje");
+        cardCarteirasAtivas = new ModernCard(null, "0", TemaCores.ACCENT);
+        textos.vincular(cardCarteirasAtivas::setTitulo, "gui.dash.card.carteirasAtivas");
+        cardResultadoTotal = new ModernCard(null, formatadorInicial.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
+        textos.vincular(cardResultadoTotal::setTitulo, "gui.dash.card.resultadoTotal");
 
         // Topo: Título da tela e Ações Rápidas
         JPanel painelTopo = new JPanel(new BorderLayout());
         painelTopo.setOpaque(false);
 
-        rotuloTitulo = new JLabel(mensagens.get("gui.dash.titulo"));
+        rotuloTitulo = new JLabel();
+        textos.vincular(rotuloTitulo::setText, "gui.dash.titulo");
         rotuloTitulo.setFont(TemaCores.FONTE_TITULO_GRANDE);
         rotuloTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         painelTopo.add(rotuloTitulo, BorderLayout.WEST);
@@ -151,10 +170,14 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         JPanel painelAcoesRapidas = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         painelAcoesRapidas.setOpaque(false);
 
-        botaoNovaCarteira = new ModernButton(mensagens.get("gui.dash.btn.novaCarteira"), ModernButton.Variante.SUCESSO);
-        botaoComprarMoedas = new ModernButton(mensagens.get("gui.dash.btn.comprarFTC"), ModernButton.Variante.PRIMARIA);
-        botaoVenderMoedas = new ModernButton(mensagens.get("gui.dash.btn.venderFTC"), ModernButton.Variante.NEUTRO);
-        botaoAbrirRelatorios = new ModernButton(mensagens.get("gui.dash.btn.relatorios"), ModernButton.Variante.NEUTRO);
+        botaoNovaCarteira = new ModernButton("", ModernButton.Variante.SUCESSO);
+        textos.vincular(botaoNovaCarteira::setText, "gui.dash.btn.novaCarteira");
+        botaoComprarMoedas = new ModernButton("", ModernButton.Variante.PRIMARIA);
+        textos.vincular(botaoComprarMoedas::setText, "gui.dash.btn.comprarFTC");
+        botaoVenderMoedas = new ModernButton("", ModernButton.Variante.NEUTRO);
+        textos.vincular(botaoVenderMoedas::setText, "gui.dash.btn.venderFTC");
+        botaoAbrirRelatorios = new ModernButton("", ModernButton.Variante.NEUTRO);
+        textos.vincular(botaoAbrirRelatorios::setText, "gui.dash.btn.relatorios");
 
         botaoNovaCarteira.addActionListener(e -> navegarPara(ModoNavegacao.CARTEIRAS.getIdentificadorCard()));
         botaoComprarMoedas.addActionListener(e -> navegarPara(ModoNavegacao.MOVIMENTACOES.getIdentificadorCard()));
@@ -187,21 +210,22 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         JPanel painelFeedRecente = new JPanel(new BorderLayout(8, 8));
         painelFeedRecente.setOpaque(false);
 
-        rotuloFeedTitulo = new JLabel(mensagens.get("gui.dash.feed.titulo"));
+        rotuloFeedTitulo = new JLabel();
+        textos.vincular(rotuloFeedTitulo::setText, "gui.dash.feed.titulo");
         rotuloFeedTitulo.setFont(TemaCores.FONTE_TITULO_MEDIO);
         rotuloFeedTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         painelFeedRecente.add(rotuloFeedTitulo, BorderLayout.NORTH);
 
-        String[] colunasFeed = {
-                mensagens.get("gui.dash.feed.col.data"),
-                mensagens.get("gui.dash.feed.col.carteira"),
-                mensagens.get("gui.dash.feed.col.tipo"),
-                mensagens.get("gui.dash.feed.col.quantidade"),
-                mensagens.get("gui.dash.feed.col.cotacao"),
-                mensagens.get("gui.dash.feed.col.total")
+        String[] chavesColunas = {
+                "gui.dash.feed.col.data",
+                "gui.dash.feed.col.carteira",
+                "gui.dash.feed.col.tipo",
+                "gui.dash.feed.col.quantidade",
+                "gui.dash.feed.col.cotacao",
+                "gui.dash.feed.col.total"
         };
 
-        modeloTabelaFeed = new DefaultTableModel(colunasFeed, 0) {
+        modeloTabelaFeed = new DefaultTableModel(chavesColunas, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
                 return false;
@@ -209,20 +233,20 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         };
 
         tabelaFeedOperacoes = new JTable(modeloTabelaFeed);
+        textos.vincularColunas(tabelaFeedOperacoes, chavesColunas);
         tabelaFeedOperacoes.setRowHeight(32);
         tabelaFeedOperacoes.setFont(TemaCores.FONTE_PADRAO);
         tabelaFeedOperacoes.getTableHeader().setFont(TemaCores.FONTE_LABEL);
         tabelaFeedOperacoes.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
 
-        GuiFormatador formatador = mensagens.getFormatador();
         tabelaFeedOperacoes.getColumnModel().getColumn(2).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, contexto.getMensagens()));
         tabelaFeedOperacoes.getColumnModel().getColumn(3).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, contexto.getMensagens()));
         tabelaFeedOperacoes.getColumnModel().getColumn(4).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabelaFeedOperacoes.getColumnModel().getColumn(5).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
 
         JScrollPane painelRolagemFeed = new JScrollPane(tabelaFeedOperacoes);
         painelRolagemFeed.setBorder(BorderFactory.createLineBorder(TemaCores.BORDA_SUAVE));
@@ -251,36 +275,58 @@ public class DashboardPanel extends JPanel implements IDashboardView {
     }
 
     /**
-     * Atualiza os componentes gráficos do dashboard com o resumo analítico recebido.
+     * Atualiza os cartões de indicadores do portfólio.
      *
-     * @param resumo Objeto imutável contendo os indicadores de desempenho e a lista de transações recentes
+     * @param portfolio           soma das posições de todas as carteiras
+     * @param quantidadeCarteiras número de carteiras cadastradas
+     * @param cotacaoAtual        cotação de hoje
      */
     @Override
-    public void exibirResumo(ResumoDashboardDTO resumo) {
-        GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
+    public void exibirIndicadores(Posicao portfolio, int quantidadeCarteiras, BigDecimal cotacaoAtual) {
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
+        BigDecimal ganhoTotal = portfolio.calcularGanhoTotal(cotacaoAtual);
 
-        cardPatrimonioTotal.setValor(formatador.moeda(resumo.patrimonioTotal()), TemaCores.PRIMARIA);
-        cardSaldoConsolidado.setValor(formatador.quantidade(resumo.saldoTotalFTC()), TemaCores.TEXTO_PRINCIPAL);
-        cardCotacaoHoje.setValor(formatador.moeda(resumo.cotacaoAtual()), TemaCores.SECUNDARIA);
-        cardCarteirasAtivas.setValor(String.valueOf(resumo.quantidadeCarteiras()), TemaCores.ACCENT);
+        cardPatrimonioTotal.setValor(formatador.moeda(portfolio.calcularValorDeMercado(cotacaoAtual)), TemaCores.PRIMARIA);
+        cardSaldoConsolidado.setValor(formatador.quantidade(portfolio.getSaldo()), TemaCores.TEXTO_PRINCIPAL);
+        cardCotacaoHoje.setValor(formatador.moeda(cotacaoAtual), TemaCores.SECUNDARIA);
+        cardCarteirasAtivas.setValor(String.valueOf(quantidadeCarteiras), TemaCores.ACCENT);
+        // Lucro em verde e prejuízo em vermelho
+        cardResultadoTotal.setValor(formatador.moeda(ganhoTotal),
+                ganhoTotal.signum() >= 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO);
+    }
 
-        // Aplica destaque de lucro em verde e prejuízo em vermelho
-        cardResultadoTotal.setValor(
-                formatador.moeda(resumo.ganhoTotalConsolidado()),
-                resumo.ganhoTotalConsolidado().signum() >= 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO
-        );
-
+    /**
+     * Preenche a tabela com as movimentações mais recentes.
+     *
+     * @param movimentacoes movimentações da mais recente para a mais antiga
+     * @param carteiras     carteiras indexadas pelo identificador
+     * @param cotacoes      cotação de cada data das movimentações
+     */
+    @Override
+    public void exibirUltimasMovimentacoes(List<Movimentacao> movimentacoes, Map<Integer, Carteira> carteiras,
+            Map<LocalDate, BigDecimal> cotacoes) {
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
         modeloTabelaFeed.setRowCount(0);
-        for (MovimentacaoDTO movimentacao : resumo.ultimasMovimentacoes()) {
-            modeloTabelaFeed.addRow(new Object[]{
-                    formatador.data(movimentacao.dataOperacao()),
-                    "#" + movimentacao.idCarteira() + " " + movimentacao.nomeTitular(),
-                    movimentacao.tipoOperacao(),
-                    movimentacao.quantidade(),
-                    movimentacao.cotacaoAplicada(),
-                    movimentacao.valorTotalOperacao()
-            });
+        for (Movimentacao movimentacao : movimentacoes) {
+            modeloTabelaFeed.addRow(linhaMovimentacao(movimentacao, carteiras, cotacoes, formatador));
         }
+    }
+
+    // Linha das tabelas de movimentações (aqui e na tela de movimentações): data, carteira, tipo, quantidade,
+    // cotação e valor da operação
+    static Object[] linhaMovimentacao(Movimentacao movimentacao, Map<Integer, Carteira> carteiras,
+            Map<LocalDate, BigDecimal> cotacoes, GuiFormatador formatador) {
+        Carteira carteira = carteiras.get(movimentacao.getIdCarteira());
+        String titular = (carteira != null) ? carteira.getNomeTitular() : "";
+        BigDecimal cotacao = cotacoes.get(movimentacao.getDataOperacao());
+        return new Object[]{
+                formatador.data(movimentacao.getDataOperacao()),
+                "#" + movimentacao.getIdCarteira() + " " + titular,
+                movimentacao.getTipoOperacao(),
+                movimentacao.getQuantidadeMovimentada(),
+                cotacao,
+                movimentacao.calcularValor(cotacao)
+        };
     }
 
     /**
@@ -290,7 +336,7 @@ public class DashboardPanel extends JPanel implements IDashboardView {
      */
     @Override
     public void exibirMensagemErro(String mensagem) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         JOptionPane.showMessageDialog(this, mensagem, mensagens.get("gui.dash.erro.titulo"), JOptionPane.ERROR_MESSAGE);
     }
 }

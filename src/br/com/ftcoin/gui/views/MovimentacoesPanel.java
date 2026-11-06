@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -22,18 +23,19 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
 
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
-import br.com.ftcoin.gui.dto.MovimentacaoDTO;
+import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.presenters.MovimentacaoPresenter;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
-import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.contracts.IMovimentacaoView;
+import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.models.Movimentacao;
+import br.com.ftcoin.models.Posicao;
 import br.com.ftcoin.models.TipoOperacao;
 
 /**
@@ -46,16 +48,18 @@ import br.com.ftcoin.models.TipoOperacao;
  * prévio de estimativa financeira em tempo real e visualização tabular do histórico geral de transações.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
 public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
+    private static final long serialVersionUID = 1L;
+
     /**
      * Apresentador responsável pelas regras de apresentação do módulo.
      */
-    private final MovimentacaoPresenter presenter;
+    private final transient MovimentacaoPresenter presenter;
 
     /**
      * Caixa de seleção de carteiras para ordens de compra.
@@ -130,7 +134,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      * @param id        Identificador numérico da carteira
      * @param descricao Texto formatado para exibição visual
      * @param saldo     Saldo quantitativo de moedas disponível
-     * @author Equipe FTCoin
+     * @author Grupo B.05
      * @version 1.0.0
      * @since 2026-10-20
      */
@@ -147,22 +151,28 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         }
     }
 
+    private final transient ContextoAplicacao contexto;
+    private final transient TextosTraduzidos textos;
+
     /**
      * Constrói o painel de movimentações inicializando formulários e o apresentador.
      *
-     * @param relatoriosService Serviço analítico de relatórios e carteiras
      * @param cotacaoService   Serviço de cotações para estimativas imediatas
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public MovimentacoesPanel(RelatoriosService relatoriosService, CotacaoCacheService cotacaoService) {
-        this.presenter = new MovimentacaoPresenter(this, relatoriosService, cotacaoService);
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+    public MovimentacoesPanel(CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
+        this.presenter = new MovimentacaoPresenter(this, cotacaoService, contexto);
+        MensagensGui mensagens = contexto.getMensagens();
+        this.textos = new TextosTraduzidos(mensagens);
 
         setLayout(new BorderLayout(15, 15));
         setBackground(TemaCores.FUNDO_APP);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Título Superior
-        JLabel rotuloTituloSuperior = new JLabel(mensagens.get("gui.mov.tituloSuperior"));
+        JLabel rotuloTituloSuperior = new JLabel();
+        textos.vincular(rotuloTituloSuperior::setText, "gui.mov.tituloSuperior");
         rotuloTituloSuperior.setFont(TemaCores.FONTE_TITULO_GRANDE);
         rotuloTituloSuperior.setForeground(TemaCores.TEXTO_PRINCIPAL);
         add(rotuloTituloSuperior, BorderLayout.NORTH);
@@ -173,8 +183,10 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         JTabbedPane abasOperacoes = new JTabbedPane();
         abasOperacoes.setFont(TemaCores.FONTE_LABEL);
-        abasOperacoes.addTab(mensagens.get("gui.mov.tab.compra"), criarPainelFormulario(TipoOperacao.COMPRA));
-        abasOperacoes.addTab(mensagens.get("gui.mov.tab.venda"), criarPainelFormulario(TipoOperacao.VENDA));
+        abasOperacoes.addTab("", criarPainelFormulario(TipoOperacao.COMPRA));
+        abasOperacoes.addTab("", criarPainelFormulario(TipoOperacao.VENDA));
+        textos.vincular(titulo -> abasOperacoes.setTitleAt(0, titulo), "gui.mov.tab.compra");
+        textos.vincular(titulo -> abasOperacoes.setTitleAt(1, titulo), "gui.mov.tab.venda");
 
         painelConteudoCentral.add(abasOperacoes, BorderLayout.NORTH);
 
@@ -182,21 +194,22 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         JPanel painelHistorico = new JPanel(new BorderLayout(8, 8));
         painelHistorico.setOpaque(false);
 
-        JLabel rotuloHistoricoTitulo = new JLabel(mensagens.get("gui.mov.historico.titulo"));
+        JLabel rotuloHistoricoTitulo = new JLabel();
+        textos.vincular(rotuloHistoricoTitulo::setText, "gui.mov.historico.titulo");
         rotuloHistoricoTitulo.setFont(TemaCores.FONTE_TITULO_MEDIO);
         rotuloHistoricoTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         painelHistorico.add(rotuloHistoricoTitulo, BorderLayout.NORTH);
 
-        String[] colunas = {
-                mensagens.get("gui.dash.feed.col.data"),
-                mensagens.get("gui.dash.feed.col.carteira"),
-                mensagens.get("gui.dash.feed.col.tipo"),
-                mensagens.get("gui.dash.feed.col.quantidade"),
-                mensagens.get("gui.dash.feed.col.cotacao"),
-                mensagens.get("gui.dash.feed.col.total")
+        String[] chavesColunas = {
+                "gui.dash.feed.col.data",
+                "gui.dash.feed.col.carteira",
+                "gui.dash.feed.col.tipo",
+                "gui.dash.feed.col.quantidade",
+                "gui.dash.feed.col.cotacao",
+                "gui.dash.feed.col.total"
         };
 
-        modeloTabelaHistorico = new DefaultTableModel(colunas, 0) {
+        modeloTabelaHistorico = new DefaultTableModel(chavesColunas, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
                 return false;
@@ -204,20 +217,20 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         };
 
         tabelaHistoricoOperacoes = new JTable(modeloTabelaHistorico);
+        textos.vincularColunas(tabelaHistoricoOperacoes, chavesColunas);
         tabelaHistoricoOperacoes.setRowHeight(32);
         tabelaHistoricoOperacoes.setFont(TemaCores.FONTE_PADRAO);
         tabelaHistoricoOperacoes.getTableHeader().setFont(TemaCores.FONTE_LABEL);
         tabelaHistoricoOperacoes.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
 
-        GuiFormatador formatador = mensagens.getFormatador();
         tabelaHistoricoOperacoes.getColumnModel().getColumn(2).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, contexto.getMensagens()));
         tabelaHistoricoOperacoes.getColumnModel().getColumn(3).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, contexto.getMensagens()));
         tabelaHistoricoOperacoes.getColumnModel().getColumn(4).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
         tabelaHistoricoOperacoes.getColumnModel().getColumn(5).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, formatador));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
 
         JScrollPane painelRolagemHistorico = new JScrollPane(tabelaHistoricoOperacoes);
         painelRolagemHistorico.setBorder(BorderFactory.createLineBorder(TemaCores.BORDA_SUAVE));
@@ -239,7 +252,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     private JPanel criarPainelFormulario(TipoOperacao tipo) {
         boolean ehCompra = (tipo == TipoOperacao.COMPRA);
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
 
         JPanel painelForm = new JPanel(new GridBagLayout());
         painelForm.setBackground(TemaCores.SUPERFICIE_CARD);
@@ -261,7 +274,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         // Linha 0: Seleção de Carteira
         restricoes.gridx = 0; restricoes.gridy = 0;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.carteiraDestinoOrigem")), restricoes);
+        painelForm.add(rotulo("gui.mov.label.carteiraDestinoOrigem"), restricoes);
         restricoes.gridx = 1; restricoes.gridy = 0; restricoes.gridwidth = 2;
         painelForm.add(comboCarteira, restricoes);
         restricoes.gridwidth = 1;
@@ -269,7 +282,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         // Se for Venda, exibe saldo disponível para alienação
         if (!ehCompra) {
             restricoes.gridx = 3; restricoes.gridy = 0;
-            painelForm.add(new JLabel(mensagens.get("gui.mov.label.saldoDisponivel")), restricoes);
+            painelForm.add(rotulo("gui.mov.label.saldoDisponivel"), restricoes);
             restricoes.gridx = 4; restricoes.gridy = 0;
             rotuloSaldoDisponivelVenda.setFont(TemaCores.FONTE_LABEL);
             rotuloSaldoDisponivelVenda.setForeground(TemaCores.POSITIVO_LUCRO);
@@ -278,33 +291,33 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         // Linha 1: Data e Quantidade
         restricoes.gridx = 0; restricoes.gridy = 1;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.dataOperacao")), restricoes);
+        painelForm.add(rotulo("gui.mov.label.dataOperacao"), restricoes);
         restricoes.gridx = 1; restricoes.gridy = 1;
         painelForm.add(campoData, restricoes);
 
         restricoes.gridx = 2; restricoes.gridy = 1;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.quantidadeFTC")), restricoes);
+        painelForm.add(rotulo("gui.mov.label.quantidadeFTC"), restricoes);
         restricoes.gridx = 3; restricoes.gridy = 1;
         painelForm.add(campoQuantidade, restricoes);
 
         // Linha 2: Cotação e Total Estimado
         restricoes.gridx = 0; restricoes.gridy = 2;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.cotacaoAplicada")), restricoes);
+        painelForm.add(rotulo("gui.mov.label.cotacaoAplicada"), restricoes);
         restricoes.gridx = 1; restricoes.gridy = 2;
         painelForm.add(rotuloCotacao, restricoes);
 
         restricoes.gridx = 2; restricoes.gridy = 2;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.totalEstimado")), restricoes);
+        painelForm.add(rotulo("gui.mov.label.totalEstimado"), restricoes);
         restricoes.gridx = 3; restricoes.gridy = 2;
         painelForm.add(rotuloTotal, restricoes);
 
         // Linha 3: Botão de Confirmação da Ordem
         restricoes.gridx = 3; restricoes.gridy = 3;
-        String textoBotao = ehCompra ? mensagens.get("gui.mov.btn.confirmarCompra") : mensagens.get("gui.mov.btn.confirmarVenda");
         ModernButton botaoConfirmar = new ModernButton(
-                textoBotao,
+                "",
                 ehCompra ? ModernButton.Variante.SUCESSO : ModernButton.Variante.PRIMARIA
         );
+        textos.vincular(botaoConfirmar::setText, ehCompra ? "gui.mov.btn.confirmarCompra" : "gui.mov.btn.confirmarVenda");
         botaoConfirmar.setPreferredSize(new Dimension(230, 38));
         botaoConfirmar.addActionListener(e -> {
             ItemCarteiraCombo item = (ItemCarteiraCombo) comboCarteira.getSelectedItem();
@@ -327,6 +340,13 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         return painelForm;
     }
 
+    // Rótulo de formulário cujo texto acompanha o idioma ativo
+    private JLabel rotulo(String chave) {
+        JLabel rotulo = new JLabel();
+        textos.vincular(rotulo::setText, chave);
+        return rotulo;
+    }
+
     /**
      * Configura ouvintes de alteração nos campos de texto para recálculo automático de totais.
      */
@@ -338,10 +358,11 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
             private void recalcular() {
                 LocalDate data = converterTextoEmData(campoDataCompra.getText());
-                presenter.calcularEstimativas(data, campoQuantidadeCompra.getText());
+                presenter.calcularEstimativas(TipoOperacao.COMPRA, data, campoQuantidadeCompra.getText());
             }
         };
         campoQuantidadeCompra.getDocument().addDocumentListener(ouvinteDocCompra);
+        campoDataCompra.getDocument().addDocumentListener(ouvinteDocCompra);
 
         DocumentListener ouvinteDocVenda = new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { recalcular(); }
@@ -350,15 +371,16 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
             private void recalcular() {
                 LocalDate data = converterTextoEmData(campoDataVenda.getText());
-                presenter.calcularEstimativas(data, campoQuantidadeVenda.getText());
+                presenter.calcularEstimativas(TipoOperacao.VENDA, data, campoQuantidadeVenda.getText());
             }
         };
         campoQuantidadeVenda.getDocument().addDocumentListener(ouvinteDocVenda);
+        campoDataVenda.getDocument().addDocumentListener(ouvinteDocVenda);
 
         comboCarteiraVenda.addActionListener(e -> {
             ItemCarteiraCombo selecionado = (ItemCarteiraCombo) comboCarteiraVenda.getSelectedItem();
             if (selecionado != null) {
-                GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
+                GuiFormatador formatador = contexto.getMensagens().getFormatador();
                 rotuloSaldoDisponivelVenda.setText(formatador.quantidade(selecionado.saldo()));
             }
         });
@@ -383,26 +405,29 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     public void inicializar() {
         presenter.inicializar();
-        presenter.calcularEstimativas(LocalDate.now(), campoQuantidadeCompra.getText());
+        presenter.calcularEstimativas(TipoOperacao.COMPRA,
+                converterTextoEmData(campoDataCompra.getText()), campoQuantidadeCompra.getText());
+        presenter.calcularEstimativas(TipoOperacao.VENDA,
+                converterTextoEmData(campoDataVenda.getText()), campoQuantidadeVenda.getText());
     }
 
     /**
-     * Atualiza as caixas de seleção de carteiras disponíveis para compra e venda.
+     * Atualiza as caixas de seleção de carteiras dos formulários de compra e venda.
      *
-     * @param carteiras Lista contendo as carteiras ativas
+     * @param posicoes posição de cada carteira; o saldo aparece no formulário de venda
      */
     @Override
-    public void exibirCarteirasDisponiveis(List<CarteiraDTO> carteiras) {
+    public void exibirCarteirasDisponiveis(Map<Carteira, Posicao> posicoes) {
         comboCarteiraCompra.removeAllItems();
         comboCarteiraVenda.removeAllItems();
 
-        GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
-        for (CarteiraDTO carteira : carteiras) {
-            String rotulo = "#" + carteira.id() + " - " + carteira.nomeTitular() + " (" + carteira.corretora() + ")";
-            ItemCarteiraCombo item = new ItemCarteiraCombo(carteira.id(), rotulo, carteira.saldo());
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
+        posicoes.forEach((carteira, posicao) -> {
+            String rotulo = "#" + carteira.getId() + " - " + carteira.getNomeTitular() + " (" + carteira.getCorretora() + ")";
+            ItemCarteiraCombo item = new ItemCarteiraCombo(carteira.getId(), rotulo, posicao.getSaldo());
             comboCarteiraCompra.addItem(item);
             comboCarteiraVenda.addItem(item);
-        }
+        });
 
         if (comboCarteiraVenda.getItemCount() > 0) {
             ItemCarteiraCombo primeiro = comboCarteiraVenda.getItemAt(0);
@@ -411,58 +436,55 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     }
 
     /**
-     * Renderiza o histórico de transações na tabela visual da tela.
+     * Preenche a tabela com as movimentações mais recentes de todas as carteiras.
      *
-     * @param movimentacoes Lista com os registros recentes
+     * @param movimentacoes movimentações da mais recente para a mais antiga
+     * @param carteiras     carteiras indexadas pelo identificador
+     * @param cotacoes      cotação de cada data das movimentações
      */
     @Override
-    public void exibirHistoricoMovimentacoes(List<MovimentacaoDTO> movimentacoes) {
+    public void exibirHistoricoMovimentacoes(List<Movimentacao> movimentacoes, Map<Integer, Carteira> carteiras,
+            Map<LocalDate, BigDecimal> cotacoes) {
         modeloTabelaHistorico.setRowCount(0);
-        GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
-        for (MovimentacaoDTO movimentacao : movimentacoes) {
-            modeloTabelaHistorico.addRow(new Object[]{
-                    formatador.data(movimentacao.dataOperacao()),
-                    "#" + movimentacao.idCarteira() + " " + movimentacao.nomeTitular(),
-                    movimentacao.tipoOperacao(),
-                    movimentacao.quantidade(),
-                    movimentacao.cotacaoAplicada(),
-                    movimentacao.valorTotalOperacao()
-            });
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
+        for (Movimentacao movimentacao : movimentacoes) {
+            modeloTabelaHistorico.addRow(DashboardPanel.linhaMovimentacao(movimentacao, carteiras, cotacoes, formatador));
         }
     }
 
     /**
-     * Atualiza os rótulos de prévia financeira com os valores estimados calculados.
+     * Atualiza a prévia financeira do formulário da operação informada.
      *
+     * @param tipo       operação cujo formulário deve ser atualizado
      * @param cotacao    Valor da cotação
      * @param valorTotal Valor financeiro total calculado
      */
     @Override
-    public void atualizarEstimativas(BigDecimal cotacao, BigDecimal valorTotal) {
-        GuiFormatador formatador = AppContext.getInstancia().getMensagens().getFormatador();
-        rotuloCotacaoEstimadaCompra.setText(formatador.moeda(cotacao));
-        rotuloTotalEstimadoCompra.setText(formatador.moeda(valorTotal));
-        rotuloCotacaoEstimadaVenda.setText(formatador.moeda(cotacao));
-        rotuloTotalEstimadoVenda.setText(formatador.moeda(valorTotal));
-        rotuloCotacaoEstimadaCompra.setToolTipText(null);
-        rotuloCotacaoEstimadaVenda.setToolTipText(null);
+    public void atualizarEstimativas(TipoOperacao tipo, BigDecimal cotacao, BigDecimal valorTotal) {
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
+        boolean ehCompra = (tipo == TipoOperacao.COMPRA);
+        JLabel rotuloCotacao = ehCompra ? rotuloCotacaoEstimadaCompra : rotuloCotacaoEstimadaVenda;
+        JLabel rotuloTotal = ehCompra ? rotuloTotalEstimadoCompra : rotuloTotalEstimadoVenda;
+        rotuloCotacao.setText(formatador.moeda(cotacao));
+        rotuloTotal.setText(formatador.moeda(valorTotal));
+        rotuloCotacao.setToolTipText(null);
     }
 
     /**
-     * Mostra que não há cotação para a estimativa, sem abrir diálogo
+     * Mostra que não há cotação para a estimativa da operação, sem abrir diálogo
      * (a prévia é recalculada a cada digitação).
      *
+     * @param tipo   Operação cuja prévia é atualizada ({@code COMPRA} ou {@code VENDA})
      * @param motivo Texto traduzido com o motivo
      */
     @Override
-    public void informarCotacaoIndisponivel(String motivo) {
-        String rotulo = AppContext.getInstancia().getMensagens().get("gui.mov.semCotacao");
-        rotuloCotacaoEstimadaCompra.setText(rotulo);
-        rotuloCotacaoEstimadaVenda.setText(rotulo);
-        rotuloCotacaoEstimadaCompra.setToolTipText(motivo);
-        rotuloCotacaoEstimadaVenda.setToolTipText(motivo);
-        rotuloTotalEstimadoCompra.setText("—");
-        rotuloTotalEstimadoVenda.setText("—");
+    public void informarCotacaoIndisponivel(TipoOperacao tipo, String motivo) {
+        boolean ehCompra = (tipo == TipoOperacao.COMPRA);
+        JLabel rotuloCotacao = ehCompra ? rotuloCotacaoEstimadaCompra : rotuloCotacaoEstimadaVenda;
+        JLabel rotuloTotal = ehCompra ? rotuloTotalEstimadoCompra : rotuloTotalEstimadoVenda;
+        rotuloCotacao.setText(contexto.getMensagens().get("gui.mov.semCotacao"));
+        rotuloCotacao.setToolTipText(motivo);
+        rotuloTotal.setText("—");
     }
 
     /**
@@ -472,7 +494,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     @Override
     public void exibirMensagemSucesso(String mensagem) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         JOptionPane.showMessageDialog(this, mensagem, mensagens.get("gui.comum.sucesso"), JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -483,7 +505,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     @Override
     public void exibirMensagemErro(String mensagem) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         JOptionPane.showMessageDialog(this, mensagem, mensagens.get("gui.mov.avisoErroTitulo"), JOptionPane.WARNING_MESSAGE);
     }
 

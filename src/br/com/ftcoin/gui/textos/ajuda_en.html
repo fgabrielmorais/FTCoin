@@ -1,0 +1,31 @@
+<html>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 15px; color: #1f2937;">
+    <h1 style="color: #1a2b4c; margin-bottom: 5px;">User manual</h1>
+    <p style="color: #6b7280; font-size: 13px;">${sistema} - Version ${versao} | OOP &amp; MVP architecture</p>
+    <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
+
+    <h3 style="color: #2563eb;">1. Overview</h3>
+    <p>FTCoin Studio is an academic application for managing wallets of the FTCoin virtual currency, recording purchases and sales, checking quotes and tracking results. Use the buttons in the top bar to open each screen.</p>
+
+    <h3 style="color: #2563eb;">2. Wallets</h3>
+    <ul><li><b>Create:</b> open Wallets, click New Wallet, enter the holder and broker, and confirm.</li><li><b>Edit:</b> select a wallet in the table and click Edit to change its details.</li><li><b>Delete:</b> select the wallet and confirm deletion. Wallets with recorded transactions cannot be deleted.</li></ul>
+
+    <h3 style="color: #2563eb;">3. Purchases, sales and dates</h3>
+    <p>Open Transactions, choose Purchase or Sale, select the wallet and enter a positive quantity. Use a dot or comma as the decimal separator, without thousands separators: for example, <b>10.5</b> or <b>10,5</b>. Check the details and confirm the transaction. Sales exceeding the available balance are rejected.</p><p>Enter dates as <b>YYYY-MM-DD</b>, for example, <b>2026-11-01</b>, regardless of the selected language. The transaction form rejects future dates.</p><p><b>Current limitation:</b> the entered date may be used for the estimate, but the purchase or sale is recorded using the current computer date and validated using the current quote. To keep the estimate consistent with the record, use the current date. The form cannot record a backdated transaction.</p>
+
+    <h3 style="color: #2563eb;">4. Quotes and cache</h3>
+    <p>On the Quote screen, enter a date as YYYY-MM-DD and click Consult. The screen displays the value, response source, response time and query time.</p><ul><li><b>Oracle:</b> a query to the configured quote source. Memory mode uses simulated values; MariaDB mode reads them from the database. This is not an integration with an exchange or external financial service.</li><li><b>Cache:</b> temporary reuse of a previously queried quote, valid for 60 seconds. The cache is cleared when the database is switched.</li><li><b>Clear cache:</b> removes temporary entries and queries the current date again.</li></ul><p>If there is no quote for the requested date, the system says so instead of making up a value. Days without a quote are left out of the recent history.</p>
+
+    <h3 style="color: #2563eb;">5. Using the reports</h3>
+    <p>Open Reports and select a wallet for reports 1 and 2. Use Refresh All to reload the data.</p><ol><li><b>Consolidated position:</b> balance, average cost, cost value, market value, gains and ROI for the selected wallet.</li><li><b>Transaction history:</b> dates, purchases and sales, quantities, quotes and totals for the selected wallet.</li><li><b>Consolidated portfolio:</b> all wallets and their respective shares of the total market value.</li><li><b>Performance and profitability:</b> cost value, current value, total result and ROI per wallet. The table is not necessarily sorted by profitability.</li><li><b>Oracle history:</b> a table of recent quotes, absolute and percentage changes, and the source indicated by the system.</li></ol>
+
+    <h3 style="color: #2563eb;">6. Average cost and results</h3>
+    <p><b>Weighted average cost (CMP):</b> cost value divided by the FTC balance. A purchase increases the balance and cost value, recalculating CMP. A sale reduces the balance and cost value proportionally, preserving CMP subject to rounding.</p><ul><li><b>Realized result:</b> the sum of sale results. Each sale yields quantity sold × (sale quote − average cost).</li><li><b>Unrealized result:</b> market value of the remaining position minus its cost value.</li><li><b>Total result:</b> realized plus unrealized result.</li><li><b>ROI in this application:</b> total result divided by the cost value of the remaining position, multiplied by 100. When this cost value is zero, the system displays zero ROI.</li></ul><p>Negative results represent losses. Colors assist reading, but also check the displayed sign and value.</p>
+
+    <h3 style="color: #2563eb;">7. Language and storage</h3>
+    <p>Use the Language selector in the top bar to choose Portuguese, English or Spanish without restarting. Close modal dialogs, such as this manual, to access the selector, then reopen Help. The language changes the presentation of text, numbers and dates; it does not represent a currency conversion.</p><p>The Database selector switches between Memory and MariaDB. Switching selects another data source; it does not automatically transfer records between modes.</p><ul><li><b>Memory:</b> intended for tests and simulations. Data is not stored permanently and is lost when the application exits.</li><li><b>MariaDB:</b> records are persisted in the configured database. If the connection fails, check that the server is available and ask the person responsible for installation to check the address, database, credentials and permissions. Do not share passwords in screenshots.</li></ul>
+
+    <h3 style="color: #2563eb;">8. Exiting</h3>
+    <p>To close only this manual, use Close Manual or the X on this window. To exit the application, use the X on the main window. Complete transactions before exiting: unconfirmed fields are not saved records, and memory-mode data will not be available in a new session.</p>
+</body>
+</html>

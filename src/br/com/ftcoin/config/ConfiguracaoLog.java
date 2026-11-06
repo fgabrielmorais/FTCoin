@@ -20,7 +20,7 @@ import java.util.logging.Logger;
  * aplica o {@link FormatadorLog} a todos os destinos.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-11-02
  */

@@ -13,7 +13,7 @@ import java.awt.Font;
  * com os padrões de experiência do usuário ({@code UI/UX}).
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */

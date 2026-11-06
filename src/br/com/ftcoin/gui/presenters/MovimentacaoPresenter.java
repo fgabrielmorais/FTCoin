@@ -2,21 +2,24 @@ package br.com.ftcoin.gui.presenters;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import br.com.ftcoin.config.RegistroDeFalhas;
-import br.com.ftcoin.controllers.MovimentacaoController;
-import br.com.ftcoin.gui.common.AppContext;
-import br.com.ftcoin.gui.common.TarefaEmSegundoPlano;
+import br.com.ftcoin.services.MovimentacaoService;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
-import br.com.ftcoin.gui.dto.MovimentacaoDTO;
+import br.com.ftcoin.gui.common.TarefaEmSegundoPlano;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
-import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.contracts.IMovimentacaoView;
+import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.FTCoinException;
+import br.com.ftcoin.models.Movimentacao;
 import br.com.ftcoin.models.RegraNegocioException;
 import br.com.ftcoin.models.TipoOperacao;
 
@@ -27,10 +30,10 @@ import br.com.ftcoin.models.TipoOperacao;
  *
  * <p>
  * Coordena validações rigorosas de interface, cálculos prévios de estimativa financeira
- * e submissão de ordens de Compra e Venda de FTCoins aos controladores de domínio.
+ * e submissão de ordens de Compra e Venda de FTCoins aos serviços do modelo.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -38,36 +41,38 @@ public class MovimentacaoPresenter {
 
     private static final Logger LOG = Logger.getLogger(MovimentacaoPresenter.class.getName());
 
+    /** Quantas operações recentes aparecem no histórico da tela. */
+    private static final int QUANTIDADE_HISTORICO = 8;
+
     /**
      * Interface de contrato para atualização da visão de movimentações.
      */
     private final IMovimentacaoView view;
 
     /**
-     * Serviço de relatórios e apuração de carteiras.
-     */
-    private final RelatoriosService relatoriosService;
-
-    /**
      * Serviço de cotações para cálculo imediato de estimativas financeiras.
      */
     private final CotacaoCacheService cotacaoService;
 
+    private final ContextoAplicacao contexto;
+
     /**
-     * Número da última estimativa pedida; respostas de pedidos anteriores são descartadas.
+     * Número da última estimativa pedida em cada operação; respostas de pedidos anteriores são descartadas.
      */
-    private final AtomicLong ultimoPedidoEstimativa = new AtomicLong();
+    private final Map<TipoOperacao, AtomicLong> ultimoPedidoEstimativa = new EnumMap<>(Map.of(
+            TipoOperacao.COMPRA, new AtomicLong(),
+            TipoOperacao.VENDA, new AtomicLong()));
 
     /**
      * Constrói o apresentador de movimentações injetando visão e serviços requeridos.
      *
      * @param view             Visão que implementa o contrato {@link IMovimentacaoView}
-     * @param relatoriosService Serviço de dados e carteiras
      * @param cotacaoService   Serviço de consulta de cotações
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public MovimentacaoPresenter(IMovimentacaoView view, RelatoriosService relatoriosService, CotacaoCacheService cotacaoService) {
+    public MovimentacaoPresenter(IMovimentacaoView view, CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
+        this.contexto = contexto;
         this.view = view;
-        this.relatoriosService = relatoriosService;
         this.cotacaoService = cotacaoService;
     }
 
@@ -84,11 +89,11 @@ public class MovimentacaoPresenter {
      */
     public void carregarCarteiras() {
         try {
-            List<CarteiraDTO> carteiras = relatoriosService.listarCarteirasDTO();
-            view.exibirCarteirasDisponiveis(carteiras);
+            List<Carteira> carteiras = contexto.getCarteiraService().listarTodasCarteiras();
+            view.exibirCarteirasDisponiveis(contexto.getMovimentacaoService().apurarPosicoes(carteiras));
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar carteiras", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -97,25 +102,32 @@ public class MovimentacaoPresenter {
      */
     public void carregarHistoricoGeral() {
         try {
-            List<MovimentacaoDTO> ultimas = relatoriosService.obterResumoDashboard().ultimasMovimentacoes();
-            view.exibirHistoricoMovimentacoes(ultimas);
+            MovimentacaoService movimentacoes = contexto.getMovimentacaoService();
+            List<Carteira> carteiras = contexto.getCarteiraService().listarTodasCarteiras();
+            List<Movimentacao> ultimas = movimentacoes.buscarUltimasMovimentacoes(QUANTIDADE_HISTORICO);
+            Map<Integer, Carteira> carteirasPorId =
+                    carteiras.stream().collect(Collectors.toMap(Carteira::getId, Function.identity()));
+            view.exibirHistoricoMovimentacoes(ultimas, carteirasPorId, movimentacoes.buscarCotacoesDasOperacoes(ultimas));
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar histórico de movimentações", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
     /**
-     * Calcula dinamicamente o valor estimado da operação com base na quantidade e data informadas.
+     * Calcula o valor estimado de uma operação a partir da quantidade e da data informadas.
+     * Cada formulário (compra ou venda) recebe só a própria estimativa.
      *
+     * @param tipo          operação cujo formulário recebe a estimativa
      * @param data          Data informada para apuração da cotação
      * @param strQuantidade Quantidade digitada no campo de texto
      */
-    public void calcularEstimativas(LocalDate data, String strQuantidade) {
-        // Invalida qualquer consulta anterior ainda em andamento
-        long pedido = ultimoPedidoEstimativa.incrementAndGet();
+    public void calcularEstimativas(TipoOperacao tipo, LocalDate data, String strQuantidade) {
+        // Invalida qualquer consulta anterior desta operação ainda em andamento
+        AtomicLong contador = ultimoPedidoEstimativa.get(tipo);
+        long pedido = contador.incrementAndGet();
         if (strQuantidade == null || strQuantidade.trim().isEmpty()) {
-            view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+            view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
             return;
         }
 
@@ -123,7 +135,7 @@ public class MovimentacaoPresenter {
             String sanitizada = strQuantidade.trim().replace(",", ".");
             BigDecimal qtd = new BigDecimal(sanitizada);
             if (qtd.signum() <= 0) {
-                view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+                view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
                 return;
             }
 
@@ -132,32 +144,33 @@ public class MovimentacaoPresenter {
             TarefaEmSegundoPlano.executar(
                     () -> cotacaoService.obterCotacaoSincrona(dataAlvo),
                     cotacao -> {
-                        if (pedido != ultimoPedidoEstimativa.get()) {
+                        if (pedido != contador.get()) {
                             return;
                         }
                         if (cotacao == null) {
-                            MensagensGui mensagens = AppContext.getInstancia().getMensagens();
-                            view.informarCotacaoIndisponivel(mensagens.descreverErro(new RegraNegocioException("erro.oraculo.semCotacao", dataAlvo)));
+                            MensagensGui mensagens = contexto.getMensagens();
+                            view.informarCotacaoIndisponivel(tipo,
+                                    mensagens.descreverErro(new RegraNegocioException("erro.oraculo.semCotacao", dataAlvo)));
                         } else {
-                            view.atualizarEstimativas(cotacao, qtd.multiply(cotacao));
+                            view.atualizarEstimativas(tipo, cotacao, qtd.multiply(cotacao));
                         }
                     },
                     e -> {
-                        if (pedido != ultimoPedidoEstimativa.get()) {
+                        if (pedido != contador.get()) {
                             return;
                         }
-                        //Falha do oráculo (rede, autenticação): avisa na prévia sem derrubar a tela
+                        // Falha do oráculo (rede, autenticação): avisa na prévia sem derrubar a tela
                         RegistroDeFalhas.registrar(LOG, "calcular estimativa", e);
-                        view.informarCotacaoIndisponivel(AppContext.getInstancia().getMensagens().descreverErro(e));
+                        view.informarCotacaoIndisponivel(tipo, contexto.getMensagens().descreverErro(e));
                     });
         } catch (NumberFormatException e) {
             LOG.log(Level.FINEST, "Estimativa ignorada: quantidade digitada ainda não é um número ({0})", strQuantidade);
-            view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+            view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
         }
     }
 
     /**
-     * Valida os campos da operação e submete o registro de compra ou venda ao controlador.
+     * Valida os campos da operação e submete o registro de compra ou venda ao serviço.
      *
      * @param idCarteira    Identificador da carteira selecionada
      * @param tipo          Tipo da operação ({@code COMPRA} ou {@code VENDA})
@@ -165,7 +178,7 @@ public class MovimentacaoPresenter {
      * @param strQuantidade Quantidade informada em formato texto
      */
     public void registrarOperacao(Integer idCarteira, TipoOperacao tipo, LocalDate data, String strQuantidade) {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
         LOG.log(Level.FINE, "Usuário pediu: {0} de {1} FTC na carteira {2}", new Object[] { tipo, strQuantidade, idCarteira });
 
         if (idCarteira == null || idCarteira <= 0) {
@@ -204,8 +217,8 @@ public class MovimentacaoPresenter {
         }
 
         try {
-            MovimentacaoController controller = AppContext.getInstancia().getMovimentacaoController();
-            controller.registrarOperacao(idCarteira, tipo, quantidade);
+            MovimentacaoService servico = contexto.getMovimentacaoService();
+            servico.registrarOperacao(idCarteira, tipo, quantidade);
 
             view.limparFormulario();
             carregarCarteiras();
@@ -218,7 +231,7 @@ public class MovimentacaoPresenter {
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "registrar " + tipo + " na carteira " + idCarteira, e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 }

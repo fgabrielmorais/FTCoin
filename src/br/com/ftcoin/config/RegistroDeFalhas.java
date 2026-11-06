@@ -16,7 +16,7 @@ import br.com.ftcoin.models.FTCoinException;
  * a chave do erro. Qualquer outra exceção é inesperada e vira {@code SEVERE} com o stack trace completo.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-11-02
  */

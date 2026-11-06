@@ -21,11 +21,13 @@ import br.com.ftcoin.gui.common.TemaCores;
  * e valores financeiros com destaque tipográfico em negrito.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
 public class ModernCard extends JPanel {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * Rótulo de texto para exibição do título superior do cartão.

@@ -1,12 +1,18 @@
 package br.com.ftcoin.gui.presenters;
 
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import br.com.ftcoin.config.RegistroDeFalhas;
-import br.com.ftcoin.gui.common.AppContext;
-import br.com.ftcoin.gui.dto.ResumoDashboardDTO;
-import br.com.ftcoin.gui.services.RelatoriosService;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.views.contracts.IDashboardView;
+import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.models.Movimentacao;
+import br.com.ftcoin.models.Posicao;
+import br.com.ftcoin.services.MovimentacaoService;
 
 /**
  * <p>
@@ -18,7 +24,7 @@ import br.com.ftcoin.gui.views.contracts.IDashboardView;
  * saldo total de moedas, cotação corrente e histórico de transações recentes para o feed.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -26,25 +32,25 @@ public class DashboardPresenter {
 
     private static final Logger LOG = Logger.getLogger(DashboardPresenter.class.getName());
 
+    /** Quantas operações recentes aparecem no dashboard. */
+    private static final int QUANTIDADE_ULTIMAS_OPERACOES = 8;
+
     /**
      * Interface de contrato para atualização dos componentes visuais do dashboard.
      */
     private final IDashboardView view;
 
-    /**
-     * Serviço de relatórios analíticos e apuração de indicadores.
-     */
-    private final RelatoriosService relatoriosService;
+    private final ContextoAplicacao contexto;
 
     /**
      * Constrói o apresentador do dashboard vinculando a visão e o serviço analítico.
      *
      * @param view             Visão que implementa o contrato {@link IDashboardView}
-     * @param relatoriosService Serviço de cálculo e apuração de dados consolidados
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public DashboardPresenter(IDashboardView view, RelatoriosService relatoriosService) {
+    public DashboardPresenter(IDashboardView view, ContextoAplicacao contexto) {
+        this.contexto = contexto;
         this.view = view;
-        this.relatoriosService = relatoriosService;
     }
 
     /**
@@ -52,11 +58,18 @@ public class DashboardPresenter {
      */
     public void carregarDadosDashboard() {
         try {
-            ResumoDashboardDTO resumo = relatoriosService.obterResumoDashboard();
-            view.exibirResumo(resumo);
+            MovimentacaoService movimentacoes = contexto.getMovimentacaoService();
+            List<Carteira> carteiras = contexto.getCarteiraService().listarTodasCarteiras();
+            Posicao portfolio = Posicao.consolidar(movimentacoes.apurarPosicoes(carteiras).values());
+            view.exibirIndicadores(portfolio, carteiras.size(), movimentacoes.buscarCotacaoAtual());
+
+            List<Movimentacao> ultimas = movimentacoes.buscarUltimasMovimentacoes(QUANTIDADE_ULTIMAS_OPERACOES);
+            Map<Integer, Carteira> carteirasPorId =
+                    carteiras.stream().collect(Collectors.toMap(Carteira::getId, Function.identity()));
+            view.exibirUltimasMovimentacoes(ultimas, carteirasPorId, movimentacoes.buscarCotacoesDasOperacoes(ultimas));
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar o dashboard", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 }

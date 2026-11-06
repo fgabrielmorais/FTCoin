@@ -3,114 +3,66 @@ package br.com.ftcoin.gui.common;
 import java.awt.Color;
 
 /**
- * <p>
- * Enumeração que identifica a procedência dos dados de cotação obtidos pelo sistema.
- * </p>
+ * Procedência de uma cotação exibida na interface: consultada no Oráculo ou recuperada do cache local.
+ * O nome exibido vem dos arquivos de mensagens; o enum guarda só a chave, as cores e o ícone.
  *
- * <p>
- * Diferencia se o preço foi consultado diretamente no <b>Oráculo Externo</b> ou recuperado
- * a partir do <b>Cache Local</b> em memória de alta velocidade.
- * </p>
- *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
- * @since 2026-10-20
  */
 public enum OrigemCotacao {
 
-    /**
-     * Dado recuperado diretamente através de chamada simulada ao serviço do oráculo.
-     */
-    ORACULO("ORÁCULO EXTERNO", new Color(46, 125, 50), new Color(232, 245, 233), "🌐"),
+    /** Cotação consultada no Oráculo. */
+    ORACULO("gui.cotacao.badge.oraculo", new Color(46, 125, 50), new Color(232, 245, 233), "🌐"),
 
-    /**
-     * Dado obtido instantaneamente a partir da memória cache local.
-     */
-    CACHE("CACHE LOCAL", new Color(21, 101, 192), new Color(227, 242, 253), "⚡");
+    /** Cotação recuperada do cache local. */
+    CACHE("gui.cotacao.badge.cache", new Color(21, 101, 192), new Color(227, 242, 253), "⚡");
 
-    /**
-     * Descrição textual de apresentação da origem.
-     */
-    private final String descricao;
-
-    /**
-     * Cor primária de texto para contraste visual no badge.
-     */
+    private final String chaveMensagem;
     private final Color corTexto;
-
-    /**
-     * Cor suave de fundo do componente visual de identificação.
-     */
     private final Color corFundo;
-
-    /**
-     * Emoji ou símbolo gráfico representativo da fonte.
-     */
     private final String icone;
 
-    /**
-     * Constrói uma opção da enumeração de origem da cotação.
-     *
-     * @param descricao Rótulo textual da fonte
-     * @param corTexto  Cor de contraste da tipografia
-     * @param corFundo  Cor de preenchimento do componente
-     * @param icone     Símbolo representativo da origem
-     */
-    OrigemCotacao(String descricao, Color corTexto, Color corFundo, String icone) {
-        this.descricao = descricao;
+    OrigemCotacao(String chaveMensagem, Color corTexto, Color corFundo, String icone) {
+        this.chaveMensagem = chaveMensagem;
         this.corTexto = corTexto;
         this.corFundo = corFundo;
         this.icone = icone;
     }
 
     /**
-     * Retorna a descrição textual desta origem de dados.
+     * Devolve a cor do texto do selo de origem.
      *
-     * @return O texto descritivo {@code String}
-     */
-    public String getDescricao() {
-        return descricao;
-    }
-
-    /**
-     * Retorna a cor de texto recomendada para renderização do rótulo.
-     *
-     * @return A cor {@code Color} da tipografia
+     * @return a cor do texto
      */
     public Color getCorTexto() {
         return corTexto;
     }
 
     /**
-     * Retorna a cor de fundo recomendada para o componente de destaque.
+     * Devolve a cor de fundo do selo de origem.
      *
-     * @return A cor {@code Color} de superfície
+     * @return a cor de fundo
      */
     public Color getCorFundo() {
         return corFundo;
     }
 
     /**
-     * Retorna o ícone gráfico associado a esta origem de dados.
+     * Devolve o ícone exibido antes do nome da origem.
      *
-     * @return O símbolo textual {@code String}
+     * @return o ícone
      */
     public String getIcone() {
         return icone;
     }
 
     /**
-     * Retorna a descrição devidamente internacionalizada conforme o {@link java.util.Locale}
-     * ativo no {@link AppContext} da aplicação.
+     * Devolve o nome da origem no idioma ativo.
      *
-     * @return A descrição localizada correspondente a esta origem de cotação
+     * @param mensagens textos do idioma ativo
+     * @return o nome da origem
      */
-    public String getDescricaoLocalizada() {
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
-        if (mensagens != null) {
-            String chave = (this == ORACULO) ? "gui.cotacao.badge.oraculo" : "gui.cotacao.badge.cache";
-            return mensagens.get(chave);
-        }
-        return descricao;
+    public String getDescricaoLocalizada(MensagensGui mensagens) {
+        return mensagens.get(chaveMensagem);
     }
 }
