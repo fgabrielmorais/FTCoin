@@ -57,6 +57,11 @@ public class MensagensGui {
     public static final Locale LOCALE_EN = Locale.of("en", "US");
 
     /**
+     * Localização padrão para o idioma Espanhol (Espanha).
+     */
+    public static final Locale LOCALE_ES = Locale.of("es", "ES");
+
+    /**
      * Localidade atualmente aplicada aos textos da interface.
      */
     private Locale localeAtual;
@@ -93,11 +98,11 @@ public class MensagensGui {
     /**
      * Define a nova localidade da interface, recarregando bundles e notificando ouvintes.
      *
-     * @param novoLocale Nova localidade desejada para a interface
+     * @param novoLocale Nova localidade desejada; idiomas sem tradução usam o português
      */
     public synchronized void setLocale(Locale novoLocale) {
-        this.localeAtual = (novoLocale != null && "en".equalsIgnoreCase(novoLocale.getLanguage()))
-                ? LOCALE_EN : LOCALE_PT;
+        // Idiomas sem tradução caem no português
+        this.localeAtual = IdiomaSelector.porLocale(novoLocale).getLocale();
         this.bundle = ResourceBundle.getBundle(BUNDLE_BASE_NAME, this.localeAtual);
         this.formatador = new GuiFormatador(this.localeAtual);
         LOG.log(Level.INFO, "Idioma da interface: {0}", this.localeAtual);

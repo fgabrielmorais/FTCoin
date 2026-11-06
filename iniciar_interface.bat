@@ -1,26 +1,74 @@
 @echo off
+setlocal
 chcp 65001 > nul
 title FTCoin Studio - Inicializando Interface Grafica
 
-set "JAVA_BIN=C:\Program Files\Java\zulu21.44.17-ca-jdk21.0.8-win_x64\bin\java.exe"
+if defined JAVA_HOME (
+    set "JAVA_BIN=%JAVA_HOME%\bin\java.exe"
+) else (
+    set "JAVA_BIN=java"
+)
 
-if not exist "%JAVA_BIN%" (
-    if defined JAVA_HOME (
-        set "JAVA_BIN=%JAVA_HOME%\bin\java.exe"
-    ) else (
-        set "JAVA_BIN=java"
-    )
+if defined MAVEN_HOME (
+    set "MAVEN_CMD=%MAVEN_HOME%\bin\mvn.cmd"
+) else (
+    set "MAVEN_CMD=mvn.cmd"
 )
 
 echo ========================================================
-echo   Iniciando FTCoin Studio - GUI (Java 25 LTS)
+echo   FTCoin Studio - GUI - Projeto configurado para Java 21
 echo ========================================================
 echo.
 
-"%JAVA_BIN%" -cp "bin;src" br.com.ftcoin.gui.main.FTCoinGuiApp
-
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo Ocorreu um erro ao inicializar a interface.
-    pause
+"%JAVA_BIN%" -version > nul 2>&1
+if errorlevel 1 (
+    echo Java nao encontrado. Configure JAVA_HOME ou o PATH.
+    goto :erro
 )
+
+call "%MAVEN_CMD%" -version > nul 2>&1
+if errorlevel 1 (
+    echo Maven nao encontrado. Configure MAVEN_HOME ou o PATH.
+    goto :erro
+)
+
+pushd "%~dp0"
+if errorlevel 1 (
+    echo Nao foi possivel abrir a pasta do projeto.
+    goto :erro
+)
+
+echo Compilando a interface e preparando as dependencias...
+echo.
+
+call "%MAVEN_CMD%" compile dependency:copy-dependencies "-DincludeScope=runtime"
+if errorlevel 1 (
+    popd
+    echo.
+    echo A compilacao ou a preparacao das dependencias falhou.
+    goto :erro
+)
+
+echo.
+echo Iniciando a interface...
+echo.
+
+"%JAVA_BIN%" -cp "target\classes;target\dependency\*" br.com.ftcoin.gui.main.FTCoinGuiApp
+set "RESULTADO=%ERRORLEVEL%"
+
+popd
+
+if not "%RESULTADO%"=="0" (
+    echo.
+    echo Ocorreu um erro ao executar a interface.
+    goto :erro
+)
+
+endlocal
+exit /b 0
+
+:erro
+echo.
+pause
+endlocal
+exit /b 1

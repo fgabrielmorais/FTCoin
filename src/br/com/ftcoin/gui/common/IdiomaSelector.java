@@ -14,7 +14,10 @@ public enum IdiomaSelector {
     PORTUGUES(MensagensGui.LOCALE_PT, "gui.menu.idioma.pt"),
 
     /** Inglês dos Estados Unidos. */
-    INGLES(MensagensGui.LOCALE_EN, "gui.menu.idioma.en");
+    INGLES(MensagensGui.LOCALE_EN, "gui.menu.idioma.en"),
+
+    /** Espanhol da Espanha. */
+    ESPANHOL(MensagensGui.LOCALE_ES, "gui.menu.idioma.es");
 
     private final Locale locale;
     private final String chaveMensagem;
@@ -47,9 +50,16 @@ public enum IdiomaSelector {
      * Devolve a opção correspondente a um idioma.
      *
      * @param locale idioma desejado
-     * @return inglês para qualquer variante de inglês; português nos demais casos
+     * @return a opção com o mesmo idioma, sem olhar o país; português quando o idioma não tem tradução
      */
     public static IdiomaSelector porLocale(Locale locale) {
-        return (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) ? INGLES : PORTUGUES;
+        if (locale != null) {
+            for (IdiomaSelector opcao : values()) {
+                if (opcao.locale.getLanguage().equalsIgnoreCase(locale.getLanguage())) {
+                    return opcao;
+                }
+            }
+        }
+        return PORTUGUES;
     }
 }
