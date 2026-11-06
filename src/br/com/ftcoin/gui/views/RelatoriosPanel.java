@@ -1,11 +1,14 @@
 package br.com.ftcoin.gui.views;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -19,20 +22,19 @@ import javax.swing.table.DefaultTableModel;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
+import br.com.ftcoin.gui.common.OrigemCotacao;
 import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.common.TextosTraduzidos;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
-import br.com.ftcoin.gui.dto.MovimentacaoDTO;
-import br.com.ftcoin.gui.dto.PosicaoRelatorioDTO;
-import br.com.ftcoin.gui.dto.RelatorioConsolidadoItemDTO;
-import br.com.ftcoin.gui.dto.RelatorioDesempenhoDTO;
-import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
 import br.com.ftcoin.gui.presenters.RelatoriosPresenter;
-import br.com.ftcoin.gui.services.RelatoriosService;
+import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.components.ModernCard;
 import br.com.ftcoin.gui.views.contracts.IRelatoriosView;
+import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.models.Cotacao;
+import br.com.ftcoin.models.Movimentacao;
+import br.com.ftcoin.models.Posicao;
 
 /**
  * View do Módulo de Relatórios (Padrão MVP).
@@ -110,12 +112,12 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     /**
      * Monta as abas dos relatórios e o presenter da tela.
      *
-     * @param relatoriosService serviço que monta os dados dos relatórios
+     * @param cotacaoService serviço de cotações com cache, usado no relatório 5
      * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public RelatoriosPanel(RelatoriosService relatoriosService, ContextoAplicacao contexto) {
+    public RelatoriosPanel(CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
         this.contexto = contexto;
-        this.presenter = new RelatoriosPresenter(this, relatoriosService, contexto);
+        this.presenter = new RelatoriosPresenter(this, cotacaoService, contexto);
         MensagensGui mensagens = contexto.getMensagens();
         this.textos = new TextosTraduzidos(mensagens);
         GuiFormatador fmt = mensagens.getFormatador();
@@ -311,14 +313,14 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     }
 
     @Override
-    public void exibirCarteirasFiltro(List<CarteiraDTO> carteiras) {
+    public void exibirCarteirasFiltro(List<Carteira> carteiras) {
         carregandoFiltro = true;
         try {
             cmbCarteiraFiltro.removeAllItems();
-            for (CarteiraDTO c : carteiras) {
+            for (Carteira c : carteiras) {
                 cmbCarteiraFiltro.addItem(new ItemFiltroCarteira(
-                        c.id(),
-                        "#" + c.id() + " - " + c.nomeTitular() + " (" + c.corretora() + ")"
+                        c.getId(),
+                        "#" + c.getId() + " - " + c.getNomeTitular() + " (" + c.getCorretora() + ")"
                 ));
             }
             if (carteiras.isEmpty()) {
@@ -330,110 +332,81 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     }
 
     private void limparRelatoriosIndividuais() {
-        GuiFormatador fmt = contexto.getMensagens().getFormatador();
-        cardSaldo.setValor(fmt.quantidade(BigDecimal.ZERO), TemaCores.PRIMARIA);
-        cardCustoMedio.setValor(fmt.moeda(BigDecimal.ZERO), TemaCores.TEXTO_PRINCIPAL);
-        cardValorCusto.setValor(fmt.moeda(BigDecimal.ZERO), TemaCores.TEXTO_PRINCIPAL);
-        cardValorMercado.setValor(fmt.moeda(BigDecimal.ZERO), TemaCores.SECUNDARIA);
-        cardGanhoRealizado.setValor(fmt.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
-        cardGanhoNaoRealizado.setValor(fmt.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
-        cardGanhoTotal.setValor(fmt.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
-        cardRoi.setValor(fmt.percentual(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
+        exibirRelatorio1Posicao(new Posicao(), BigDecimal.ZERO);
         modelRel2.setRowCount(0);
     }
 
     @Override
-    public void exibirRelatorio1Posicao(PosicaoRelatorioDTO posicao) {
-        if (posicao == null) {
-            limparRelatoriosIndividuais();
-            return;
-        }
+    public void exibirRelatorio1Posicao(Posicao posicao, BigDecimal cotacaoAtual) {
         GuiFormatador fmt = contexto.getMensagens().getFormatador();
 
-        cardSaldo.setValor(fmt.quantidade(posicao.saldo()), TemaCores.PRIMARIA);
-        cardCustoMedio.setValor(fmt.moeda(posicao.custoMedio()), TemaCores.TEXTO_PRINCIPAL);
-        cardValorCusto.setValor(fmt.moeda(posicao.valorACusto()), TemaCores.TEXTO_PRINCIPAL);
-        cardValorMercado.setValor(fmt.moeda(posicao.valorDeMercado()), TemaCores.SECUNDARIA);
+        cardSaldo.setValor(fmt.quantidade(posicao.getSaldo()), TemaCores.PRIMARIA);
+        cardCustoMedio.setValor(fmt.moeda(posicao.getCustoMedio()), TemaCores.TEXTO_PRINCIPAL);
+        cardValorCusto.setValor(fmt.moeda(posicao.getValorACusto()), TemaCores.TEXTO_PRINCIPAL);
+        cardValorMercado.setValor(fmt.moeda(posicao.calcularValorDeMercado(cotacaoAtual)), TemaCores.SECUNDARIA);
 
-        // Cores estratégicas: Verde para positivo/lucro, Vermelho para negativo/prejuízo
-        cardGanhoRealizado.setValor(
-                fmt.moeda(posicao.ganhoRealizado()),
-                posicao.ganhoRealizado().signum() >= 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO
-        );
-        cardGanhoNaoRealizado.setValor(
-                fmt.moeda(posicao.ganhoNaoRealizado()),
-                posicao.ganhoNaoRealizado().signum() >= 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO
-        );
-        cardGanhoTotal.setValor(
-                fmt.moeda(posicao.ganhoTotal()),
-                posicao.ganhoTotal().signum() >= 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO
-        );
-        cardRoi.setValor(
-                fmt.percentual(posicao.roiPercentual()),
-                posicao.roiPercentual().signum() >= 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO
-        );
+        // Verde para lucro, vermelho para prejuízo
+        BigDecimal ganhoRealizado = posicao.getGanhoRealizado();
+        BigDecimal ganhoNaoRealizado = posicao.calcularGanhoNaoRealizado(cotacaoAtual);
+        BigDecimal ganhoTotal = posicao.calcularGanhoTotal(cotacaoAtual);
+        BigDecimal roi = posicao.calcularRoi(cotacaoAtual);
+        cardGanhoRealizado.setValor(fmt.moeda(ganhoRealizado), corDoResultado(ganhoRealizado));
+        cardGanhoNaoRealizado.setValor(fmt.moeda(ganhoNaoRealizado), corDoResultado(ganhoNaoRealizado));
+        cardGanhoTotal.setValor(fmt.moeda(ganhoTotal), corDoResultado(ganhoTotal));
+        cardRoi.setValor(fmt.percentual(roi), corDoResultado(roi));
+    }
+
+    private static Color corDoResultado(BigDecimal valor) {
+        return valor.signum() >= 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO;
     }
 
     @Override
-    public void exibirRelatorio2Historico(List<MovimentacaoDTO> historico) {
+    public void exibirRelatorio2Historico(List<Movimentacao> historico, Map<LocalDate, BigDecimal> cotacoes) {
         modelRel2.setRowCount(0);
         GuiFormatador fmt = contexto.getMensagens().getFormatador();
-        for (MovimentacaoDTO m : historico) {
+        for (Movimentacao m : historico) {
+            BigDecimal cotacao = cotacoes.get(m.getDataOperacao());
             modelRel2.addRow(new Object[]{
-                    fmt.data(m.dataOperacao()),
-                    m.tipoOperacao(),
-                    m.quantidade(),
-                    m.cotacaoAplicada(),
-                    m.valorTotalOperacao()
+                    fmt.data(m.getDataOperacao()),
+                    m.getTipoOperacao(),
+                    m.getQuantidadeMovimentada(),
+                    cotacao,
+                    m.calcularValor(cotacao)
             });
         }
     }
 
     @Override
-    public void exibirRelatorio3Consolidado(List<RelatorioConsolidadoItemDTO> consolidado) {
+    public void exibirRelatorio3Consolidado(Map<Carteira, Posicao> posicoes, Posicao portfolio, BigDecimal cotacaoAtual) {
         modelRel3.setRowCount(0);
-        for (RelatorioConsolidadoItemDTO item : consolidado) {
-            modelRel3.addRow(new Object[]{
-                    item.idCarteira(),
-                    item.titular(),
-                    item.corretora(),
-                    item.saldo(),
-                    item.valorMercado(),
-                    item.participacaoPerc(),
-                    item.ganhoTotal()
-            });
-        }
+        posicoes.forEach((carteira, posicao) -> modelRel3.addRow(new Object[]{
+                carteira.getId(),
+                carteira.getNomeTitular(),
+                carteira.getCorretora(),
+                posicao.getSaldo(),
+                posicao.calcularValorDeMercado(cotacaoAtual),
+                posicao.calcularParticipacao(portfolio, cotacaoAtual),
+                posicao.calcularGanhoTotal(cotacaoAtual)
+        }));
     }
 
     @Override
-    public void exibirRelatorio4Desempenho(List<RelatorioDesempenhoDTO> desempenho) {
+    public void exibirRelatorio4Desempenho(Map<Carteira, Posicao> posicoes, BigDecimal cotacaoAtual) {
         modelRel4.setRowCount(0);
-        for (RelatorioDesempenhoDTO d : desempenho) {
-            modelRel4.addRow(new Object[]{
-                    d.idCarteira(),
-                    d.titular(),
-                    d.corretora(),
-                    d.valorInvestido(),
-                    d.valorAtual(),
-                    d.lucroPrejuizo(),
-                    d.roiPercentual()
-            });
-        }
+        posicoes.forEach((carteira, posicao) -> modelRel4.addRow(new Object[]{
+                carteira.getId(),
+                carteira.getNomeTitular(),
+                carteira.getCorretora(),
+                posicao.getValorACusto(),
+                posicao.calcularValorDeMercado(cotacaoAtual),
+                posicao.calcularGanhoTotal(cotacaoAtual),
+                posicao.calcularRoi(cotacaoAtual)
+        }));
     }
 
     @Override
-    public void exibirRelatorio5Cotacoes(List<RelatorioHistoricoCotacaoDTO> cotacoes) {
-        modelRel5.setRowCount(0);
-        GuiFormatador fmt = contexto.getMensagens().getFormatador();
-        for (RelatorioHistoricoCotacaoDTO c : cotacoes) {
-            modelRel5.addRow(new Object[]{
-                    fmt.data(c.data()),
-                    c.valorCotacao(),
-                    c.variacaoAbsoluta(),
-                    c.variacaoPercentual(),
-                    c.origem()
-            });
-        }
+    public void exibirRelatorio5Cotacoes(Map<Cotacao, OrigemCotacao> historico) {
+        CotacaoPanel.preencherHistorico(modelRel5, historico, contexto.getMensagens().getFormatador());
     }
 
     @Override

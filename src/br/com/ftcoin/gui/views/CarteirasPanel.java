@@ -7,7 +7,9 @@ import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -24,12 +26,12 @@ import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.common.TextosTraduzidos;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.presenters.CarteiraPresenter;
-import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.contracts.ICarteiraView;
+import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.models.Posicao;
 
 /**
  * <p>
@@ -67,7 +69,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
     /**
      * Lista em memória das carteiras atualmente exibidas.
      */
-    private transient List<CarteiraDTO> carteirasCarregadas = List.of();
+    private transient List<Carteira> carteirasCarregadas = List.of();
 
     /**
      * Referência para a janela modal de formulário ativa.
@@ -80,12 +82,11 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
     /**
      * Constrói o painel de carteiras inicializando componentes visuais e apresentador.
      *
-     * @param relatoriosService Serviço de dados e relatórios da aplicação
      * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public CarteirasPanel(RelatoriosService relatoriosService, ContextoAplicacao contexto) {
+    public CarteirasPanel(ContextoAplicacao contexto) {
         this.contexto = contexto;
-        this.presenter = new CarteiraPresenter(this, relatoriosService, contexto);
+        this.presenter = new CarteiraPresenter(this, contexto);
         MensagensGui mensagens = contexto.getMensagens();
         this.textos = new TextosTraduzidos(mensagens);
 
@@ -176,7 +177,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
      * Trata o evento de clique no botão de edição de carteira.
      */
     private void tratarAcaoEditar() {
-        CarteiraDTO selecionada = getCarteiraSelecionada();
+        Carteira selecionada = getCarteiraSelecionada();
         if (selecionada != null) {
             abrirModalEdicao(selecionada);
         } else {
@@ -188,12 +189,12 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
      * Trata o evento de clique no botão de exclusão de carteira solicitando confirmação.
      */
     private void tratarAcaoExcluir() {
-        CarteiraDTO selecionada = getCarteiraSelecionada();
+        Carteira selecionada = getCarteiraSelecionada();
         if (selecionada != null) {
             MensagensGui mensagens = contexto.getMensagens();
             int confirmacao = JOptionPane.showConfirmDialog(
                     this,
-                    mensagens.get("gui.carteira.confirm.excluir", selecionada.id(), selecionada.nomeTitular()),
+                    mensagens.get("gui.carteira.confirm.excluir", selecionada.getId(), selecionada.getNomeTitular()),
                     "gui.comum.atencao",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE
@@ -207,23 +208,22 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
     }
 
     /**
-     * Renderiza as carteiras na tabela visual da tela.
+     * Renderiza as carteiras na tabela, com o saldo e o valor de mercado de cada uma.
      *
-     * @param carteiras Lista contendo os dados imutáveis de carteiras em formato {@link CarteiraDTO}
+     * @param posicoes     posição de cada carteira, na ordem da tabela
+     * @param cotacaoAtual cotação de hoje
      */
     @Override
-    public void exibirCarteiras(List<CarteiraDTO> carteiras) {
-        this.carteirasCarregadas = carteiras;
+    public void exibirCarteiras(Map<Carteira, Posicao> posicoes, BigDecimal cotacaoAtual) {
+        this.carteirasCarregadas = List.copyOf(posicoes.keySet());
         modeloTabelaCarteiras.setRowCount(0);
-        for (CarteiraDTO carteira : carteiras) {
-            modeloTabelaCarteiras.addRow(new Object[]{
-                    carteira.id(),
-                    carteira.nomeTitular(),
-                    carteira.corretora(),
-                    carteira.saldo(),
-                    carteira.valorMercado()
-            });
-        }
+        posicoes.forEach((carteira, posicao) -> modeloTabelaCarteiras.addRow(new Object[]{
+                carteira.getId(),
+                carteira.getNomeTitular(),
+                carteira.getCorretora(),
+                posicao.getSaldo(),
+                posicao.calcularValorDeMercado(cotacaoAtual)
+        }));
     }
 
     /**
@@ -251,10 +251,10 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
     /**
      * Retorna a carteira atualmente selecionada pelo usuário na tabela visual.
      *
-     * @return O objeto {@link CarteiraDTO} selecionado, ou {@code null} se não houver linha ativa
+     * @return a carteira selecionada, ou {@code null} se não houver linha ativa
      */
     @Override
-    public CarteiraDTO getCarteiraSelecionada() {
+    public Carteira getCarteiraSelecionada() {
         int linhaSelecionada = tabelaCarteiras.getSelectedRow();
         if (linhaSelecionada >= 0 && linhaSelecionada < carteirasCarregadas.size()) {
             return carteirasCarregadas.get(linhaSelecionada);
@@ -276,7 +276,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
      * @param carteira Dados da carteira a ser modificada
      */
     @Override
-    public void abrirModalEdicao(CarteiraDTO carteira) {
+    public void abrirModalEdicao(Carteira carteira) {
         abrirDialogFormulario(carteira);
     }
 
@@ -296,7 +296,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
      *
      * @param existente Carteira para edição, ou {@code null} em caso de novo registro
      */
-    private void abrirDialogFormulario(CarteiraDTO existente) {
+    private void abrirDialogFormulario(Carteira existente) {
         Frame janelaMae = (Frame) SwingUtilities.getWindowAncestor(this);
         MensagensGui mensagens = contexto.getMensagens();
 
@@ -321,13 +321,13 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
 
         JLabel rotuloTitular = new JLabel(mensagens.get("gui.carteira.form.titular"));
         rotuloTitular.setFont(TemaCores.FONTE_LABEL);
-        JTextField campoTextoTitular = new JTextField(existente != null ? existente.nomeTitular() : "", 20);
+        JTextField campoTextoTitular = new JTextField(existente != null ? existente.getNomeTitular() : "", 20);
         campoTextoTitular.setFont(TemaCores.FONTE_PADRAO);
         campoTextoTitular.setPreferredSize(new Dimension(280, 32));
 
         JLabel rotuloCorretora = new JLabel(mensagens.get("gui.carteira.form.corretora"));
         rotuloCorretora.setFont(TemaCores.FONTE_LABEL);
-        JTextField campoTextoCorretora = new JTextField(existente != null ? existente.corretora() : "", 20);
+        JTextField campoTextoCorretora = new JTextField(existente != null ? existente.getCorretora() : "", 20);
         campoTextoCorretora.setFont(TemaCores.FONTE_PADRAO);
         campoTextoCorretora.setPreferredSize(new Dimension(280, 32));
 
@@ -352,7 +352,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
             if (existente == null) {
                 presenter.salvarNovaCarteira(campoTextoTitular.getText(), campoTextoCorretora.getText());
             } else {
-                presenter.atualizarCarteira(existente.id(), campoTextoTitular.getText(), campoTextoCorretora.getText());
+                presenter.atualizarCarteira(existente.getId(), campoTextoTitular.getText(), campoTextoCorretora.getText());
             }
         });
 

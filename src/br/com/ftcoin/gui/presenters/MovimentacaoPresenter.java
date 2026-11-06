@@ -3,18 +3,20 @@ package br.com.ftcoin.gui.presenters;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
-import br.com.ftcoin.gui.dto.MovimentacaoDTO;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
-import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.contracts.IMovimentacaoView;
+import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.FTCoinException;
+import br.com.ftcoin.models.Movimentacao;
 import br.com.ftcoin.models.TipoOperacao;
 
 /**
@@ -35,15 +37,13 @@ public class MovimentacaoPresenter {
 
     private static final Logger LOG = Logger.getLogger(MovimentacaoPresenter.class.getName());
 
+    /** Quantas operações recentes aparecem no histórico da tela. */
+    private static final int QUANTIDADE_HISTORICO = 8;
+
     /**
      * Interface de contrato para atualização da visão de movimentações.
      */
     private final IMovimentacaoView view;
-
-    /**
-     * Serviço de relatórios e apuração de carteiras.
-     */
-    private final RelatoriosService relatoriosService;
 
     /**
      * Serviço de cotações para cálculo imediato de estimativas financeiras.
@@ -56,14 +56,12 @@ public class MovimentacaoPresenter {
      * Constrói o apresentador de movimentações injetando visão e serviços requeridos.
      *
      * @param view             Visão que implementa o contrato {@link IMovimentacaoView}
-     * @param relatoriosService Serviço de dados e carteiras
      * @param cotacaoService   Serviço de consulta de cotações
      * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public MovimentacaoPresenter(IMovimentacaoView view, RelatoriosService relatoriosService, CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
+    public MovimentacaoPresenter(IMovimentacaoView view, CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
         this.contexto = contexto;
         this.view = view;
-        this.relatoriosService = relatoriosService;
         this.cotacaoService = cotacaoService;
     }
 
@@ -80,8 +78,8 @@ public class MovimentacaoPresenter {
      */
     public void carregarCarteiras() {
         try {
-            List<CarteiraDTO> carteiras = relatoriosService.listarCarteirasDTO();
-            view.exibirCarteirasDisponiveis(carteiras);
+            List<Carteira> carteiras = contexto.getCarteiraService().listarTodasCarteiras();
+            view.exibirCarteirasDisponiveis(contexto.getMovimentacaoService().apurarPosicoes(carteiras));
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar carteiras", e);
             view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
@@ -93,8 +91,12 @@ public class MovimentacaoPresenter {
      */
     public void carregarHistoricoGeral() {
         try {
-            List<MovimentacaoDTO> ultimas = relatoriosService.obterResumoDashboard().ultimasMovimentacoes();
-            view.exibirHistoricoMovimentacoes(ultimas);
+            MovimentacaoService movimentacoes = contexto.getMovimentacaoService();
+            List<Carteira> carteiras = contexto.getCarteiraService().listarTodasCarteiras();
+            List<Movimentacao> ultimas = movimentacoes.buscarUltimasMovimentacoes(QUANTIDADE_HISTORICO);
+            Map<Integer, Carteira> carteirasPorId =
+                    carteiras.stream().collect(Collectors.toMap(Carteira::getId, Function.identity()));
+            view.exibirHistoricoMovimentacoes(ultimas, carteirasPorId, movimentacoes.buscarCotacoesDasOperacoes(ultimas));
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar histórico de movimentações", e);
             view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));

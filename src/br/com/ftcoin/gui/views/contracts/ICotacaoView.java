@@ -1,8 +1,9 @@
 package br.com.ftcoin.gui.views.contracts;
 
-import java.util.List;
-import br.com.ftcoin.gui.dto.CotacaoDTO;
-import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
+import java.util.Map;
+
+import br.com.ftcoin.gui.common.OrigemCotacao;
+import br.com.ftcoin.models.Cotacao;
 
 /**
  * <p>
@@ -21,37 +22,39 @@ import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
 public interface ICotacaoView {
 
     /**
-     * Atualiza os componentes visuais com os dados da cotação consultada.
+     * Exibe a cotação consultada, de onde ela veio e quanto a consulta demorou.
      *
-     * @param cotacao Objeto imutável contendo preço, origem e métricas de telemetria
+     * @param cotacao         cotação consultada
+     * @param origem          se a cotação veio do Oráculo ou do cache
+     * @param tempoRespostaMs duração da consulta, em milissegundos
      */
-    void exibirCotacao(CotacaoDTO cotacao);
+    void exibirCotacao(Cotacao cotacao, OrigemCotacao origem, long tempoRespostaMs);
 
     /**
-     * Alterna o estado visual de processamento da tela (barra de progresso e botões).
+     * Mostra ou esconde o indicador de consulta em andamento.
      *
-     * @param carregando {@code true} para indicar carregamento em andamento; {@code false} para repouso
+     * @param carregando {@code true} enquanto a consulta não terminar
      */
     void exibirCarregando(boolean carregando);
 
     /**
-     * Renderiza o histórico de oscilações diárias recentes na tabela da tela.
+     * Exibe as cotações dos últimos dias e a variação de cada dia em relação ao anterior.
      *
-     * @param historico Lista de registros de cotação dos últimos períodos
+     * @param historico cotações da mais recente para a mais antiga, cada uma com a sua origem
      */
-    void exibirHistoricoOscilacoes(List<RelatorioHistoricoCotacaoDTO> historico);
+    void exibirHistoricoOscilacoes(Map<Cotacao, OrigemCotacao> historico);
 
     /**
-     * Exibe um diálogo modal com mensagem de confirmação e êxito operacional.
+     * Exibe uma mensagem de sucesso ao usuário.
      *
-     * @param mensagem Texto localizado contendo os detalhes do sucesso
+     * @param mensagem texto já traduzido
      */
     void exibirMensagemSucesso(String mensagem);
 
     /**
-     * Exibe um diálogo modal com mensagem de falha ou indisponibilidade na consulta.
+     * Exibe uma mensagem de falha na consulta ao usuário.
      *
-     * @param mensagem Texto explicativo da falha ocorrida
+     * @param mensagem texto já traduzido
      */
     void exibirMensagemErro(String mensagem);
 }

@@ -1,14 +1,11 @@
 package br.com.ftcoin.gui.presenters;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
-import br.com.ftcoin.gui.dto.CotacaoDTO;
-import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.views.contracts.ICotacaoView;
 import br.com.ftcoin.models.FTCoinException;
@@ -30,6 +27,9 @@ import br.com.ftcoin.models.FTCoinException;
 public class CotacaoPresenter {
 
     private static final Logger LOG = Logger.getLogger(CotacaoPresenter.class.getName());
+
+    /** Quantos dias para trás o histórico de oscilações mostra. */
+    private static final int DIAS_HISTORICO = 10;
 
     /**
      * Interface de contrato para atualização dos componentes visuais de cotação.
@@ -78,9 +78,9 @@ public class CotacaoPresenter {
         cotacaoService.buscarCotacaoAssincrona(
                 data,
                 forcarOraculo,
-                dto -> {
+                (cotacao, origem, tempoRespostaMs) -> {
                     view.exibirCarregando(false);
-                    view.exibirCotacao(dto);
+                    view.exibirCotacao(cotacao, origem, tempoRespostaMs);
                     carregarHistorico();
                 },
                 erro -> {
@@ -111,8 +111,7 @@ public class CotacaoPresenter {
      */
     public void carregarHistorico() {
         try {
-            List<RelatorioHistoricoCotacaoDTO> historico = cotacaoService.obterHistoricoRecente(10);
-            view.exibirHistoricoOscilacoes(historico);
+            view.exibirHistoricoOscilacoes(cotacaoService.obterHistoricoRecente(DIAS_HISTORICO));
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar histórico de cotações", e);
             view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));

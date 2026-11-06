@@ -7,8 +7,11 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -22,16 +25,16 @@ import javax.swing.table.DefaultTableModel;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
+import br.com.ftcoin.gui.common.OrigemCotacao;
 import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.common.TextosTraduzidos;
-import br.com.ftcoin.gui.dto.CotacaoDTO;
-import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
 import br.com.ftcoin.gui.presenters.CotacaoPresenter;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.views.components.BadgeLabel;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.contracts.ICotacaoView;
+import br.com.ftcoin.models.Cotacao;
 
 /**
  * <p>
@@ -50,6 +53,9 @@ import br.com.ftcoin.gui.views.contracts.ICotacaoView;
 public class CotacaoPanel extends JPanel implements ICotacaoView {
 
     private static final long serialVersionUID = 1L;
+
+    /** Formato do horário da consulta, igual em todos os idiomas. */
+    private static final DateTimeFormatter FORMATO_HORA = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     /**
      * Apresentador responsável pelas regras de apresentação da tela de cotações.
@@ -294,19 +300,21 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
     }
 
     /**
-     * Atualiza os componentes visuais da tela com os dados da cotação consultada.
+     * Atualiza a tela com a cotação consultada, a origem dela e o tempo da consulta.
      *
-     * @param cotacao Objeto imutável contendo preço, origem e métricas de telemetria
+     * @param cotacao         cotação consultada
+     * @param origem          se veio do Oráculo ou do cache
+     * @param tempoRespostaMs duração da consulta, em milissegundos
      */
     @Override
-    public void exibirCotacao(CotacaoDTO cotacao) {
+    public void exibirCotacao(Cotacao cotacao, OrigemCotacao origem, long tempoRespostaMs) {
         MensagensGui mensagens = contexto.getMensagens();
         GuiFormatador formatador = mensagens.getFormatador();
 
-        rotuloValorMoeda.setText(formatador.moeda(cotacao.valor()));
-        etiquetaOrigemDado.configurarOrigem(cotacao.origem(), mensagens);
-        rotuloLatenciaResposta.setText(mensagens.get("gui.cotacao.latencia", cotacao.tempoRespostaMs()));
-        rotuloHorarioConsulta.setText(mensagens.get("gui.cotacao.horario", cotacao.horaConsulta().toString().substring(0, 8)));
+        rotuloValorMoeda.setText(formatador.moeda(cotacao.getValor()));
+        etiquetaOrigemDado.configurarOrigem(origem, mensagens);
+        rotuloLatenciaResposta.setText(mensagens.get("gui.cotacao.latencia", tempoRespostaMs));
+        rotuloHorarioConsulta.setText(mensagens.get("gui.cotacao.horario", LocalTime.now().format(FORMATO_HORA)));
     }
 
     /**
@@ -321,21 +329,30 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
     }
 
     /**
-     * Renderiza o histórico de oscilações diárias na tabela visual.
+     * Preenche a tabela com as cotações dos últimos dias e a variação de cada dia.
      *
-     * @param historico Lista de registros de cotação dos últimos períodos
+     * @param historico cotações da mais recente para a mais antiga, cada uma com a sua origem
      */
     @Override
-    public void exibirHistoricoOscilacoes(List<RelatorioHistoricoCotacaoDTO> historico) {
-        modeloTabelaHistorico.setRowCount(0);
-        GuiFormatador formatador = contexto.getMensagens().getFormatador();
-        for (RelatorioHistoricoCotacaoDTO item : historico) {
-            modeloTabelaHistorico.addRow(new Object[]{
-                    formatador.data(item.data()),
-                    item.valorCotacao(),
-                    item.variacaoAbsoluta(),
-                    item.variacaoPercentual(),
-                    item.origem()
+    public void exibirHistoricoOscilacoes(Map<Cotacao, OrigemCotacao> historico) {
+        preencherHistorico(modeloTabelaHistorico, historico, contexto.getMensagens().getFormatador());
+    }
+
+    // Tabela de cotações (aqui e no relatório 5): data, valor, variação em reais e em %, origem.
+    // O histórico vem do dia mais recente para o mais antigo, então a cotação anterior é a da linha seguinte.
+    static void preencherHistorico(DefaultTableModel modelo, Map<Cotacao, OrigemCotacao> historico,
+            GuiFormatador formatador) {
+        modelo.setRowCount(0);
+        List<Cotacao> cotacoes = List.copyOf(historico.keySet());
+        for (int i = 0; i < cotacoes.size(); i++) {
+            Cotacao cotacao = cotacoes.get(i);
+            Cotacao anterior = (i + 1 < cotacoes.size()) ? cotacoes.get(i + 1) : null;
+            modelo.addRow(new Object[]{
+                    formatador.data(cotacao.getData()),
+                    cotacao.getValor(),
+                    cotacao.calcularVariacao(anterior),
+                    cotacao.calcularVariacaoPercentual(anterior),
+                    historico.get(cotacao)
             });
         }
     }

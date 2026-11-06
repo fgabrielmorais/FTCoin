@@ -5,10 +5,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.services.CarteiraService;
+import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
-import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.contracts.ICarteiraView;
 import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.FTCoinException;
@@ -36,24 +35,17 @@ public class CarteiraPresenter {
      */
     private final ICarteiraView view;
 
-    /**
-     * Serviço de relatórios e consulta de dados consolidados.
-     */
-    private final RelatoriosService relatoriosService;
-
     private final ContextoAplicacao contexto;
 
     /**
      * Constrói o apresentador de carteiras associando a visão e o serviço de dados.
      *
      * @param view             Visão que implementa o contrato {@link ICarteiraView}
-     * @param relatoriosService Serviço de relatórios e dados consolidados
      * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public CarteiraPresenter(ICarteiraView view, RelatoriosService relatoriosService, ContextoAplicacao contexto) {
+    public CarteiraPresenter(ICarteiraView view, ContextoAplicacao contexto) {
         this.contexto = contexto;
         this.view = view;
-        this.relatoriosService = relatoriosService;
     }
 
     /**
@@ -61,8 +53,9 @@ public class CarteiraPresenter {
      */
     public void carregarCarteiras() {
         try {
-            List<CarteiraDTO> carteiras = relatoriosService.listarCarteirasDTO();
-            view.exibirCarteiras(carteiras);
+            MovimentacaoService movimentacoes = contexto.getMovimentacaoService();
+            List<Carteira> carteiras = contexto.getCarteiraService().listarTodasCarteiras();
+            view.exibirCarteiras(movimentacoes.apurarPosicoes(carteiras), movimentacoes.buscarCotacaoAtual());
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar carteiras", e);
             view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
@@ -149,8 +142,8 @@ public class CarteiraPresenter {
      * Exclui a carteira selecionada na tabela da visão caso não possua movimentações vinculadas.
      */
     public void excluirCarteira() {
-        CarteiraDTO selecionada = view.getCarteiraSelecionada();
-        LOG.log(Level.FINE, "Usuário pediu: excluir carteira {0}", selecionada == null ? "(nenhuma selecionada)" : selecionada.id());
+        Carteira selecionada = view.getCarteiraSelecionada();
+        LOG.log(Level.FINE, "Usuário pediu: excluir carteira {0}", selecionada == null ? "(nenhuma selecionada)" : selecionada.getId());
         MensagensGui mensagens = contexto.getMensagens();
 
         if (selecionada == null) {
@@ -161,14 +154,14 @@ public class CarteiraPresenter {
 
         try {
             CarteiraService servico = contexto.getCarteiraService();
-            servico.excluirCarteira(selecionada.id());
+            servico.excluirCarteira(selecionada.getId());
             carregarCarteiras();
-            view.exibirMensagemSucesso(mensagens.get("gui.carteira.sucesso.excluida", selecionada.id()));
+            view.exibirMensagemSucesso(mensagens.get("gui.carteira.sucesso.excluida", selecionada.getId()));
         } catch (FTCoinException e) {
-            RegistroDeFalhas.registrar(LOG, "excluir carteira " + selecionada.id(), e);
+            RegistroDeFalhas.registrar(LOG, "excluir carteira " + selecionada.getId(), e);
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
-            RegistroDeFalhas.registrar(LOG, "excluir carteira " + selecionada.id(), e);
+            RegistroDeFalhas.registrar(LOG, "excluir carteira " + selecionada.getId(), e);
             view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }

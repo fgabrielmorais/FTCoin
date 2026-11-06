@@ -4,9 +4,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -19,8 +17,6 @@ import javax.swing.SwingUtilities;
 import br.com.ftcoin.daos.OraculoDAO;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.OrigemCotacao;
-import br.com.ftcoin.gui.dto.CotacaoDTO;
-import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
 import br.com.ftcoin.models.Cotacao;
 import br.com.ftcoin.models.FTCoinException;
 import br.com.ftcoin.models.RegraNegocioException;
@@ -85,6 +81,25 @@ public class CotacaoCacheService {
     private final ContextoAplicacao contexto;
 
     /**
+     * Recebe o resultado de uma consulta assíncrona de cotação, já na thread do Swing.
+     *
+     * @author Grupo B.05
+     * @version 1.0.0
+     */
+    @FunctionalInterface
+    public interface OuvinteCotacao {
+
+        /**
+         * Recebe a cotação consultada.
+         *
+         * @param cotacao         cotação da data pedida
+         * @param origem          se veio do Oráculo ou do cache
+         * @param tempoRespostaMs duração da consulta, em milissegundos
+         */
+        void receber(Cotacao cotacao, OrigemCotacao origem, long tempoRespostaMs);
+    }
+
+    /**
      * Cria o serviço de cotações. O cache é esvaziado sempre que a persistência muda,
      * para não misturar cotações de mecanismos diferentes.
      *
@@ -106,7 +121,7 @@ public class CotacaoCacheService {
     public void buscarCotacaoAssincrona(
             LocalDate data,
             boolean forcarOraculo,
-            Consumer<CotacaoDTO> onSucesso,
+            OuvinteCotacao onSucesso,
             Consumer<Throwable> onErro
     ) {
         final LocalDate dataAlvo = (data != null) ? data : LocalDate.now();
@@ -120,14 +135,8 @@ public class CotacaoCacheService {
                     if (itemCache != null && itemCache.estaValida()) {
                         long tempoMs = Math.max(1, System.currentTimeMillis() - instanteInicio);
                         LOG.log(Level.FINE, "Cotação de {0} servida pelo cache ({1} ms)", new Object[] { dataAlvo, tempoMs });
-                        CotacaoDTO dto = new CotacaoDTO(
-                                dataAlvo,
-                                itemCache.cotacao(),
-                                OrigemCotacao.CACHE,
-                                LocalTime.now(),
-                                tempoMs
-                        );
-                        SwingUtilities.invokeLater(() -> onSucesso.accept(dto));
+                        Cotacao cotacao = new Cotacao(dataAlvo, itemCache.cotacao());
+                        SwingUtilities.invokeLater(() -> onSucesso.receber(cotacao, OrigemCotacao.CACHE, tempoMs));
                         return;
                     }
                 }
@@ -147,15 +156,8 @@ public class CotacaoCacheService {
                 long tempoMs = System.currentTimeMillis() - instanteInicio;
                 LOG.log(Level.FINE, "Cotação de {0} = {1}, respondida pelo Oráculo em {2} ms",
                         new Object[] { dataAlvo, cotacao, tempoMs });
-                CotacaoDTO dto = new CotacaoDTO(
-                        dataAlvo,
-                        cotacao,
-                        OrigemCotacao.ORACULO,
-                        LocalTime.now(),
-                        tempoMs
-                );
-
-                SwingUtilities.invokeLater(() -> onSucesso.accept(dto));
+                Cotacao consultada = new Cotacao(dataAlvo, cotacao);
+                SwingUtilities.invokeLater(() -> onSucesso.receber(consultada, OrigemCotacao.ORACULO, tempoMs));
 
             } catch (FTCoinException e) {
                 // Erro previsto (ex.: sem cotação para a data): quem o registra é o presenter
@@ -215,14 +217,13 @@ public class CotacaoCacheService {
      * Dias sem cotação no Oráculo ficam fora da lista, em vez de receber um valor inventado.
      *
      * @param dias Quantidade de dias passados a serem consultados
-     * @return A lista de registros em formato {@link RelatorioHistoricoCotacaoDTO}
+     * @return as cotações da mais recente para a mais antiga, cada uma com a origem (Oráculo ou cache)
      */
-    public List<RelatorioHistoricoCotacaoDTO> obterHistoricoRecente(int dias) {
-        List<RelatorioHistoricoCotacaoDTO> lista = new ArrayList<>();
+    public Map<Cotacao, OrigemCotacao> obterHistoricoRecente(int dias) {
+        Map<Cotacao, OrigemCotacao> historico = new LinkedHashMap<>();
         LocalDate hoje = LocalDate.now();
-        Cotacao anterior = null;
 
-        for (int i = dias; i >= 0; i--) {
+        for (int i = 0; i <= dias; i++) {
             LocalDate data = hoje.minusDays(i);
             // A origem é decidida antes da busca, que guarda a cotação no cache
             EntradaCache noCache = mapaCache.get(data);
@@ -231,13 +232,10 @@ public class CotacaoCacheService {
             if (cotacao == null) {
                 continue;
             }
-            Cotacao atual = new Cotacao(data, cotacao);
-            lista.add(new RelatorioHistoricoCotacaoDTO(data, cotacao,
-                    atual.calcularVariacao(anterior), atual.calcularVariacaoPercentual(anterior), origem));
-            anterior = atual;
+            historico.put(new Cotacao(data, cotacao), origem);
         }
 
-        LOG.log(Level.FINE, "Histórico de cotações montado: {0} dia(s)", lista.size());
-        return lista.reversed();
+        LOG.log(Level.FINE, "Histórico de cotações montado: {0} dia(s)", historico.size());
+        return historico;
     }
 }

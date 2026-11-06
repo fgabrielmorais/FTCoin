@@ -25,7 +25,6 @@ import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.ModoNavegacao;
 import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
-import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.components.ModernButton;
 
 /**
@@ -109,13 +108,12 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
 
         CotacaoCacheService cotacaoService = new CotacaoCacheService(contexto);
-        RelatoriosService relatoriosService = new RelatoriosService(cotacaoService, contexto);
 
-        pnlDashboard = new DashboardPanel(relatoriosService, this::navegarPara, contexto);
-        pnlCarteiras = new CarteirasPanel(relatoriosService, contexto);
-        pnlMovimentacoes = new MovimentacoesPanel(relatoriosService, cotacaoService, contexto);
+        pnlDashboard = new DashboardPanel(this::navegarPara, contexto);
+        pnlCarteiras = new CarteirasPanel(contexto);
+        pnlMovimentacoes = new MovimentacoesPanel(cotacaoService, contexto);
         pnlCotacao = new CotacaoPanel(cotacaoService, contexto);
-        pnlRelatorios = new RelatoriosPanel(relatoriosService, contexto);
+        pnlRelatorios = new RelatoriosPanel(cotacaoService, contexto);
 
         pnlConteudo.add(pnlDashboard, TELA_DASHBOARD);
         pnlConteudo.add(pnlCarteiras, TELA_CARTEIRAS);

@@ -1,12 +1,15 @@
 package br.com.ftcoin.gui.views.contracts;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
-import br.com.ftcoin.gui.dto.MovimentacaoDTO;
-import br.com.ftcoin.gui.dto.PosicaoRelatorioDTO;
-import br.com.ftcoin.gui.dto.RelatorioConsolidadoItemDTO;
-import br.com.ftcoin.gui.dto.RelatorioDesempenhoDTO;
-import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
+import java.util.Map;
+
+import br.com.ftcoin.gui.common.OrigemCotacao;
+import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.models.Cotacao;
+import br.com.ftcoin.models.Movimentacao;
+import br.com.ftcoin.models.Posicao;
 
 /**
  * <p>
@@ -31,51 +34,56 @@ import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
 public interface IRelatoriosView {
 
     /**
-     * Atualiza a caixa de seleção com as carteiras disponíveis para filtragem nos relatórios individuais.
+     * Preenche o seletor de carteira usado pelos relatórios 1 e 2.
      *
-     * @param carteiras Lista contendo os dados básicos das carteiras cadastradas
+     * @param carteiras carteiras cadastradas
      */
-    void exibirCarteirasFiltro(List<CarteiraDTO> carteiras);
+    void exibirCarteirasFiltro(List<Carteira> carteiras);
 
     /**
-     * Atualiza os cartões analíticos do Relatório 1 com os indicadores de posição e custo médio ponderado.
+     * Exibe o relatório 1: a posição da carteira selecionada pelo custo médio.
      *
-     * @param posicao Objeto imutável contendo os cálculos de saldo, CMP, valor de mercado e resultados
+     * @param posicao      posição apurada da carteira
+     * @param cotacaoAtual cotação de hoje, usada no valor de mercado, nos ganhos e no ROI
      */
-    void exibirRelatorio1Posicao(PosicaoRelatorioDTO posicao);
+    void exibirRelatorio1Posicao(Posicao posicao, BigDecimal cotacaoAtual);
 
     /**
-     * Renderiza na tabela do Relatório 2 o extrato cronológico de operações da carteira selecionada.
+     * Exibe o relatório 2: o histórico de operações da carteira selecionada.
      *
-     * @param historico Lista com as movimentações filtradas da carteira
+     * @param historico movimentações da mais recente para a mais antiga
+     * @param cotacoes  cotação de cada data das movimentações, usada no valor de cada operação
      */
-    void exibirRelatorio2Historico(List<MovimentacaoDTO> historico);
+    void exibirRelatorio2Historico(List<Movimentacao> historico, Map<LocalDate, BigDecimal> cotacoes);
 
     /**
-     * Renderiza na tabela do Relatório 3 a visão horizontal de todas as carteiras e participações percentuais.
+     * Exibe o relatório 3: todas as carteiras e quanto cada uma representa do portfólio.
      *
-     * @param consolidado Lista de itens consolidados do portfólio
+     * @param posicoes     posição de cada carteira
+     * @param portfolio    soma de todas as posições
+     * @param cotacaoAtual cotação de hoje
      */
-    void exibirRelatorio3Consolidado(List<RelatorioConsolidadoItemDTO> consolidado);
+    void exibirRelatorio3Consolidado(Map<Carteira, Posicao> posicoes, Posicao portfolio, BigDecimal cotacaoAtual);
 
     /**
-     * Renderiza na tabela do Relatório 4 a avaliação de retorno financeiro e taxa de rentabilidade (ROI).
+     * Exibe o relatório 4: valor investido, valor atual, resultado e ROI de cada carteira.
      *
-     * @param desempenho Lista com as métricas de lucratividade calculadas por carteira
+     * @param posicoes     posição de cada carteira
+     * @param cotacaoAtual cotação de hoje
      */
-    void exibirRelatorio4Desempenho(List<RelatorioDesempenhoDTO> desempenho);
+    void exibirRelatorio4Desempenho(Map<Carteira, Posicao> posicoes, BigDecimal cotacaoAtual);
 
     /**
-     * Renderiza na tabela do Relatório 5 a série temporal de cotações emitidas pelo oráculo.
+     * Exibe o relatório 5: as cotações dos últimos dias e a variação diária.
      *
-     * @param cotacoes Lista contendo o histórico diário de oscilações e fontes
+     * @param historico cotações da mais recente para a mais antiga, cada uma com a sua origem
      */
-    void exibirRelatorio5Cotacoes(List<RelatorioHistoricoCotacaoDTO> cotacoes);
+    void exibirRelatorio5Cotacoes(Map<Cotacao, OrigemCotacao> historico);
 
     /**
-     * Exibe um diálogo modal com mensagem de falha na geração ou atualização dos relatórios.
+     * Exibe uma mensagem de erro ao usuário.
      *
-     * @param mensagem Texto explicativo da falha ocorrida
+     * @param mensagem texto já traduzido
      */
     void exibirMensagemErro(String mensagem);
 }

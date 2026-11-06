@@ -1,9 +1,13 @@
 package br.com.ftcoin.gui.views.contracts;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
-import br.com.ftcoin.gui.dto.MovimentacaoDTO;
+import java.util.Map;
+
+import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.models.Movimentacao;
+import br.com.ftcoin.models.Posicao;
 import br.com.ftcoin.models.TipoOperacao;
 
 /**
@@ -23,18 +27,21 @@ import br.com.ftcoin.models.TipoOperacao;
 public interface IMovimentacaoView {
 
     /**
-     * Atualiza as caixas de seleção de carteiras disponíveis para operações de compra e venda.
+     * Atualiza as caixas de seleção de carteiras dos formulários de compra e venda.
      *
-     * @param carteiras Lista de carteiras ativas para preenchimento dos componentes
+     * @param posicoes posição de cada carteira; o saldo aparece no formulário de venda
      */
-    void exibirCarteirasDisponiveis(List<CarteiraDTO> carteiras);
+    void exibirCarteirasDisponiveis(Map<Carteira, Posicao> posicoes);
 
     /**
-     * Renderiza o histórico de transações na tabela da tela de movimentações.
+     * Exibe as movimentações mais recentes de todas as carteiras.
      *
-     * @param movimentacoes Lista contendo as movimentações mais recentes em formato {@link MovimentacaoDTO}
+     * @param movimentacoes movimentações da mais recente para a mais antiga
+     * @param carteiras     carteiras indexadas pelo identificador, para mostrar o titular de cada operação
+     * @param cotacoes      cotação de cada data das movimentações, usada no valor de cada operação
      */
-    void exibirHistoricoMovimentacoes(List<MovimentacaoDTO> movimentacoes);
+    void exibirHistoricoMovimentacoes(List<Movimentacao> movimentacoes, Map<Integer, Carteira> carteiras,
+            Map<LocalDate, BigDecimal> cotacoes);
 
     /**
      * Atualiza a prévia financeira de um dos formulários com a cotação estimada e o montante total.

@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -27,14 +28,14 @@ import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.common.TextosTraduzidos;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
-import br.com.ftcoin.gui.dto.MovimentacaoDTO;
 import br.com.ftcoin.gui.presenters.MovimentacaoPresenter;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
-import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.contracts.IMovimentacaoView;
+import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.models.Movimentacao;
+import br.com.ftcoin.models.Posicao;
 import br.com.ftcoin.models.TipoOperacao;
 
 /**
@@ -156,13 +157,12 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     /**
      * Constrói o painel de movimentações inicializando formulários e o apresentador.
      *
-     * @param relatoriosService Serviço analítico de relatórios e carteiras
      * @param cotacaoService   Serviço de cotações para estimativas imediatas
      * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public MovimentacoesPanel(RelatoriosService relatoriosService, CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
+    public MovimentacoesPanel(CotacaoCacheService cotacaoService, ContextoAplicacao contexto) {
         this.contexto = contexto;
-        this.presenter = new MovimentacaoPresenter(this, relatoriosService, cotacaoService, contexto);
+        this.presenter = new MovimentacaoPresenter(this, cotacaoService, contexto);
         MensagensGui mensagens = contexto.getMensagens();
         this.textos = new TextosTraduzidos(mensagens);
 
@@ -412,22 +412,22 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     }
 
     /**
-     * Atualiza as caixas de seleção de carteiras disponíveis para compra e venda.
+     * Atualiza as caixas de seleção de carteiras dos formulários de compra e venda.
      *
-     * @param carteiras Lista contendo as carteiras ativas
+     * @param posicoes posição de cada carteira; o saldo aparece no formulário de venda
      */
     @Override
-    public void exibirCarteirasDisponiveis(List<CarteiraDTO> carteiras) {
+    public void exibirCarteirasDisponiveis(Map<Carteira, Posicao> posicoes) {
         comboCarteiraCompra.removeAllItems();
         comboCarteiraVenda.removeAllItems();
 
         GuiFormatador formatador = contexto.getMensagens().getFormatador();
-        for (CarteiraDTO carteira : carteiras) {
-            String rotulo = "#" + carteira.id() + " - " + carteira.nomeTitular() + " (" + carteira.corretora() + ")";
-            ItemCarteiraCombo item = new ItemCarteiraCombo(carteira.id(), rotulo, carteira.saldo());
+        posicoes.forEach((carteira, posicao) -> {
+            String rotulo = "#" + carteira.getId() + " - " + carteira.getNomeTitular() + " (" + carteira.getCorretora() + ")";
+            ItemCarteiraCombo item = new ItemCarteiraCombo(carteira.getId(), rotulo, posicao.getSaldo());
             comboCarteiraCompra.addItem(item);
             comboCarteiraVenda.addItem(item);
-        }
+        });
 
         if (comboCarteiraVenda.getItemCount() > 0) {
             ItemCarteiraCombo primeiro = comboCarteiraVenda.getItemAt(0);
@@ -436,23 +436,19 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     }
 
     /**
-     * Renderiza o histórico de transações na tabela visual da tela.
+     * Preenche a tabela com as movimentações mais recentes de todas as carteiras.
      *
-     * @param movimentacoes Lista com os registros recentes
+     * @param movimentacoes movimentações da mais recente para a mais antiga
+     * @param carteiras     carteiras indexadas pelo identificador
+     * @param cotacoes      cotação de cada data das movimentações
      */
     @Override
-    public void exibirHistoricoMovimentacoes(List<MovimentacaoDTO> movimentacoes) {
+    public void exibirHistoricoMovimentacoes(List<Movimentacao> movimentacoes, Map<Integer, Carteira> carteiras,
+            Map<LocalDate, BigDecimal> cotacoes) {
         modeloTabelaHistorico.setRowCount(0);
         GuiFormatador formatador = contexto.getMensagens().getFormatador();
-        for (MovimentacaoDTO movimentacao : movimentacoes) {
-            modeloTabelaHistorico.addRow(new Object[]{
-                    formatador.data(movimentacao.dataOperacao()),
-                    "#" + movimentacao.idCarteira() + " " + movimentacao.nomeTitular(),
-                    movimentacao.tipoOperacao(),
-                    movimentacao.quantidade(),
-                    movimentacao.cotacaoAplicada(),
-                    movimentacao.valorTotalOperacao()
-            });
+        for (Movimentacao movimentacao : movimentacoes) {
+            modeloTabelaHistorico.addRow(DashboardPanel.linhaMovimentacao(movimentacao, carteiras, cotacoes, formatador));
         }
     }
 

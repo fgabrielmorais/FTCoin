@@ -1,7 +1,10 @@
 package br.com.ftcoin.gui.views.contracts;
 
-import java.util.List;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
+import java.math.BigDecimal;
+import java.util.Map;
+
+import br.com.ftcoin.models.Carteira;
+import br.com.ftcoin.models.Posicao;
 
 /**
  * <p>
@@ -20,47 +23,48 @@ import br.com.ftcoin.gui.dto.CarteiraDTO;
 public interface ICarteiraView {
 
     /**
-     * Renderiza a listagem de carteiras ativas na tabela visual da interface.
+     * Exibe as carteiras cadastradas com o saldo e o valor de mercado de cada uma.
      *
-     * @param carteiras Lista contendo os dados imutáveis de carteiras em formato {@link CarteiraDTO}
+     * @param posicoes     posição de cada carteira, na ordem em que devem aparecer
+     * @param cotacaoAtual cotação de hoje, usada no valor de mercado
      */
-    void exibirCarteiras(List<CarteiraDTO> carteiras);
+    void exibirCarteiras(Map<Carteira, Posicao> posicoes, BigDecimal cotacaoAtual);
 
     /**
-     * Exibe um diálogo modal com mensagem de confirmação e êxito operacional.
+     * Exibe uma mensagem de sucesso ao usuário.
      *
-     * @param mensagem Texto localizado contendo os detalhes do sucesso
+     * @param mensagem texto já traduzido
      */
     void exibirMensagemSucesso(String mensagem);
 
     /**
-     * Exibe um diálogo modal com mensagem informativa de falha ou erro de validação.
+     * Exibe uma mensagem de erro ou de validação ao usuário.
      *
-     * @param mensagem Texto localizado contendo os detalhes do problema
+     * @param mensagem texto já traduzido
      */
     void exibirMensagemErro(String mensagem);
 
     /**
-     * Retorna a carteira atualmente selecionada pelo usuário na tabela visual.
+     * Devolve a carteira selecionada na tabela.
      *
-     * @return O objeto {@link CarteiraDTO} selecionado, ou {@code null} se não houver seleção ativa
+     * @return a carteira selecionada, ou {@code null} se nenhuma linha estiver selecionada
      */
-    CarteiraDTO getCarteiraSelecionada();
+    Carteira getCarteiraSelecionada();
 
     /**
-     * Abre a janela modal com formulário limpo para inclusão de nova carteira.
+     * Abre o formulário vazio de inclusão de carteira.
      */
     void abrirModalCadastro();
 
     /**
-     * Abre a janela modal com os dados cadastrais preenchidos para alteração.
+     * Abre o formulário de edição já preenchido com os dados da carteira.
      *
-     * @param carteira Dados da carteira a ser modificada
+     * @param carteira carteira a editar
      */
-    void abrirModalEdicao(CarteiraDTO carteira);
+    void abrirModalEdicao(Carteira carteira);
 
     /**
-     * Fecha e libera a janela modal de formulário atualmente em exibição.
+     * Fecha o formulário de carteira aberto, se houver.
      */
     void fecharModal();
 }

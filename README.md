@@ -37,7 +37,7 @@ Todos os cálculos usam `BigDecimal` com arredondamento `HALF_EVEN`.
 
 - **Linguagem:** Java 21, com `module-info`.
 - **Interface gráfica (MVP):** cada tela implementa um contrato `I*View` e só exibe e lê dados. O presenter da tela recebe a view e os serviços pelo construtor, trata os eventos e decide o que mostrar.
-- **Modelo:** as entidades, a apuração da posição (`Posicao`) e os serviços `CarteiraService` e `MovimentacaoService` concentram as regras de negócio. As duas interfaces usam os mesmos serviços.
+- **Modelo:** as entidades (`Carteira`, `Movimentacao`, `Cotacao`), a apuração da posição (`Posicao`) e os serviços `CarteiraService` e `MovimentacaoService` concentram as regras e os cálculos, inclusive os dos relatórios (ROI, participação no portfólio, variação da cotação). As duas interfaces usam os mesmos serviços, e as telas recebem as próprias entidades, sem objetos intermediários.
 - **Contexto da aplicação:** a GUI cria um único `ContextoAplicacao` na inicialização e o injeta nas telas. Ele guarda os DAOs, os serviços e as mensagens, e é o único ponto que troca entre memória e MariaDB.
 - **Persistência:** padrão DAO com classes abstratas (`CarteiraDAO`, `MovimentacaoDAO`, `OraculoDAO`) e duas implementações de cada: em memória e em MariaDB. A `DAOFactory` (Abstract Factory) escolhe entre elas. Os DAOs não são Singleton; o Singleton fica só na conexão com o banco (`ConexaoMariaDB`), fechada ao sair.
 - **Textos:** nenhum texto de interface fica no código. Os textos curtos vêm dos arquivos `Messages_<idioma>.properties`, e o manual e os créditos, de arquivos HTML por idioma em `gui/textos`.
@@ -64,8 +64,7 @@ src/
     │   ├── common/        # contexto, mensagens, formatação e enums da interface
     │   ├── presenters/    # um presenter por tela
     │   ├── views/         # telas, contratos (contracts/) e componentes visuais
-    │   ├── services/      # cache de cotações e montagem dos relatórios
-    │   ├── dto/           # dados preparados para as telas
+    │   ├── services/      # cache de cotações do Oráculo
     │   └── textos/        # manual e créditos em HTML, um arquivo por idioma
     ├── main/          # ponto de entrada da linha de comando
     └── views/         # telas da linha de comando
