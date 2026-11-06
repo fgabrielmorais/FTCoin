@@ -44,19 +44,9 @@ public class CotacaoCacheService {
     private static final Logger LOG = Logger.getLogger(CotacaoCacheService.class.getName());
 
     /**
-     * Cotação usada quando o Oráculo não tem valor para a data pedida.
-     */
-    private static final BigDecimal COTACAO_PADRAO = BigDecimal.valueOf(5.50);
-
-    /**
      * Tempo de vida limite (TTL) de uma cotação armazenada no cache local.
      */
     private static final Duration TTL_CACHE = Duration.ofSeconds(60);
-
-    /**
-     * Tempo em milissegundos simulado para representar o tráfego de rede ao Oráculo externo.
-     */
-    private static final long LATENCIA_SIMULADA_ORACULO_MS = 380;
 
     /**
      * <p>
@@ -94,12 +84,14 @@ public class CotacaoCacheService {
     private final ContextoAplicacao contexto;
 
     /**
-     * Construtor padrão do serviço de cotações e cache.
+     * Cria o serviço de cotações. O cache é esvaziado sempre que a persistência muda,
+     * para não misturar cotações de mecanismos diferentes.
+     *
      * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
     public CotacaoCacheService(ContextoAplicacao contexto) {
         this.contexto = contexto;
-        // Inicialização padrão do serviço
+        contexto.adicionarOuvintePersistencia(this::limparCache);
     }
 
     /**
@@ -142,8 +134,6 @@ public class CotacaoCacheService {
                 // 2. Consulta ao Oráculo com simulação de latência de I/O em thread virtual
                 LOG.log(Level.FINE, "Cotação de {0}: consultando o Oráculo ({1})",
                         new Object[] { dataAlvo, forcarOraculo ? "cache ignorado a pedido" : "cache vazio ou expirado" });
-                Thread.sleep(LATENCIA_SIMULADA_ORACULO_MS);
-
                 OraculoDAO oraculoDAO = contexto.getOraculoDAO();
                 BigDecimal cotacao = oraculoDAO.buscarCotacaoPorData(dataAlvo);
 
@@ -166,10 +156,6 @@ public class CotacaoCacheService {
 
                 SwingUtilities.invokeLater(() -> onSucesso.accept(dto));
 
-            } catch (InterruptedException e) {
-                LOG.log(Level.WARNING, "Consulta da cotação de {0} interrompida", dataAlvo);
-                Thread.currentThread().interrupt();
-                SwingUtilities.invokeLater(() -> onErro.accept(e));
             } catch (FTCoinException e) {
                 // Erro previsto (ex.: sem cotação para a data): quem o registra é o presenter
                 SwingUtilities.invokeLater(() -> onErro.accept(e));
@@ -182,27 +168,37 @@ public class CotacaoCacheService {
     }
 
     /**
-     * Retorna a cotação síncrona com fallback ao cache local para apuração dos relatórios.
+     * Devolve a cotação de uma data, pelo cache quando ainda válido ou pelo Oráculo.
      *
-     * @param data Data de apuração desejada
-     * @return O valor de cotação apurado em {@code BigDecimal}
+     * @param data dia da cotação; {@code null} significa hoje
+     * @return a cotação do dia, em reais
+     * @throws RegraNegocioException se o Oráculo não tiver cotação para a data
      */
     public BigDecimal obterCotacaoSincrona(LocalDate data) {
         LocalDate dataAlvo = (data != null) ? data : LocalDate.now();
-        EntradaCache item = mapaCache.get(dataAlvo);
+        BigDecimal cotacao = buscarNoCacheOuOraculo(dataAlvo);
+        if (cotacao == null) {
+            throw new RegraNegocioException("erro.oraculo.semCotacao", dataAlvo);
+        }
+        return cotacao;
+    }
+
+    // Devolve null quando o Oráculo não tem cotação para a data; nunca inventa um valor
+    private BigDecimal buscarNoCacheOuOraculo(LocalDate data) {
+        EntradaCache item = mapaCache.get(data);
         if (item != null && item.estaValida()) {
-            LOG.log(Level.FINEST, "Cotação de {0} servida pelo cache", dataAlvo);
+            LOG.log(Level.FINEST, "Cotação de {0} servida pelo cache", data);
             return item.cotacao();
         }
 
-        BigDecimal cotacao = contexto.getOraculoDAO().buscarCotacaoPorData(dataAlvo);
+        BigDecimal cotacao = contexto.getOraculoDAO().buscarCotacaoPorData(data);
         if (cotacao != null) {
-            mapaCache.put(dataAlvo, new EntradaCache(cotacao, Instant.now()));
-            LOG.log(Level.FINEST, "Cotação de {0} = {1}, guardada no cache", new Object[] { dataAlvo, cotacao });
-            return cotacao;
+            mapaCache.put(data, new EntradaCache(cotacao, Instant.now()));
+            LOG.log(Level.FINEST, "Cotação de {0} = {1}, guardada no cache", new Object[] { data, cotacao });
+        } else {
+            LOG.log(Level.FINE, "Oráculo sem cotação para {0}", data);
         }
-        LOG.log(Level.WARNING, "Oráculo sem cotação para {0}; usando o valor padrão {1}", new Object[] { dataAlvo, COTACAO_PADRAO });
-        return COTACAO_PADRAO;
+        return cotacao;
     }
 
     /**
@@ -214,7 +210,8 @@ public class CotacaoCacheService {
     }
 
     /**
-     * Retorna a lista cronológica das cotações dos últimos dias para renderização do histórico.
+     * Lista as cotações dos últimos dias, da mais recente para a mais antiga.
+     * Dias sem cotação no Oráculo ficam fora da lista, em vez de receber um valor inventado.
      *
      * @param dias Quantidade de dias passados a serem consultados
      * @return A lista de registros em formato {@link RelatorioHistoricoCotacaoDTO}
@@ -226,7 +223,13 @@ public class CotacaoCacheService {
 
         for (int i = dias; i >= 0; i--) {
             LocalDate data = hoje.minusDays(i);
-            BigDecimal cotacao = obterCotacaoSincrona(data);
+            // A origem é decidida antes da busca, que guarda a cotação no cache
+            EntradaCache noCache = mapaCache.get(data);
+            OrigemCotacao origem = (noCache != null && noCache.estaValida()) ? OrigemCotacao.CACHE : OrigemCotacao.ORACULO;
+            BigDecimal cotacao = buscarNoCacheOuOraculo(data);
+            if (cotacao == null) {
+                continue;
+            }
             BigDecimal variacaoAbs = BigDecimal.ZERO;
             BigDecimal variacaoPerc = BigDecimal.ZERO;
 
@@ -236,7 +239,6 @@ public class CotacaoCacheService {
                         .divide(cotacaoAnterior, 2, java.math.RoundingMode.HALF_EVEN);
             }
 
-            OrigemCotacao origem = mapaCache.containsKey(data) ? OrigemCotacao.CACHE : OrigemCotacao.ORACULO;
             lista.add(new RelatorioHistoricoCotacaoDTO(data, cotacao, variacaoAbs, variacaoPerc, origem));
             cotacaoAnterior = cotacao;
         }

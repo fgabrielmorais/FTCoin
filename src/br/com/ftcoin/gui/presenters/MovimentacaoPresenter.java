@@ -129,6 +129,10 @@ public class MovimentacaoPresenter {
         } catch (NumberFormatException e) {
             LOG.log(Level.FINEST, "Estimativa ignorada: quantidade digitada ainda não é um número ({0})", strQuantidade);
             view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+        } catch (FTCoinException e) {
+            // Sem cotação para a data: a estimativa fica zerada e o registro da operação informa o erro
+            LOG.log(Level.FINE, "Estimativa sem cotação: {0}", e.getChave());
+            view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
         }
     }
 
