@@ -102,14 +102,16 @@ public class MovimentacaoPresenter {
     }
 
     /**
-     * Calcula dinamicamente o valor estimado da operação com base na quantidade e data informadas.
+     * Calcula o valor estimado de uma operação a partir da quantidade e da data informadas.
+     * Cada formulário (compra ou venda) recebe só a própria estimativa.
      *
+     * @param tipo          operação cujo formulário recebe a estimativa
      * @param data          Data informada para apuração da cotação
      * @param strQuantidade Quantidade digitada no campo de texto
      */
-    public void calcularEstimativas(LocalDate data, String strQuantidade) {
+    public void calcularEstimativas(TipoOperacao tipo, LocalDate data, String strQuantidade) {
         if (strQuantidade == null || strQuantidade.trim().isEmpty()) {
-            view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+            view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
             return;
         }
 
@@ -117,7 +119,7 @@ public class MovimentacaoPresenter {
             String sanitizada = strQuantidade.trim().replace(",", ".");
             BigDecimal qtd = new BigDecimal(sanitizada);
             if (qtd.signum() <= 0) {
-                view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+                view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
                 return;
             }
 
@@ -125,14 +127,14 @@ public class MovimentacaoPresenter {
             BigDecimal cotacao = cotacaoService.obterCotacaoSincrona(dataAlvo);
             BigDecimal total = qtd.multiply(cotacao);
 
-            view.atualizarEstimativas(cotacao, total);
+            view.atualizarEstimativas(tipo, cotacao, total);
         } catch (NumberFormatException e) {
             LOG.log(Level.FINEST, "Estimativa ignorada: quantidade digitada ainda não é um número ({0})", strQuantidade);
-            view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+            view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
         } catch (FTCoinException e) {
             // Sem cotação para a data: a estimativa fica zerada e o registro da operação informa o erro
             LOG.log(Level.FINE, "Estimativa sem cotação: {0}", e.getChave());
-            view.atualizarEstimativas(BigDecimal.ZERO, BigDecimal.ZERO);
+            view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
         }
     }
 

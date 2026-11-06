@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.dto.MovimentacaoDTO;
+import br.com.ftcoin.models.TipoOperacao;
 
 /**
  * <p>
@@ -36,12 +37,13 @@ public interface IMovimentacaoView {
     void exibirHistoricoMovimentacoes(List<MovimentacaoDTO> movimentacoes);
 
     /**
-     * Atualiza os rótulos de prévia financeira com a cotação estimada e o montante total calculado.
+     * Atualiza a prévia financeira de um dos formulários com a cotação estimada e o montante total.
      *
+     * @param tipo       operação cujo formulário deve ser atualizado
      * @param cotacao    Valor unitário da cotação aplicada
      * @param valorTotal Valor financeiro total resultante do produto entre quantidade e cotação
      */
-    void atualizarEstimativas(BigDecimal cotacao, BigDecimal valorTotal);
+    void atualizarEstimativas(TipoOperacao tipo, BigDecimal cotacao, BigDecimal valorTotal);
 
     /**
      * Exibe um diálogo modal com mensagem de confirmação de compra ou venda registrada.

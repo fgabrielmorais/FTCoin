@@ -5,6 +5,7 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.Currency;
 import java.util.Locale;
 
 /**
@@ -72,6 +73,8 @@ public class GuiFormatador {
     public GuiFormatador(Locale locale) {
         this.locale = (locale != null) ? locale : Locale.of("pt", "BR");
         this.formatoMoeda = NumberFormat.getCurrencyInstance(this.locale);
+        // Os valores do sistema são em reais; o idioma muda só a apresentação, não a moeda
+        this.formatoMoeda.setCurrency(Currency.getInstance("BRL"));
         this.formatoMoeda.setMinimumFractionDigits(CASAS_MOEDA);
         this.formatoMoeda.setMaximumFractionDigits(CASAS_MOEDA);
 
@@ -102,14 +105,11 @@ public class GuiFormatador {
     /**
      * Formata uma quantidade numérica acrescida da sigla oficial da moeda.
      *
-     * @param quantidade Quantidade de criptomoedas a ser formatada
+     * @param quantidade Quantidade de criptomoedas a ser formatada; {@code null} vale zero
      * @return A quantidade formatada acompanhada do sufixo (ex: {@code "10,000 FTC"})
      */
     public String quantidade(BigDecimal quantidade) {
-        if (quantidade == null) {
-            return formatoQuantidade.format(BigDecimal.ZERO);
-        }
-        return formatoQuantidade.format(quantidade) + " FTC";
+        return quantidadeSemUnidade(quantidade) + " FTC";
     }
 
     /**
@@ -128,12 +128,12 @@ public class GuiFormatador {
     /**
      * Formata um valor percentual com sinal explícito de positivo ou negativo.
      *
-     * @param percentual Taxa percentual a ser formatada
+     * @param percentual Taxa percentual a ser formatada; {@code null} vale zero
      * @return O percentual com símbolo e sinal (ex: {@code "+12,50%"})
      */
     public String percentual(BigDecimal percentual) {
         if (percentual == null) {
-            return "0,00%";
+            percentual = BigDecimal.ZERO;
         }
         String sinal = percentual.signum() > 0 ? "+" : "";
         return sinal + formatoPercentual.format(percentual) + "%";

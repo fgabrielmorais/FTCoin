@@ -358,10 +358,11 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
             private void recalcular() {
                 LocalDate data = converterTextoEmData(campoDataCompra.getText());
-                presenter.calcularEstimativas(data, campoQuantidadeCompra.getText());
+                presenter.calcularEstimativas(TipoOperacao.COMPRA, data, campoQuantidadeCompra.getText());
             }
         };
         campoQuantidadeCompra.getDocument().addDocumentListener(ouvinteDocCompra);
+        campoDataCompra.getDocument().addDocumentListener(ouvinteDocCompra);
 
         DocumentListener ouvinteDocVenda = new DocumentListener() {
             @Override public void insertUpdate(DocumentEvent e) { recalcular(); }
@@ -370,10 +371,11 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
             private void recalcular() {
                 LocalDate data = converterTextoEmData(campoDataVenda.getText());
-                presenter.calcularEstimativas(data, campoQuantidadeVenda.getText());
+                presenter.calcularEstimativas(TipoOperacao.VENDA, data, campoQuantidadeVenda.getText());
             }
         };
         campoQuantidadeVenda.getDocument().addDocumentListener(ouvinteDocVenda);
+        campoDataVenda.getDocument().addDocumentListener(ouvinteDocVenda);
 
         comboCarteiraVenda.addActionListener(e -> {
             ItemCarteiraCombo selecionado = (ItemCarteiraCombo) comboCarteiraVenda.getSelectedItem();
@@ -403,7 +405,10 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     public void inicializar() {
         presenter.inicializar();
-        presenter.calcularEstimativas(LocalDate.now(), campoQuantidadeCompra.getText());
+        presenter.calcularEstimativas(TipoOperacao.COMPRA,
+                converterTextoEmData(campoDataCompra.getText()), campoQuantidadeCompra.getText());
+        presenter.calcularEstimativas(TipoOperacao.VENDA,
+                converterTextoEmData(campoDataVenda.getText()), campoQuantidadeVenda.getText());
     }
 
     /**
@@ -452,18 +457,20 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     }
 
     /**
-     * Atualiza os rótulos de prévia financeira com os valores estimados calculados.
+     * Atualiza a prévia financeira do formulário da operação informada.
      *
+     * @param tipo       operação cujo formulário deve ser atualizado
      * @param cotacao    Valor da cotação
      * @param valorTotal Valor financeiro total calculado
      */
     @Override
-    public void atualizarEstimativas(BigDecimal cotacao, BigDecimal valorTotal) {
+    public void atualizarEstimativas(TipoOperacao tipo, BigDecimal cotacao, BigDecimal valorTotal) {
         GuiFormatador formatador = contexto.getMensagens().getFormatador();
-        rotuloCotacaoEstimadaCompra.setText(formatador.moeda(cotacao));
-        rotuloTotalEstimadoCompra.setText(formatador.moeda(valorTotal));
-        rotuloCotacaoEstimadaVenda.setText(formatador.moeda(cotacao));
-        rotuloTotalEstimadoVenda.setText(formatador.moeda(valorTotal));
+        boolean ehCompra = (tipo == TipoOperacao.COMPRA);
+        JLabel rotuloCotacao = ehCompra ? rotuloCotacaoEstimadaCompra : rotuloCotacaoEstimadaVenda;
+        JLabel rotuloTotal = ehCompra ? rotuloTotalEstimadoCompra : rotuloTotalEstimadoVenda;
+        rotuloCotacao.setText(formatador.moeda(cotacao));
+        rotuloTotal.setText(formatador.moeda(valorTotal));
     }
 
     /**
