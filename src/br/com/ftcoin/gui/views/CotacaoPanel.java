@@ -23,6 +23,7 @@ import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
+import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.dto.CotacaoDTO;
 import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
 import br.com.ftcoin.gui.presenters.CotacaoPresenter;
@@ -106,6 +107,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
     private final JTable tabelaHistoricoOscilacoes;
 
     private final transient ContextoAplicacao contexto;
+    private final transient TextosTraduzidos textos;
 
     /**
      * Constrói o painel de cotações inicializando componentes gráficos e o apresentador.
@@ -117,10 +119,13 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         this.contexto = contexto;
         this.presenter = new CotacaoPresenter(this, cotacaoService, contexto);
         MensagensGui mensagens = contexto.getMensagens();
+        this.textos = new TextosTraduzidos(mensagens);
 
         this.campoDataConsulta = new JTextField(LocalDate.now().toString(), 10);
-        this.botaoConsultarCotacao = new ModernButton(mensagens.get("gui.cotacao.btn.consultar"), ModernButton.Variante.PRIMARIA);
-        this.botaoLimparCacheOraculo = new ModernButton(mensagens.get("gui.cotacao.btn.limparCache"), ModernButton.Variante.NEUTRO);
+        this.botaoConsultarCotacao = new ModernButton("", ModernButton.Variante.PRIMARIA);
+        this.botaoLimparCacheOraculo = new ModernButton("", ModernButton.Variante.NEUTRO);
+        textos.vincular(botaoConsultarCotacao::setText, "gui.cotacao.btn.consultar");
+        textos.vincular(botaoLimparCacheOraculo::setText, "gui.cotacao.btn.limparCache");
         this.etiquetaOrigemDado = new BadgeLabel(mensagens.get("gui.cotacao.aguardando"));
         this.rotuloLatenciaResposta = new JLabel(mensagens.get("gui.cotacao.latencia", "-"));
         this.rotuloHorarioConsulta = new JLabel(mensagens.get("gui.cotacao.horario", "--:--:--"));
@@ -133,7 +138,8 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         JPanel painelTopo = new JPanel(new BorderLayout(10, 10));
         painelTopo.setOpaque(false);
 
-        JLabel rotuloTitulo = new JLabel(mensagens.get("gui.cotacao.painel.titulo"));
+        JLabel rotuloTitulo = new JLabel();
+        textos.vincular(rotuloTitulo::setText, "gui.cotacao.painel.titulo");
         rotuloTitulo.setFont(TemaCores.FONTE_TITULO_GRANDE);
         rotuloTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         painelTopo.add(rotuloTitulo, BorderLayout.NORTH);
@@ -141,7 +147,8 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         JPanel painelBarraConsulta = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         painelBarraConsulta.setOpaque(false);
 
-        JLabel rotuloData = new JLabel(mensagens.get("gui.cotacao.label.data"));
+        JLabel rotuloData = new JLabel();
+        textos.vincular(rotuloData::setText, "gui.cotacao.label.data");
         rotuloData.setFont(TemaCores.FONTE_LABEL);
         painelBarraConsulta.add(rotuloData);
 
@@ -178,7 +185,8 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         restricoes.insets = new Insets(6, 10, 6, 10);
         restricoes.gridx = 0;
 
-        JLabel rotuloFTC = new JLabel(mensagens.get("gui.cotacao.rotuloFTC"));
+        JLabel rotuloFTC = new JLabel();
+        textos.vincular(rotuloFTC::setText, "gui.cotacao.rotuloFTC");
         rotuloFTC.setFont(TemaCores.FONTE_LABEL);
         rotuloFTC.setForeground(TemaCores.TEXTO_SECUNDARIO);
         restricoes.gridy = 0;
@@ -211,20 +219,21 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         JPanel painelHistorico = new JPanel(new BorderLayout(8, 8));
         painelHistorico.setOpaque(false);
 
-        JLabel rotuloHistTitulo = new JLabel(mensagens.get("gui.cotacao.historico.titulo"));
+        JLabel rotuloHistTitulo = new JLabel();
+        textos.vincular(rotuloHistTitulo::setText, "gui.cotacao.historico.titulo");
         rotuloHistTitulo.setFont(TemaCores.FONTE_TITULO_MEDIO);
         rotuloHistTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         painelHistorico.add(rotuloHistTitulo, BorderLayout.NORTH);
 
-        String[] colunasHistorico = {
-                mensagens.get("gui.cotacao.col.data"),
-                mensagens.get("gui.cotacao.col.cotacao"),
-                mensagens.get("gui.cotacao.col.varAbs"),
-                mensagens.get("gui.cotacao.col.varPerc"),
-                mensagens.get("gui.cotacao.col.fonte")
+        String[] chavesColunas = {
+                "gui.cotacao.col.data",
+                "gui.cotacao.col.cotacao",
+                "gui.cotacao.col.varAbs",
+                "gui.cotacao.col.varPerc",
+                "gui.cotacao.col.fonte"
         };
 
-        modeloTabelaHistorico = new DefaultTableModel(colunasHistorico, 0) {
+        modeloTabelaHistorico = new DefaultTableModel(chavesColunas, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
                 return false;
@@ -232,6 +241,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         };
 
         tabelaHistoricoOscilacoes = new JTable(modeloTabelaHistorico);
+        textos.vincularColunas(tabelaHistoricoOscilacoes, chavesColunas);
         tabelaHistoricoOscilacoes.setRowHeight(32);
         tabelaHistoricoOscilacoes.setFont(TemaCores.FONTE_PADRAO);
         tabelaHistoricoOscilacoes.getTableHeader().setFont(TemaCores.FONTE_LABEL);
@@ -267,8 +277,8 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         } catch (DateTimeParseException ex) {
             JOptionPane.showMessageDialog(
                     this,
-                    mensagens.get("gui.cotacao.dataInvalida"),
-                    mensagens.get("gui.cotacao.dataInvalidaTitulo"),
+                    "gui.cotacao.dataInvalida",
+                    "gui.cotacao.dataInvalidaTitulo",
                     JOptionPane.WARNING_MESSAGE
             );
             return;

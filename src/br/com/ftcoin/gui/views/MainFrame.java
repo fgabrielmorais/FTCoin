@@ -133,7 +133,11 @@ public class MainFrame extends JFrame {
         aplicarTextos();
 
         contexto.adicionarOuvintePersistencia(this::recarregarTodosPaineis);
-        mensagens.adicionarOuvinte(this::aplicarTextos);
+        mensagens.adicionarOuvinte(() -> {
+            aplicarTextos();
+            // Os dados são recarregados para refazer valores formatados (moeda, datas) no novo idioma
+            recarregarTodosPaineis();
+        });
 
         recarregarTodosPaineis();
     }

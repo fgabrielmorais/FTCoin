@@ -26,6 +26,7 @@ import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
+import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.dto.MovimentacaoDTO;
 import br.com.ftcoin.gui.presenters.MovimentacaoPresenter;
@@ -150,6 +151,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     }
 
     private final transient ContextoAplicacao contexto;
+    private final transient TextosTraduzidos textos;
 
     /**
      * Constrói o painel de movimentações inicializando formulários e o apresentador.
@@ -162,13 +164,15 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         this.contexto = contexto;
         this.presenter = new MovimentacaoPresenter(this, relatoriosService, cotacaoService, contexto);
         MensagensGui mensagens = contexto.getMensagens();
+        this.textos = new TextosTraduzidos(mensagens);
 
         setLayout(new BorderLayout(15, 15));
         setBackground(TemaCores.FUNDO_APP);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Título Superior
-        JLabel rotuloTituloSuperior = new JLabel(mensagens.get("gui.mov.tituloSuperior"));
+        JLabel rotuloTituloSuperior = new JLabel();
+        textos.vincular(rotuloTituloSuperior::setText, "gui.mov.tituloSuperior");
         rotuloTituloSuperior.setFont(TemaCores.FONTE_TITULO_GRANDE);
         rotuloTituloSuperior.setForeground(TemaCores.TEXTO_PRINCIPAL);
         add(rotuloTituloSuperior, BorderLayout.NORTH);
@@ -179,8 +183,10 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         JTabbedPane abasOperacoes = new JTabbedPane();
         abasOperacoes.setFont(TemaCores.FONTE_LABEL);
-        abasOperacoes.addTab(mensagens.get("gui.mov.tab.compra"), criarPainelFormulario(TipoOperacao.COMPRA));
-        abasOperacoes.addTab(mensagens.get("gui.mov.tab.venda"), criarPainelFormulario(TipoOperacao.VENDA));
+        abasOperacoes.addTab("", criarPainelFormulario(TipoOperacao.COMPRA));
+        abasOperacoes.addTab("", criarPainelFormulario(TipoOperacao.VENDA));
+        textos.vincular(titulo -> abasOperacoes.setTitleAt(0, titulo), "gui.mov.tab.compra");
+        textos.vincular(titulo -> abasOperacoes.setTitleAt(1, titulo), "gui.mov.tab.venda");
 
         painelConteudoCentral.add(abasOperacoes, BorderLayout.NORTH);
 
@@ -188,21 +194,22 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         JPanel painelHistorico = new JPanel(new BorderLayout(8, 8));
         painelHistorico.setOpaque(false);
 
-        JLabel rotuloHistoricoTitulo = new JLabel(mensagens.get("gui.mov.historico.titulo"));
+        JLabel rotuloHistoricoTitulo = new JLabel();
+        textos.vincular(rotuloHistoricoTitulo::setText, "gui.mov.historico.titulo");
         rotuloHistoricoTitulo.setFont(TemaCores.FONTE_TITULO_MEDIO);
         rotuloHistoricoTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         painelHistorico.add(rotuloHistoricoTitulo, BorderLayout.NORTH);
 
-        String[] colunas = {
-                mensagens.get("gui.dash.feed.col.data"),
-                mensagens.get("gui.dash.feed.col.carteira"),
-                mensagens.get("gui.dash.feed.col.tipo"),
-                mensagens.get("gui.dash.feed.col.quantidade"),
-                mensagens.get("gui.dash.feed.col.cotacao"),
-                mensagens.get("gui.dash.feed.col.total")
+        String[] chavesColunas = {
+                "gui.dash.feed.col.data",
+                "gui.dash.feed.col.carteira",
+                "gui.dash.feed.col.tipo",
+                "gui.dash.feed.col.quantidade",
+                "gui.dash.feed.col.cotacao",
+                "gui.dash.feed.col.total"
         };
 
-        modeloTabelaHistorico = new DefaultTableModel(colunas, 0) {
+        modeloTabelaHistorico = new DefaultTableModel(chavesColunas, 0) {
             @Override
             public boolean isCellEditable(int r, int c) {
                 return false;
@@ -210,6 +217,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         };
 
         tabelaHistoricoOperacoes = new JTable(modeloTabelaHistorico);
+        textos.vincularColunas(tabelaHistoricoOperacoes, chavesColunas);
         tabelaHistoricoOperacoes.setRowHeight(32);
         tabelaHistoricoOperacoes.setFont(TemaCores.FONTE_PADRAO);
         tabelaHistoricoOperacoes.getTableHeader().setFont(TemaCores.FONTE_LABEL);
@@ -266,7 +274,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         // Linha 0: Seleção de Carteira
         restricoes.gridx = 0; restricoes.gridy = 0;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.carteiraDestinoOrigem")), restricoes);
+        painelForm.add(rotulo("gui.mov.label.carteiraDestinoOrigem"), restricoes);
         restricoes.gridx = 1; restricoes.gridy = 0; restricoes.gridwidth = 2;
         painelForm.add(comboCarteira, restricoes);
         restricoes.gridwidth = 1;
@@ -274,7 +282,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         // Se for Venda, exibe saldo disponível para alienação
         if (!ehCompra) {
             restricoes.gridx = 3; restricoes.gridy = 0;
-            painelForm.add(new JLabel(mensagens.get("gui.mov.label.saldoDisponivel")), restricoes);
+            painelForm.add(rotulo("gui.mov.label.saldoDisponivel"), restricoes);
             restricoes.gridx = 4; restricoes.gridy = 0;
             rotuloSaldoDisponivelVenda.setFont(TemaCores.FONTE_LABEL);
             rotuloSaldoDisponivelVenda.setForeground(TemaCores.POSITIVO_LUCRO);
@@ -283,33 +291,33 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         // Linha 1: Data e Quantidade
         restricoes.gridx = 0; restricoes.gridy = 1;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.dataOperacao")), restricoes);
+        painelForm.add(rotulo("gui.mov.label.dataOperacao"), restricoes);
         restricoes.gridx = 1; restricoes.gridy = 1;
         painelForm.add(campoData, restricoes);
 
         restricoes.gridx = 2; restricoes.gridy = 1;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.quantidadeFTC")), restricoes);
+        painelForm.add(rotulo("gui.mov.label.quantidadeFTC"), restricoes);
         restricoes.gridx = 3; restricoes.gridy = 1;
         painelForm.add(campoQuantidade, restricoes);
 
         // Linha 2: Cotação e Total Estimado
         restricoes.gridx = 0; restricoes.gridy = 2;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.cotacaoAplicada")), restricoes);
+        painelForm.add(rotulo("gui.mov.label.cotacaoAplicada"), restricoes);
         restricoes.gridx = 1; restricoes.gridy = 2;
         painelForm.add(rotuloCotacao, restricoes);
 
         restricoes.gridx = 2; restricoes.gridy = 2;
-        painelForm.add(new JLabel(mensagens.get("gui.mov.label.totalEstimado")), restricoes);
+        painelForm.add(rotulo("gui.mov.label.totalEstimado"), restricoes);
         restricoes.gridx = 3; restricoes.gridy = 2;
         painelForm.add(rotuloTotal, restricoes);
 
         // Linha 3: Botão de Confirmação da Ordem
         restricoes.gridx = 3; restricoes.gridy = 3;
-        String textoBotao = ehCompra ? mensagens.get("gui.mov.btn.confirmarCompra") : mensagens.get("gui.mov.btn.confirmarVenda");
         ModernButton botaoConfirmar = new ModernButton(
-                textoBotao,
+                "",
                 ehCompra ? ModernButton.Variante.SUCESSO : ModernButton.Variante.PRIMARIA
         );
+        textos.vincular(botaoConfirmar::setText, ehCompra ? "gui.mov.btn.confirmarCompra" : "gui.mov.btn.confirmarVenda");
         botaoConfirmar.setPreferredSize(new Dimension(230, 38));
         botaoConfirmar.addActionListener(e -> {
             ItemCarteiraCombo item = (ItemCarteiraCombo) comboCarteira.getSelectedItem();
@@ -330,6 +338,13 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         painelForm.add(botaoConfirmar, restricoes);
         return painelForm;
+    }
+
+    // Rótulo de formulário cujo texto acompanha o idioma ativo
+    private JLabel rotulo(String chave) {
+        JLabel rotulo = new JLabel();
+        textos.vincular(rotulo::setText, chave);
+        return rotulo;
     }
 
     /**

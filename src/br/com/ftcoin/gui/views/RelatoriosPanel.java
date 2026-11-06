@@ -20,6 +20,7 @@ import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
+import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.dto.MovimentacaoDTO;
 import br.com.ftcoin.gui.dto.PosicaoRelatorioDTO;
@@ -104,6 +105,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     }
 
     private final transient ContextoAplicacao contexto;
+    private final transient TextosTraduzidos textos;
 
     /**
      * Monta as abas dos relatórios e o presenter da tela.
@@ -115,15 +117,24 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         this.contexto = contexto;
         this.presenter = new RelatoriosPresenter(this, relatoriosService, contexto);
         MensagensGui mensagens = contexto.getMensagens();
+        this.textos = new TextosTraduzidos(mensagens);
         GuiFormatador fmt = mensagens.getFormatador();
-        cardSaldo = new ModernCard(mensagens.get("gui.rel.card.saldoCarteira"), fmt.quantidade(BigDecimal.ZERO), TemaCores.PRIMARIA);
-        cardCustoMedio = new ModernCard(mensagens.get("gui.rel.card.custoMedioCMP"), fmt.moeda(BigDecimal.ZERO), TemaCores.TEXTO_PRINCIPAL);
-        cardValorCusto = new ModernCard(mensagens.get("gui.rel.card.totalACusto"), fmt.moeda(BigDecimal.ZERO), TemaCores.TEXTO_PRINCIPAL);
-        cardValorMercado = new ModernCard(mensagens.get("gui.rel.card.valorMercadoAtual"), fmt.moeda(BigDecimal.ZERO), TemaCores.SECUNDARIA);
-        cardGanhoRealizado = new ModernCard(mensagens.get("gui.rel.card.ganhoRealizado"), fmt.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
-        cardGanhoNaoRealizado = new ModernCard(mensagens.get("gui.rel.card.ganhoNaoRealizado"), fmt.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
-        cardGanhoTotal = new ModernCard(mensagens.get("gui.rel.card.ganhoTotalLiquido"), fmt.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
-        cardRoi = new ModernCard(mensagens.get("gui.rel.card.retornoRoi"), fmt.percentual(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
+        cardSaldo = new ModernCard(null, fmt.quantidade(BigDecimal.ZERO), TemaCores.PRIMARIA);
+        textos.vincular(cardSaldo::setTitulo, "gui.rel.card.saldoCarteira");
+        cardCustoMedio = new ModernCard(null, fmt.moeda(BigDecimal.ZERO), TemaCores.TEXTO_PRINCIPAL);
+        textos.vincular(cardCustoMedio::setTitulo, "gui.rel.card.custoMedioCMP");
+        cardValorCusto = new ModernCard(null, fmt.moeda(BigDecimal.ZERO), TemaCores.TEXTO_PRINCIPAL);
+        textos.vincular(cardValorCusto::setTitulo, "gui.rel.card.totalACusto");
+        cardValorMercado = new ModernCard(null, fmt.moeda(BigDecimal.ZERO), TemaCores.SECUNDARIA);
+        textos.vincular(cardValorMercado::setTitulo, "gui.rel.card.valorMercadoAtual");
+        cardGanhoRealizado = new ModernCard(null, fmt.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
+        textos.vincular(cardGanhoRealizado::setTitulo, "gui.rel.card.ganhoRealizado");
+        cardGanhoNaoRealizado = new ModernCard(null, fmt.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
+        textos.vincular(cardGanhoNaoRealizado::setTitulo, "gui.rel.card.ganhoNaoRealizado");
+        cardGanhoTotal = new ModernCard(null, fmt.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
+        textos.vincular(cardGanhoTotal::setTitulo, "gui.rel.card.ganhoTotalLiquido");
+        cardRoi = new ModernCard(null, fmt.percentual(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
+        textos.vincular(cardRoi::setTitulo, "gui.rel.card.retornoRoi");
 
         setLayout(new BorderLayout(15, 15));
         setBackground(TemaCores.FUNDO_APP);
@@ -133,7 +144,8 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         JPanel pnlTopo = new JPanel(new BorderLayout(10, 10));
         pnlTopo.setOpaque(false);
 
-        JLabel lblTitulo = new JLabel(mensagens.get("gui.rel.painel.titulo"));
+        JLabel lblTitulo = new JLabel();
+        textos.vincular(lblTitulo::setText, "gui.rel.painel.titulo");
         lblTitulo.setFont(TemaCores.FONTE_TITULO_GRANDE);
         lblTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         pnlTopo.add(lblTitulo, BorderLayout.NORTH);
@@ -141,7 +153,8 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         JPanel pnlFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         pnlFiltro.setOpaque(false);
 
-        JLabel lblFiltrar = new JLabel(mensagens.get("gui.rel.filtro.label"));
+        JLabel lblFiltrar = new JLabel();
+        textos.vincular(lblFiltrar::setText, "gui.rel.filtro.label");
         lblFiltrar.setFont(TemaCores.FONTE_LABEL);
         pnlFiltro.add(lblFiltrar);
 
@@ -158,7 +171,8 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         });
         pnlFiltro.add(cmbCarteiraFiltro);
 
-        ModernButton btnRecarregar = new ModernButton(mensagens.get("gui.rel.btn.atualizarTodos"), ModernButton.Variante.NEUTRO);
+        ModernButton btnRecarregar = new ModernButton("", ModernButton.Variante.NEUTRO);
+        textos.vincular(btnRecarregar::setText, "gui.rel.btn.atualizarTodos");
         btnRecarregar.addActionListener(e -> presenter.inicializar());
         pnlFiltro.add(btnRecarregar);
 
@@ -182,14 +196,16 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         pnlRel1.add(cardGanhoNaoRealizado);
         pnlRel1.add(cardGanhoTotal);
         pnlRel1.add(cardRoi);
-        tabRelatorios.addTab(mensagens.get("gui.rel.tab1.titulo"), pnlRel1);
+        tabRelatorios.addTab("", pnlRel1);
+        textos.vincular(titulo -> tabRelatorios.setTitleAt(0, titulo), "gui.rel.tab1.titulo");
 
         // 2. Histórico da Carteira
-        String[] colRel2 = colunas(mensagens, "gui.rel.tab2.col.", "data", "operacao", "quantidade", "cotacao", "total");
+        String[] colRel2 = chaves("gui.rel.tab2.col.", "data", "operacao", "quantidade", "cotacao", "total");
         modelRel2 = new DefaultTableModel(colRel2, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tabelaRel2 = criarTabelaFormatada(modelRel2);
+        textos.vincularColunas(tabelaRel2, colRel2);
         tabelaRel2.getColumnModel().getColumn(1).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, mensagens));
         tabelaRel2.getColumnModel().getColumn(2).setCellRenderer(
@@ -198,14 +214,16 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, mensagens));
         tabelaRel2.getColumnModel().getColumn(4).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, mensagens));
-        tabRelatorios.addTab(mensagens.get("gui.rel.tab2.titulo"), new JScrollPane(tabelaRel2));
+        tabRelatorios.addTab("", new JScrollPane(tabelaRel2));
+        textos.vincular(titulo -> tabRelatorios.setTitleAt(1, titulo), "gui.rel.tab2.titulo");
 
         // 3. Consolidado de Todas as Carteiras
-        String[] colRel3 = colunas(mensagens, "gui.rel.tab3.col.", "id", "titular", "corretora", "saldo", "valorMercado", "participacao", "ganhoTotal");
+        String[] colRel3 = chaves("gui.rel.tab3.col.", "id", "titular", "corretora", "saldo", "valorMercado", "participacao", "ganhoTotal");
         modelRel3 = new DefaultTableModel(colRel3, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tabelaRel3 = criarTabelaFormatada(modelRel3);
+        textos.vincularColunas(tabelaRel3, colRel3);
         tabelaRel3.getColumnModel().getColumn(3).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, mensagens));
         tabelaRel3.getColumnModel().getColumn(4).setCellRenderer(
@@ -214,14 +232,16 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, mensagens));
         tabelaRel3.getColumnModel().getColumn(6).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, mensagens));
-        tabRelatorios.addTab(mensagens.get("gui.rel.tab3.titulo"), new JScrollPane(tabelaRel3));
+        tabRelatorios.addTab("", new JScrollPane(tabelaRel3));
+        textos.vincular(titulo -> tabRelatorios.setTitleAt(2, titulo), "gui.rel.tab3.titulo");
 
         // 4. Desempenho e Lucratividade
-        String[] colRel4 = colunas(mensagens, "gui.rel.tab4.col.", "id", "titular", "corretora", "investido", "valorAtual", "lucroPrejuizo", "roi");
+        String[] colRel4 = chaves("gui.rel.tab4.col.", "id", "titular", "corretora", "investido", "valorAtual", "lucroPrejuizo", "roi");
         modelRel4 = new DefaultTableModel(colRel4, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tabelaRel4 = criarTabelaFormatada(modelRel4);
+        textos.vincularColunas(tabelaRel4, colRel4);
         tabelaRel4.getColumnModel().getColumn(3).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, mensagens));
         tabelaRel4.getColumnModel().getColumn(4).setCellRenderer(
@@ -230,14 +250,16 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, mensagens));
         tabelaRel4.getColumnModel().getColumn(6).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, mensagens));
-        tabRelatorios.addTab(mensagens.get("gui.rel.tab4.titulo"), new JScrollPane(tabelaRel4));
+        tabRelatorios.addTab("", new JScrollPane(tabelaRel4));
+        textos.vincular(titulo -> tabRelatorios.setTitleAt(3, titulo), "gui.rel.tab4.titulo");
 
         // 5. Histórico do Oráculo
-        String[] colRel5 = colunas(mensagens, "gui.rel.tab5.col.", "data", "cotacao", "varAbs", "varPerc", "fonte");
+        String[] colRel5 = chaves("gui.rel.tab5.col.", "data", "cotacao", "varAbs", "varPerc", "fonte");
         modelRel5 = new DefaultTableModel(colRel5, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
         };
         tabelaRel5 = criarTabelaFormatada(modelRel5);
+        textos.vincularColunas(tabelaRel5, colRel5);
         tabelaRel5.getColumnModel().getColumn(1).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, mensagens));
         tabelaRel5.getColumnModel().getColumn(2).setCellRenderer(
@@ -246,18 +268,19 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, mensagens));
         tabelaRel5.getColumnModel().getColumn(4).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.ORIGEM_BADGE, mensagens));
-        tabRelatorios.addTab(mensagens.get("gui.rel.tab5.titulo"), new JScrollPane(tabelaRel5));
+        tabRelatorios.addTab("", new JScrollPane(tabelaRel5));
+        textos.vincular(titulo -> tabRelatorios.setTitleAt(4, titulo), "gui.rel.tab5.titulo");
 
         add(tabRelatorios, BorderLayout.CENTER);
     }
 
-    // Monta os títulos das colunas de uma tabela a partir de um prefixo de chave comum
-    private static String[] colunas(MensagensGui mensagens, String prefixo, String... sufixos) {
-        String[] titulos = new String[sufixos.length];
+    // Monta as chaves das colunas de uma tabela a partir de um prefixo comum
+    private static String[] chaves(String prefixo, String... sufixos) {
+        String[] chaves = new String[sufixos.length];
         for (int i = 0; i < sufixos.length; i++) {
-            titulos[i] = mensagens.get(prefixo + sufixos[i]);
+            chaves[i] = prefixo + sufixos[i];
         }
-        return titulos;
+        return chaves;
     }
 
     private JTable criarTabelaFormatada(DefaultTableModel model) {

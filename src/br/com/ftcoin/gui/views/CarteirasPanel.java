@@ -23,6 +23,7 @@ import javax.swing.table.DefaultTableModel;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.TemaCores;
+import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.dto.CarteiraDTO;
 import br.com.ftcoin.gui.presenters.CarteiraPresenter;
 import br.com.ftcoin.gui.services.RelatoriosService;
@@ -74,6 +75,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
     private JDialog modalFormularioAtivo;
 
     private final transient ContextoAplicacao contexto;
+    private final transient TextosTraduzidos textos;
 
     /**
      * Constrói o painel de carteiras inicializando componentes visuais e apresentador.
@@ -85,6 +87,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         this.contexto = contexto;
         this.presenter = new CarteiraPresenter(this, relatoriosService, contexto);
         MensagensGui mensagens = contexto.getMensagens();
+        this.textos = new TextosTraduzidos(mensagens);
 
         setLayout(new BorderLayout(15, 15));
         setBackground(TemaCores.FUNDO_APP);
@@ -94,7 +97,8 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         JPanel painelTopo = new JPanel(new BorderLayout());
         painelTopo.setOpaque(false);
 
-        JLabel rotuloTitulo = new JLabel(mensagens.get("gui.carteira.titulo"));
+        JLabel rotuloTitulo = new JLabel();
+        textos.vincular(rotuloTitulo::setText, "gui.carteira.titulo");
         rotuloTitulo.setFont(TemaCores.FONTE_TITULO_GRANDE);
         rotuloTitulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
         painelTopo.add(rotuloTitulo, BorderLayout.WEST);
@@ -102,10 +106,14 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         JPanel painelBotoesAcao = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         painelBotoesAcao.setOpaque(false);
 
-        ModernButton botaoNovaCarteira = new ModernButton(mensagens.get("gui.carteira.btn.novo"), ModernButton.Variante.SUCESSO);
-        ModernButton botaoEditarCarteira = new ModernButton(mensagens.get("gui.carteira.btn.editar"), ModernButton.Variante.PRIMARIA);
-        ModernButton botaoExcluirCarteira = new ModernButton(mensagens.get("gui.carteira.btn.excluir"), ModernButton.Variante.PERIGO);
-        ModernButton botaoAtualizarLista = new ModernButton(mensagens.get("gui.carteira.btn.atualizar"), ModernButton.Variante.NEUTRO);
+        ModernButton botaoNovaCarteira = new ModernButton("", ModernButton.Variante.SUCESSO);
+        textos.vincular(botaoNovaCarteira::setText, "gui.carteira.btn.novo");
+        ModernButton botaoEditarCarteira = new ModernButton("", ModernButton.Variante.PRIMARIA);
+        textos.vincular(botaoEditarCarteira::setText, "gui.carteira.btn.editar");
+        ModernButton botaoExcluirCarteira = new ModernButton("", ModernButton.Variante.PERIGO);
+        textos.vincular(botaoExcluirCarteira::setText, "gui.carteira.btn.excluir");
+        ModernButton botaoAtualizarLista = new ModernButton("", ModernButton.Variante.NEUTRO);
+        textos.vincular(botaoAtualizarLista::setText, "gui.carteira.btn.atualizar");
 
         botaoNovaCarteira.addActionListener(e -> abrirModalCadastro());
         botaoEditarCarteira.addActionListener(e -> tratarAcaoEditar());
@@ -121,15 +129,15 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         add(painelTopo, BorderLayout.NORTH);
 
         // Configuração dos cabeçalhos da tabela via arquivo de propriedades
-        String[] colunas = {
-                mensagens.get("gui.carteira.col.id"),
-                mensagens.get("gui.carteira.col.titular"),
-                mensagens.get("gui.carteira.col.corretora"),
-                mensagens.get("gui.carteira.col.saldo"),
-                mensagens.get("gui.carteira.col.valorMercado")
+        String[] chavesColunas = {
+                "gui.carteira.col.id",
+                "gui.carteira.col.titular",
+                "gui.carteira.col.corretora",
+                "gui.carteira.col.saldo",
+                "gui.carteira.col.valorMercado"
         };
 
-        modeloTabelaCarteiras = new DefaultTableModel(colunas, 0) {
+        modeloTabelaCarteiras = new DefaultTableModel(chavesColunas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
@@ -137,6 +145,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         };
 
         tabelaCarteiras = new JTable(modeloTabelaCarteiras);
+        textos.vincularColunas(tabelaCarteiras, chavesColunas);
         tabelaCarteiras.setRowHeight(34);
         tabelaCarteiras.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         tabelaCarteiras.setFont(TemaCores.FONTE_PADRAO);
@@ -185,7 +194,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
             int confirmacao = JOptionPane.showConfirmDialog(
                     this,
                     mensagens.get("gui.carteira.confirm.excluir", selecionada.id(), selecionada.nomeTitular()),
-                    mensagens.get("gui.comum.atencao"),
+                    "gui.comum.atencao",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE
             );
