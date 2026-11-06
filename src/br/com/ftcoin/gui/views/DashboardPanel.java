@@ -3,6 +3,7 @@ package br.com.ftcoin.gui.views;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.math.BigDecimal;
 import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -139,11 +140,12 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         // Inicialização dos cartões com textos internacionalizados
-        cardPatrimonioTotal = new ModernCard(mensagens.get("gui.dash.card.patrimonio"), "R$ 0,00", TemaCores.PRIMARIA);
-        cardSaldoConsolidado = new ModernCard(mensagens.get("gui.dash.card.saldoConsolidado"), "0.000 FTC", TemaCores.TEXTO_PRINCIPAL);
-        cardCotacaoHoje = new ModernCard(mensagens.get("gui.dash.card.cotacaoHoje"), "R$ 0,00", TemaCores.SECUNDARIA);
+        GuiFormatador formatadorInicial = mensagens.getFormatador();
+        cardPatrimonioTotal = new ModernCard(mensagens.get("gui.dash.card.patrimonio"), formatadorInicial.moeda(BigDecimal.ZERO), TemaCores.PRIMARIA);
+        cardSaldoConsolidado = new ModernCard(mensagens.get("gui.dash.card.saldoConsolidado"), formatadorInicial.quantidade(BigDecimal.ZERO), TemaCores.TEXTO_PRINCIPAL);
+        cardCotacaoHoje = new ModernCard(mensagens.get("gui.dash.card.cotacaoHoje"), formatadorInicial.moeda(BigDecimal.ZERO), TemaCores.SECUNDARIA);
         cardCarteirasAtivas = new ModernCard(mensagens.get("gui.dash.card.carteirasAtivas"), "0", TemaCores.ACCENT);
-        cardResultadoTotal = new ModernCard(mensagens.get("gui.dash.card.resultadoTotal"), "R$ 0,00", TemaCores.POSITIVO_LUCRO);
+        cardResultadoTotal = new ModernCard(mensagens.get("gui.dash.card.resultadoTotal"), formatadorInicial.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
 
         // Topo: Título da tela e Ações Rápidas
         JPanel painelTopo = new JPanel(new BorderLayout());

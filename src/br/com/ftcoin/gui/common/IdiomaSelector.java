@@ -3,120 +3,53 @@ package br.com.ftcoin.gui.common;
 import java.util.Locale;
 
 /**
- * <p>
- * Enumeração para o seletor de idiomas suportados na interface gráfica.
- * </p>
- *
- * <p>
- * Representa os estados fixos de localização disponíveis para alternância dinâmica
- * pelo usuário nos componentes da {@code GUI}.
- * </p>
+ * Opções do seletor de idioma da barra superior, ligadas ao {@link Locale} correspondente.
  *
  * @author Grupo B.05
  * @version 1.0.0
- * @since 2026-10-20
  */
 public enum IdiomaSelector {
 
-    /**
-     * Localização em Português do Brasil.
-     */
-    PORTUGUES(MensagensGui.LOCALE_PT, "gui.menu.idioma.pt", "🇧🇷 Português (BR)"),
+    /** Português do Brasil. */
+    PORTUGUES(MensagensGui.LOCALE_PT, "gui.menu.idioma.pt"),
 
-    /**
-     * Localização em Inglês dos Estados Unidos.
-     */
-    INGLES(MensagensGui.LOCALE_EN, "gui.menu.idioma.en", "🇺🇸 English (US)");
+    /** Inglês dos Estados Unidos. */
+    INGLES(MensagensGui.LOCALE_EN, "gui.menu.idioma.en");
 
-    /**
-     * Localidade do sistema associada ao seletor.
-     */
     private final Locale locale;
-
-    /**
-     * Chave do arquivo de propriedades para o nome do idioma.
-     */
     private final String chaveMensagem;
 
-    /**
-     * Rótulo descritivo padrão com emoji de bandeira.
-     */
-    private final String descricaoPadrao;
-
-    /**
-     * Construtor da enumeração do seletor de idioma.
-     *
-     * @param locale          Instância de {@code Locale} correspondente
-     * @param chaveMensagem   Chave do bundle de mensagens para internacionalização
-     * @param descricaoPadrao Texto padrão de fallback para o componente visual
-     */
-    IdiomaSelector(Locale locale, String chaveMensagem, String descricaoPadrao) {
+    IdiomaSelector(Locale locale, String chaveMensagem) {
         this.locale = locale;
         this.chaveMensagem = chaveMensagem;
-        this.descricaoPadrao = descricaoPadrao;
     }
 
     /**
-     * Retorna a localidade ({@code Locale}) associada a este seletor.
+     * Devolve o idioma da opção.
      *
-     * @return O {@code Locale} correspondente
+     * @return o {@link Locale} da opção
      */
     public Locale getLocale() {
         return locale;
     }
 
     /**
-     * Retorna a chave do bundle de mensagens para este seletor.
+     * Devolve o nome do idioma, como aparece no seletor.
      *
-     * @return A chave de internacionalização {@code String}
-     */
-    public String getChaveMensagem() {
-        return chaveMensagem;
-    }
-
-    /**
-     * Retorna a descrição padrão com ícone para este seletor.
-     *
-     * @return A descrição padrão {@code String}
-     */
-    public String getDescricaoPadrao() {
-        return descricaoPadrao;
-    }
-
-    /**
-     * Retorna o texto formatado e internacionalizado para o seletor.
-     *
-     * @return O rótulo localizado do seletor {@code String}
-     * @param mensagens textos do idioma ativo; se {@code null}, usa o texto padrão
+     * @param mensagens textos do idioma ativo
+     * @return o nome do idioma
      */
     public String getDescricaoLocalizada(MensagensGui mensagens) {
-        if (mensagens != null) {
-            String prefixo = (this == PORTUGUES) ? "🇧🇷 " : "🇺🇸 ";
-            return prefixo + mensagens.get(chaveMensagem);
-        }
-        return descricaoPadrao;
+        return mensagens.get(chaveMensagem);
     }
 
     /**
-     * Retorna a representação textual para renderização no componente de seleção da GUI.
+     * Devolve a opção correspondente a um idioma.
      *
-     * @return O texto de apresentação no {@code JComboBox}
-     */
-    @Override
-    public String toString() {
-        return descricaoPadrao;
-    }
-
-    /**
-     * Converte um {@code Locale} no seletor de idioma correspondente.
-     *
-     * @param locale Localidade a ser verificada
-     * @return A instância de {@code IdiomaSelector} correspondente
+     * @param locale idioma desejado
+     * @return inglês para qualquer variante de inglês; português nos demais casos
      */
     public static IdiomaSelector porLocale(Locale locale) {
-        if (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) {
-            return INGLES;
-        }
-        return PORTUGUES;
+        return (locale != null && "en".equalsIgnoreCase(locale.getLanguage())) ? INGLES : PORTUGUES;
     }
 }

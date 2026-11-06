@@ -1,10 +1,15 @@
 package br.com.ftcoin.gui.common;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -35,6 +40,11 @@ public class MensagensGui {
      * Nome base dos arquivos de propriedades (bundle).
      */
     private static final String BUNDLE_BASE_NAME = "Messages";
+
+    /**
+     * Pasta dos textos longos em HTML (manual e créditos), um arquivo por idioma.
+     */
+    private static final String PASTA_DOCUMENTOS = "/br/com/ftcoin/gui/textos/";
 
     /**
      * Localização padrão para o idioma Português (Brasil).
@@ -128,6 +138,38 @@ public class MensagensGui {
         }
         String detalhe = (erro.getMessage() != null) ? erro.getMessage() : erro.getClass().getSimpleName();
         return get("erro.inesperado", detalhe);
+    }
+
+    /**
+     * Carrega um texto longo em HTML no idioma ativo e preenche as marcações {@code ${nome}}.
+     * O arquivo procurado é {@code <documento>_<idioma>.html}; sem a versão do idioma, usa a em português.
+     *
+     * @param documento nome base do arquivo, como {@code "ajuda"}
+     * @param valores   valores das marcações, indexados pelo nome usado dentro de {@code ${...}}
+     * @return o HTML pronto para exibição
+     * @throws UncheckedIOException se o arquivo não existir em nenhum idioma ou não puder ser lido
+     */
+    public String carregarDocumento(String documento, Map<String, String> valores) {
+        String html = lerDocumento(documento, getLocaleAtual().getLanguage());
+        if (html == null) {
+            html = lerDocumento(documento, LOCALE_PT.getLanguage());
+        }
+        if (html == null) {
+            throw new UncheckedIOException(new IOException("Documento não encontrado: " + documento));
+        }
+        for (Map.Entry<String, String> valor : valores.entrySet()) {
+            html = html.replace("${" + valor.getKey() + "}", valor.getValue());
+        }
+        return html;
+    }
+
+    private static String lerDocumento(String documento, String idioma) {
+        String caminho = PASTA_DOCUMENTOS + documento + "_" + idioma + ".html";
+        try (InputStream entrada = MensagensGui.class.getResourceAsStream(caminho)) {
+            return (entrada == null) ? null : new String(entrada.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     /**

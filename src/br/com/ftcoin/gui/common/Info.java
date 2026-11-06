@@ -1,14 +1,15 @@
 package br.com.ftcoin.gui.common;
 
+import java.util.Map;
+
 /**
  * <p>
  * Classe de metadados e constantes estáticas do sistema gráfico <b>FTCoin Studio</b>.
  * </p>
  *
  * <p>
- * Centraliza identificadores de versão, dados de autoria, atribuições de equipe,
- * diretivas de copyright institucional e informações acadêmicas consumidas exclusivamente
- * pela camada de interface gráfica ({@code GUI}).
+ * Centraliza o nome, a versão e a plataforma do sistema. Os textos traduzíveis (instituição,
+ * curso, copyright) ficam nos arquivos HTML de {@code gui/textos}, um por idioma.
  * </p>
  *
  * @author Grupo B.05
@@ -40,32 +41,20 @@ public final class Info {
     public static final String PLATAFORMA_JAVA = "Java 21 LTS";
 
     /**
-     * Data de publicação ou homologação do build atual.
-     */
-    public static final String DATA_LANCAMENTO = "Outubro de 2026";
-
-    /**
-     * Relação resumida dos autores e engenheiros do sistema.
+     * Relação resumida dos autores do sistema.
      */
     public static final String AUTORES = "Ana, Arthur, Erik, Gabriel Morais Felix, Hyago, Isabela, Pedro, Vitor";
 
     /**
-     * Declaração formal de reserva de direitos autorais (copyright).
+     * Devolve os valores que preenchem as marcações dos textos em HTML (manual e créditos).
+     *
+     * @return mapa com {@code sistema}, {@code versao} e {@code plataforma}
      */
-    public static final String COPYRIGHT = "© 2026 FTCoin Studio. Todos os direitos reservados.";
-
-    /**
-     * Instituição acadêmica vinculada ao projeto.
-     */
-    public static final String INSTITUICAO = "UNICAMP - Universidade Estadual de Campinas (Campus Limeira)";
-
-    /**
-     * Curso de graduação associado.
-     */
-    public static final String CURSO = "Bacharelado em Sistemas de Informação";
-
-    /**
-     * Disciplina de desenvolvimento de software.
-     */
-    public static final String DISCIPLINA = "Programação Orientada a Objetos (POO)";
+    public static Map<String, String> valoresDocumentos() {
+        return Map.of(
+                "sistema", NOME_SISTEMA,
+                "versao", VERSAO,
+                "plataforma", PLATAFORMA_JAVA
+        );
+    }
 }

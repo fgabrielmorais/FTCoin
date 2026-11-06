@@ -294,7 +294,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         GuiFormatador formatador = mensagens.getFormatador();
 
         rotuloValorMoeda.setText(formatador.moeda(cotacao.valor()));
-        etiquetaOrigemDado.configurarOrigem(cotacao.origem());
+        etiquetaOrigemDado.configurarOrigem(cotacao.origem(), mensagens);
         rotuloLatenciaResposta.setText(mensagens.get("gui.cotacao.latencia", cotacao.tempoRespostaMs()));
         rotuloHorarioConsulta.setText(mensagens.get("gui.cotacao.horario", cotacao.horaConsulta().toString().substring(0, 8)));
     }

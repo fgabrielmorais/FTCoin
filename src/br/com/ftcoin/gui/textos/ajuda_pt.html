@@ -1,0 +1,57 @@
+<html>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 15px; color: #1f2937;">
+    <h1 style="color: #1a2b4c; margin-bottom: 5px;">Manual do Usuário</h1>
+    <p style="color: #6b7280; font-size: 13px;">${sistema} - Versão ${versao} | Arquitetura POO &amp; MVP</p>
+    <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
+
+    <h3 style="color: #2563eb;">1. Visão Geral e Inicialização</h3>
+    <p>O <b>${sistema}</b> é uma plataforma para gestão de carteiras de criptomoedas, registro de operações e apuração de resultados financeiros.
+    O sistema pode guardar os dados em <b>Memória</b> (ideal para simulações e testes rápidos) ou no <b>Banco de Dados MariaDB</b>, para persistência definitiva.</p>
+
+    <h3 style="color: #2563eb;">2. Carteiras</h3>
+    <ul>
+        <li><b>Inclusão:</b> Na tela <i>Carteiras</i>, clique em <i>+ Nova Carteira</i> e informe o nome do titular e a corretora. Os dois campos são obrigatórios e têm tamanho máximo.</li>
+        <li><b>Edição:</b> Selecione a carteira na tabela e clique em <i>Editar</i> para atualizar os dados cadastrais.</li>
+        <li><b>Exclusão:</b> Uma carteira com movimentações registradas não pode ser excluída, o que preserva o histórico contábil.</li>
+    </ul>
+
+    <h3 style="color: #2563eb;">3. Movimentações (Compra e Venda)</h3>
+    <ul>
+        <li><b>Compra:</b> Aumenta o saldo e o custo total investido, recalculando o Custo Médio Ponderado.</li>
+        <li><b>Venda:</b> Mantém o Custo Médio e realiza o lucro ou prejuízo da quantidade vendida: <i>Qtd × (Cotação - Custo Médio)</i>. Vendas acima do saldo disponível são bloqueadas.</li>
+    </ul>
+
+    <h3 style="color: #2563eb;">4. Oráculo de Cotações e Cache</h3>
+    <p>As consultas de cotação rodam em <b>Virtual Threads</b>, sem travar a tela. Um selo colorido indica a origem do valor:</p>
+    <ul>
+        <li><span style="color: #15803d; font-weight: bold;">[ORÁCULO]</span>: cotação consultada no Oráculo de cotações.</li>
+        <li><span style="color: #1d4ed8; font-weight: bold;">[CACHE]</span>: cotação reaproveitada do cache local, válido por 60 segundos. O cache é limpo quando o banco de dados é trocado.</li>
+    </ul>
+    <p>Se o Oráculo não tiver cotação para uma data, o sistema avisa em vez de inventar um valor.</p>
+
+    <h3 style="color: #2563eb;">5. Relatórios Financeiros (5 Relatórios)</h3>
+    <ol>
+        <li><b>Posição Consolidada (CMP):</b> saldo, Custo Médio, valor a custo, valor de mercado e ganhos realizado, não realizado e total.</li>
+        <li><b>Histórico de Operações:</b> extrato cronológico com tipo de operação, datas e valores totais.</li>
+        <li><b>Consolidado do Portfólio:</b> todas as carteiras lado a lado, com o percentual de participação no patrimônio.</li>
+        <li><b>Desempenho &amp; Lucratividade:</b> ranking de rentabilidade com ROI (%) e saldo líquido em cores (verde para lucro, vermelho para prejuízo).</li>
+        <li><b>Histórico do Oráculo:</b> variação diária do preço da FTCoin.</li>
+    </ol>
+
+    <h3 style="color: #2563eb;">6. Seletores de Idioma e Banco de Dados</h3>
+    <p>Na barra superior, é possível alternar entre <b>Português (Brasil)</b> e <b>English (US)</b> e trocar a persistência entre <b>Memória</b> e <b>MariaDB</b> sem reiniciar o programa.</p>
+
+    <h3 style="color: #2563eb;">7. Contato da Equipe de Desenvolvimento</h3>
+    <p>Para dúvidas técnicas ou informações acadêmicas sobre o <b>${sistema}</b>, fale com a equipe:</p>
+    <ul style="font-size: 13px; line-height: 1.8;">
+        <li><b>Ana:</b> ana@dac.unicamp.br</li>
+        <li><b>Arthur:</b> arthur@dac.unicamp.br</li>
+        <li><b>Erik:</b> erik@dac.unicamp.br</li>
+        <li><b>Gabriel Morais Felix:</b> fgabrielmorais@gmail.com</li>
+        <li><b>Hyago:</b> hyago@dac.unicamp.br</li>
+        <li><b>Isabela Dumas:</b> isabeladumas12@gmail.com</li>
+        <li><b>Pedro:</b> pedro@dac.unicamp.br</li>
+        <li><b>Vitor:</b> vitor@dac.unicamp.br</li>
+    </ul>
+</body>
+</html>

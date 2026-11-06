@@ -3,119 +3,53 @@ package br.com.ftcoin.gui.common;
 import br.com.ftcoin.daos.TipoPersistencia;
 
 /**
- * <p>
- * Enumeração para o seletor de mecanismos de banco de dados e persistência na interface gráfica.
- * </p>
- *
- * <p>
- * Representa os estados fixos de armazenamento configuráveis pelo usuário no componente
- * {@code JComboBox} da barra de navegação da {@code GUI}.
- * </p>
+ * Opções do seletor de banco de dados da barra superior, ligadas ao mecanismo de persistência correspondente.
  *
  * @author Grupo B.05
  * @version 1.0.0
- * @since 2026-10-20
  */
 public enum DatabaseSelector {
 
-    /**
-     * Armazenamento volátil em memória para simulações e testes rápidos.
-     */
-    MEMORIA(TipoPersistencia.MEMORIA, "gui.menu.banco.memoria", "💾 Memória Volátil"),
+    /** Dados em memória. */
+    MEMORIA(TipoPersistencia.MEMORIA, "gui.menu.banco.memoria"),
 
-    /**
-     * Armazenamento relacional persistente via servidor MariaDB.
-     */
-    MARIADB(TipoPersistencia.MARIADB, "gui.menu.banco.mariadb", "🗄️ MariaDB (SQL)");
+    /** Dados no MariaDB. */
+    MARIADB(TipoPersistencia.MARIADB, "gui.menu.banco.mariadb");
 
-    /**
-     * Tipo de persistência de domínio associado à opção.
-     */
     private final TipoPersistencia tipoPersistencia;
-
-    /**
-     * Chave do arquivo de propriedades para internacionalização.
-     */
     private final String chaveMensagem;
 
-    /**
-     * Rótulo descritivo padrão de exibição visual.
-     */
-    private final String descricaoPadrao;
-
-    /**
-     * Construtor da enumeração do seletor de banco de dados.
-     *
-     * @param tipoPersistencia Tipo de persistência do domínio subjacente
-     * @param chaveMensagem   Chave de mensagem do bundle para internacionalização
-     * @param descricaoPadrao Texto de fallback para exibição no componente visual
-     */
-    DatabaseSelector(TipoPersistencia tipoPersistencia, String chaveMensagem, String descricaoPadrao) {
+    DatabaseSelector(TipoPersistencia tipoPersistencia, String chaveMensagem) {
         this.tipoPersistencia = tipoPersistencia;
         this.chaveMensagem = chaveMensagem;
-        this.descricaoPadrao = descricaoPadrao;
     }
 
     /**
-     * Retorna o tipo de persistência associado a este seletor.
+     * Devolve o mecanismo de persistência da opção.
      *
-     * @return O tipo de persistência {@code TipoPersistencia}
+     * @return o tipo de persistência
      */
     public TipoPersistencia getTipoPersistencia() {
         return tipoPersistencia;
     }
 
     /**
-     * Retorna a chave do bundle de mensagens para este seletor.
+     * Devolve o nome da opção no idioma ativo.
      *
-     * @return A chave de internacionalização {@code String}
-     */
-    public String getChaveMensagem() {
-        return chaveMensagem;
-    }
-
-    /**
-     * Retorna a descrição padrão de fallback para este seletor.
-     *
-     * @return A descrição padrão {@code String}
-     */
-    public String getDescricaoPadrao() {
-        return descricaoPadrao;
-    }
-
-    /**
-     * Retorna o texto formatado e internacionalizado para o seletor.
-     *
-     * @return O rótulo localizado do seletor {@code String}
-     * @param mensagens textos do idioma ativo; se {@code null}, usa o texto padrão
+     * @param mensagens textos do idioma ativo
+     * @return o nome da opção
      */
     public String getDescricaoLocalizada(MensagensGui mensagens) {
-        if (mensagens != null) {
-            return mensagens.get(chaveMensagem);
-        }
-        return descricaoPadrao;
+        return mensagens.get(chaveMensagem);
     }
 
     /**
-     * Retorna a representação textual para renderização em componentes de lista da GUI.
+     * Devolve a opção correspondente a um mecanismo de persistência.
      *
-     * @return O texto de apresentação no {@code JComboBox}
-     */
-    @Override
-    public String toString() {
-        return descricaoPadrao;
-    }
-
-    /**
-     * Converte um {@code TipoPersistencia} de domínio no seletor correspondente da interface.
-     *
-     * @param tipo Tipo de persistência a ser localizado
-     * @return A instância de {@code DatabaseSelector} correspondente, ou {@code MEMORIA} caso {@code tipo} seja {@code null}
+     * @param tipo mecanismo de persistência
+     * @return a opção do seletor; memória para qualquer valor que não seja MariaDB
      */
     public static DatabaseSelector porTipo(TipoPersistencia tipo) {
-        if (tipo == TipoPersistencia.MARIADB) {
-            return MARIADB;
-        }
-        return MEMORIA;
+        return (tipo == TipoPersistencia.MARIADB) ? MARIADB : MEMORIA;
     }
 }

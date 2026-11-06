@@ -1,111 +1,53 @@
 package br.com.ftcoin.gui.common;
 
 /**
- * <p>
- * Enumeração para os modos de exibição e identificadores das telas principais da interface gráfica.
- * </p>
- *
- * <p>
- * Define as chaves de cartões consumidas pelo layout de navegação ({@code CardLayout}) do
- * {@code MainFrame} e os rótulos de navegação internacionalizados.
- * </p>
+ * Telas principais da interface: o identificador de cada uma no {@code CardLayout} e a chave do texto
+ * do botão de navegação.
  *
  * @author Grupo B.05
  * @version 1.0.0
- * @since 2026-10-20
  */
 public enum ModoNavegacao {
 
-    /**
-     * Tela inicial com indicadores consolidados (KPIs) e feed de operações recentes.
-     */
-    DASHBOARD("DASHBOARD", "gui.nav.btn.dashboard", "📊 Dashboard"),
+    /** Tela de dashboard. */
+    DASHBOARD("DASHBOARD", "gui.nav.btn.dashboard"),
 
-    /**
-     * Tela de gestão, listagem e cadastro de carteiras de custódia.
-     */
-    CARTEIRAS("CARTEIRAS", "gui.nav.btn.carteiras", "💼 Carteiras"),
+    /** Tela de carteiras. */
+    CARTEIRAS("CARTEIRAS", "gui.nav.btn.carteiras"),
 
-    /**
-     * Tela de registro e histórico de operações financeiras de compra e venda.
-     */
-    MOVIMENTACOES("MOVIMENTACOES", "gui.nav.btn.movimentacoes", "🔄 Movimentações"),
+    /** Tela de compra e venda. */
+    MOVIMENTACOES("MOVIMENTACOES", "gui.nav.btn.movimentacoes"),
 
-    /**
-     * Tela de telemetria e consulta assíncrona de preços junto ao Oráculo e Cache.
-     */
-    COTACAO("COTACAO", "gui.nav.btn.cotacao", "🌐 Cotação & Oráculo"),
+    /** Tela de cotação e oráculo. */
+    COTACAO("COTACAO", "gui.nav.btn.cotacao"),
 
-    /**
-     * Tela analítica com os cinco relatórios financeiros especializados do sistema.
-     */
-    RELATORIOS("RELATORIOS", "gui.nav.btn.relatorios", "📈 Relatórios");
+    /** Tela de relatórios. */
+    RELATORIOS("RELATORIOS", "gui.nav.btn.relatorios");
 
-    /**
-     * Identificador do cartão no {@code CardLayout}.
-     */
     private final String identificadorCard;
-
-    /**
-     * Chave do arquivo de propriedades para o texto do botão.
-     */
     private final String chaveMensagem;
 
-    /**
-     * Texto padrão de fallback para o botão de navegação.
-     */
-    private final String tituloPadrao;
-
-    /**
-     * Construtor da enumeração do modo de navegação.
-     *
-     * @param identificadorCard Nome identificador da tela para chave no {@code CardLayout}
-     * @param chaveMensagem     Chave no arquivo de propriedades
-     * @param tituloPadrao      Texto padrão com ícone para exibição
-     */
-    ModoNavegacao(String identificadorCard, String chaveMensagem, String tituloPadrao) {
+    ModoNavegacao(String identificadorCard, String chaveMensagem) {
         this.identificadorCard = identificadorCard;
         this.chaveMensagem = chaveMensagem;
-        this.tituloPadrao = tituloPadrao;
     }
 
     /**
-     * Retorna o identificador único do cartão para alternância no {@code CardLayout}.
+     * Devolve o identificador da tela no {@code CardLayout}.
      *
-     * @return O identificador da tela {@code String}
+     * @return o identificador da tela
      */
     public String getIdentificadorCard() {
         return identificadorCard;
     }
 
     /**
-     * Retorna a chave do bundle de mensagens associada a este modo.
+     * Devolve o texto do botão de navegação no idioma ativo.
      *
-     * @return A chave de mensagem {@code String}
-     */
-    public String getChaveMensagem() {
-        return chaveMensagem;
-    }
-
-    /**
-     * Retorna o título padrão de fallback deste modo de navegação.
-     *
-     * @return O título padrão {@code String}
-     */
-    public String getTituloPadrao() {
-        return tituloPadrao;
-    }
-
-    /**
-     * Retorna o título localizado obtido a partir do provedor central de mensagens da GUI.
-     *
-     * @return O título internacionalizado {@code String}
-     * @param mensagens textos do idioma ativo; se {@code null}, usa o texto padrão
+     * @param mensagens textos do idioma ativo
+     * @return o texto do botão
      */
     public String getTituloLocalizado(MensagensGui mensagens) {
-        if (mensagens != null) {
-            return mensagens.get(chaveMensagem);
-        }
-        return tituloPadrao;
+        return mensagens.get(chaveMensagem);
     }
 }
