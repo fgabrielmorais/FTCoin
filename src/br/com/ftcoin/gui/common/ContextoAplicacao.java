@@ -69,7 +69,7 @@ public class ContextoAplicacao {
         this.carteiraService = new CarteiraService(this.carteiraDAO, this.movimentacaoDAO);
         this.movimentacaoService = new MovimentacaoService(this.movimentacaoDAO, this.carteiraDAO, this.oraculoDAO);
         this.tipoPersistenciaAtual = tipo;
-        LOG.log(Level.INFO, "Persistência ativa: {0}", tipo.getValorConfiguracao());
+        LOG.log(Level.INFO, "Persistência ativa: {0}", tipo.getNome());
     }
 
     /**
@@ -84,7 +84,7 @@ public class ContextoAplicacao {
         }
 
         LOG.log(Level.FINE, "Alternando persistência de {0} para {1}", new Object[] {
-                this.tipoPersistenciaAtual.getValorConfiguracao(), novoTipo.getValorConfiguracao() });
+                this.tipoPersistenciaAtual.getNome(), novoTipo.getNome() });
         inicializarCamadaPersistencia(novoTipo);
 
         // Valida a conexão logo na troca, em vez de deixar o erro para a primeira tela

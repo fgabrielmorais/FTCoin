@@ -65,7 +65,7 @@ public class FTCoinGuiApp {
                 janelaPrincipal.setVisible(true);
 
                 LOG.log(Level.INFO, "FTCoin Studio pronto (persistência={0}, idioma={1})", new Object[] {
-                        contexto.getTipoPersistenciaAtual().getValorConfiguracao(),
+                        contexto.getTipoPersistenciaAtual().getNome(),
                         contexto.getMensagens().getLocaleAtual() });
             } catch (Exception e) {
                 LOG.log(Level.SEVERE, "Falha ao iniciar a interface gráfica", e);

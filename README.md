@@ -6,7 +6,7 @@
 
 O **FTCoin** é um sistema para acompanhar carteiras de uma moeda virtual. O projeto foi desenvolvido na disciplina de Programação Orientada a Objetos do curso de **Sistemas de Informação da UNICAMP (Campus Limeira)**.
 
-O sistema cadastra carteiras, registra compras e vendas de FTCoins e apura o resultado de cada carteira com base nas cotações fornecidas pelo Oráculo. Ele tem duas interfaces sobre o mesmo modelo: a interface gráfica **FTCoin Studio** (Swing) e uma versão de linha de comando.
+O sistema cadastra carteiras, registra compras e vendas de FTCoins e apura o resultado de cada carteira com base nas cotações fornecidas pelo Oráculo. A interface é o **FTCoin Studio**, uma aplicação gráfica em Swing.
 
 ---
 
@@ -37,7 +37,7 @@ Todos os cálculos usam `BigDecimal` com arredondamento `HALF_EVEN`.
 
 - **Linguagem:** Java 21, com `module-info`.
 - **Interface gráfica (MVP):** cada tela implementa um contrato `I*View` e só exibe e lê dados. O presenter da tela recebe a view e os serviços pelo construtor, trata os eventos e decide o que mostrar.
-- **Modelo:** as entidades (`Carteira`, `Movimentacao`, `Cotacao`), a apuração da posição (`Posicao`) e os serviços `CarteiraService` e `MovimentacaoService` concentram as regras e os cálculos, inclusive os dos relatórios (ROI, participação no portfólio, variação da cotação). As duas interfaces usam os mesmos serviços, e as telas recebem as próprias entidades, sem objetos intermediários.
+- **Modelo:** as entidades (`Carteira`, `Movimentacao`, `Cotacao`), a apuração da posição (`Posicao`) e os serviços `CarteiraService` e `MovimentacaoService` concentram as regras e os cálculos, inclusive os dos relatórios (ROI, participação no portfólio, variação da cotação). As telas recebem as próprias entidades, sem objetos intermediários.
 - **Contexto da aplicação:** a GUI cria um único `ContextoAplicacao` na inicialização e o injeta nas telas. Ele guarda os DAOs, os serviços e as mensagens, e é o único ponto que troca entre memória e MariaDB.
 - **Persistência:** padrão DAO com classes abstratas (`CarteiraDAO`, `MovimentacaoDAO`, `OraculoDAO`) e duas implementações de cada: em memória e em MariaDB. A `DAOFactory` (Abstract Factory) escolhe entre elas. Os DAOs não são Singleton; o Singleton fica só na conexão com o banco (`ConexaoMariaDB`), fechada ao sair.
 - **Textos:** nenhum texto de interface fica no código. Os textos curtos vêm dos arquivos `Messages_<idioma>.properties`, e o manual e os créditos, de arquivos HTML por idioma em `gui/textos`.
@@ -48,7 +48,6 @@ Todos os cálculos usam `BigDecimal` com arredondamento `HALF_EVEN`.
 
 ```text
 src/
-├── application.properties         # mecanismo de persistência (linha de comando)
 ├── database.properties.example    # modelo das credenciais do banco
 ├── logging.properties             # configuração dos logs
 ├── Messages_pt.properties         # textos em português
@@ -56,18 +55,16 @@ src/
 ├── Messages_es.properties         # textos em espanhol
 └── br/com/ftcoin/
     ├── models/        # entidades, apuração da posição e exceções do domínio
-    ├── services/      # casos de uso compartilhados pelas duas interfaces
+    ├── services/      # casos de uso (carteiras e movimentações)
     ├── daos/          # persistência em memória e em MariaDB
     ├── config/        # configuração dos logs
-    ├── gui/           # interface gráfica (Swing, padrão MVP)
-    │   ├── main/          # ponto de entrada da GUI
-    │   ├── common/        # contexto, mensagens, formatação e enums da interface
-    │   ├── presenters/    # um presenter por tela
-    │   ├── views/         # telas, contratos (contracts/) e componentes visuais
-    │   ├── services/      # cache de cotações do Oráculo
-    │   └── textos/        # manual e créditos em HTML, um arquivo por idioma
-    ├── main/          # ponto de entrada da linha de comando
-    └── views/         # telas da linha de comando
+    └── gui/           # interface gráfica (Swing, padrão MVP)
+        ├── main/          # ponto de entrada da GUI
+        ├── common/        # contexto, mensagens, formatação e enums da interface
+        ├── presenters/    # um presenter por tela
+        ├── views/         # telas, contratos (contracts/) e componentes visuais
+        ├── services/      # cache de cotações do Oráculo
+        └── textos/        # manual e créditos em HTML, um arquivo por idioma
 ```
 
 ---
@@ -106,10 +103,6 @@ Também é possível importar o projeto na IDE como **projeto Maven** e executar
 
 A interface inicia no modo memória, com carteiras e operações de demonstração, e roda sem banco de dados. O seletor **Banco** da barra superior troca para MariaDB durante a execução; a troca não copia os dados de um modo para o outro.
 
-### Linha de comando
-
-Execute a classe `br.com.ftcoin.main.Main`. O mecanismo de persistência é lido de `src/application.properties`.
-
 ### Modo memória
 
 Os dados são perdidos ao encerrar e as cotações são simuladas: variam conforme a data, e a mesma data devolve sempre o mesmo valor. Não representam preços reais de mercado.
@@ -118,11 +111,7 @@ Os dados são perdidos ao encerrar e as cotações são simuladas: variam confor
 
 1. Execute o script `docs/script.sql` no banco.
 2. Copie `src/database.properties.example` para `src/database.properties` e preencha a URL, o usuário e a senha. Esse arquivo está no `.gitignore` e não deve ser versionado.
-3. Na interface gráfica, escolha MariaDB no seletor **Banco**. Na linha de comando, troque em `src/application.properties`:
-
-   ```properties
-   storage.provider=mariadb
-   ```
+3. Na interface, escolha MariaDB no seletor **Banco**.
 
 ### Idioma
 
