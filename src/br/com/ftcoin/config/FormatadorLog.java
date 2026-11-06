@@ -22,7 +22,7 @@ import java.util.logging.LogRecord;
  * consultas de cotação feitas em paralelo.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-11-02
  */

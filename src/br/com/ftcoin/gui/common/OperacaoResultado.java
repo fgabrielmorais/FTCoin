@@ -11,7 +11,7 @@ package br.com.ftcoin.gui.common;
  * </p>
  *
  * @param <T> Tipo de dado retornado em caso de conclusão bem-sucedida
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -25,7 +25,7 @@ public sealed interface OperacaoResultado<T> permits OperacaoResultado.Sucesso, 
      * @param <T>      Tipo da carga útil transportada
      * @param mensagem Mensagem informativa ou de confirmação
      * @param dados    Carga útil dos dados resultantes
-     * @author Equipe FTCoin
+     * @author Grupo B.05
      * @version 1.0.0
      * @since 2026-10-20
      */
@@ -62,7 +62,7 @@ public sealed interface OperacaoResultado<T> permits OperacaoResultado.Sucesso, 
      * @param <T>          Tipo esperado do dado em caso de êxito
      * @param mensagemErro Texto descritivo da falha
      * @param causa        Exceção raiz causadora do problema (opcional)
-     * @author Equipe FTCoin
+     * @author Grupo B.05
      * @version 1.0.0
      * @since 2026-10-20
      */

@@ -1,0 +1,31 @@
+<html>
+<body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 15px; color: #1f2937;">
+    <h1 style="color: #1a2b4c; margin-bottom: 5px;">Manual do usuário</h1>
+    <p style="color: #6b7280; font-size: 13px;">${sistema} - Versão ${versao} | Arquitetura POO &amp; MVP</p>
+    <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 15px 0;">
+
+    <h3 style="color: #2563eb;">1. Visão geral</h3>
+    <p>O FTCoin Studio é um sistema acadêmico para gerenciar carteiras da moeda virtual FTCoin, registrar compras e vendas, consultar cotações e acompanhar resultados. Use os botões da barra superior para abrir cada tela.</p>
+
+    <h3 style="color: #2563eb;">2. Carteiras</h3>
+    <ul><li><b>Cadastrar:</b> abra Carteiras, clique em Nova Carteira, informe o titular e a corretora e confirme.</li><li><b>Editar:</b> selecione uma carteira na tabela e clique em Editar para alterar seus dados.</li><li><b>Excluir:</b> selecione a carteira e confirme a exclusão. Carteiras com movimentações registradas não podem ser excluídas.</li></ul>
+
+    <h3 style="color: #2563eb;">3. Compras, vendas e datas</h3>
+    <p>Abra Movimentações, escolha Compra ou Venda, selecione a carteira e informe uma quantidade positiva. Use ponto ou vírgula como separador decimal, sem separadores de milhares: por exemplo, <b>10.5</b> ou <b>10,5</b>. Confira os dados e confirme a operação. Uma venda acima do saldo disponível é recusada.</p><p>Digite as datas no formato <b>AAAA-MM-DD</b>, por exemplo, <b>2026-11-01</b>, independentemente do idioma. O formulário de movimentações recusa datas futuras.</p><p><b>Limitação atual:</b> a data informada pode ser usada na estimativa, mas a compra ou venda é registrada com a data atual do computador e validada com a cotação atual. Para manter a estimativa coerente com o registro, use a data de hoje. O formulário não permite efetivar uma operação retroativa.</p>
+
+    <h3 style="color: #2563eb;">4. Cotações e cache</h3>
+    <p>Na tela Cotação, informe a data no formato AAAA-MM-DD e clique em Consultar. A tela apresenta o valor, a origem da resposta, o tempo de resposta e o horário da consulta.</p><ul><li><b>Oráculo:</b> consulta à fonte de cotações configurada. No modo memória, os valores são simulados; no modo MariaDB, são lidos do banco. Não se trata de uma integração com uma bolsa ou serviço financeiro externo.</li><li><b>Cache:</b> reutilização temporária de uma cotação já consultada, com validade de 60 segundos. O cache é esvaziado quando o banco de dados é trocado.</li><li><b>Limpar cache:</b> remove as entradas temporárias e faz uma nova consulta para a data atual.</li></ul><p>Se não houver cotação para a data pedida, o sistema avisa em vez de inventar um valor. No histórico recente, os dias sem cotação ficam de fora.</p>
+
+    <h3 style="color: #2563eb;">5. Como usar os relatórios</h3>
+    <p>Abra Relatórios e selecione uma carteira para os relatórios 1 e 2. Use Atualizar Todos para recarregar os dados.</p><ol><li><b>Posição consolidada:</b> saldo, custo médio, valor a custo, valor de mercado, ganhos e ROI da carteira selecionada.</li><li><b>Histórico de operações:</b> datas, compras e vendas, quantidades, cotações e totais da carteira selecionada.</li><li><b>Consolidado do portfólio:</b> visão de todas as carteiras e da participação de cada uma no valor de mercado total.</li><li><b>Desempenho e lucratividade:</b> valor a custo, valor atual, resultado total e ROI por carteira. A tabela não é necessariamente ordenada por rentabilidade.</li><li><b>Histórico do Oráculo:</b> tabela de cotações recentes, variações absolutas e percentuais e origem indicada pelo sistema.</li></ol>
+
+    <h3 style="color: #2563eb;">6. Custo médio e resultados</h3>
+    <p><b>Custo médio ponderado (CMP):</b> valor a custo dividido pelo saldo de FTC. A compra aumenta o saldo e o valor a custo, recalculando o CMP. A venda reduz o saldo e o valor a custo proporcionalmente, mantendo o CMP, sujeito aos arredondamentos.</p><ul><li><b>Resultado realizado:</b> soma dos resultados das vendas. Cada venda apura quantidade vendida × (cotação de venda − custo médio).</li><li><b>Resultado não realizado:</b> valor de mercado da posição restante menos seu valor a custo.</li><li><b>Resultado total:</b> realizado mais não realizado.</li><li><b>ROI nesta aplicação:</b> resultado total dividido pelo valor a custo da posição restante, multiplicado por 100. Quando esse valor a custo é zero, o sistema apresenta ROI zero.</li></ul><p>Resultados negativos representam prejuízo. As cores ajudam na leitura, mas confira também o sinal e o valor exibidos.</p>
+
+    <h3 style="color: #2563eb;">7. Idioma e armazenamento</h3>
+    <p>Use o seletor Idioma na barra superior para escolher português, inglês ou espanhol sem reiniciar. Feche os diálogos modais, como este manual, para acessar o seletor; depois abra a ajuda novamente. O idioma altera a apresentação dos textos, números e datas, sem representar uma conversão monetária.</p><p>O seletor Banco alterna entre Memória e MariaDB. A troca seleciona outra fonte de dados; não transfere automaticamente os registros entre os modos.</p><ul><li><b>Memória:</b> destinada a testes e simulações. Os dados não são gravados de forma permanente e são perdidos ao encerrar o programa.</li><li><b>MariaDB:</b> os registros são persistidos no banco configurado. Se houver falha de conexão, verifique se o servidor está disponível e peça ao responsável pela instalação que confira endereço, banco, credenciais e permissões. Não compartilhe senhas em capturas de tela.</li></ul>
+
+    <h3 style="color: #2563eb;">8. Encerramento</h3>
+    <p>Para fechar apenas este manual, use Fechar Manual ou o X desta janela. Para encerrar o programa, use o X da janela principal. Conclua as operações antes de sair: campos ainda não confirmados não são registros salvos, e os dados do modo memória não estarão disponíveis em uma nova execução.</p>
+</body>
+</html>

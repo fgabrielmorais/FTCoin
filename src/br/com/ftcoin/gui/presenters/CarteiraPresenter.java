@@ -4,11 +4,10 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
-import br.com.ftcoin.controllers.CarteiraController;
-import br.com.ftcoin.gui.common.AppContext;
+import br.com.ftcoin.services.CarteiraService;
+import br.com.ftcoin.services.MovimentacaoService;
+import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
-import br.com.ftcoin.gui.dto.CarteiraDTO;
-import br.com.ftcoin.gui.services.RelatoriosService;
 import br.com.ftcoin.gui.views.contracts.ICarteiraView;
 import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.FTCoinException;
@@ -20,10 +19,10 @@ import br.com.ftcoin.models.FTCoinException;
  *
  * <p>
  * Isola a interface gráfica das regras de negócio, coordenando a validação de dados de entrada,
- * operações de inclusão, alteração e exclusão de carteiras junto aos controladores do sistema.
+ * operações de inclusão, alteração e exclusão de carteiras junto aos serviços do modelo.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
@@ -36,20 +35,17 @@ public class CarteiraPresenter {
      */
     private final ICarteiraView view;
 
-    /**
-     * Serviço de relatórios e consulta de dados consolidados.
-     */
-    private final RelatoriosService relatoriosService;
+    private final ContextoAplicacao contexto;
 
     /**
      * Constrói o apresentador de carteiras associando a visão e o serviço de dados.
      *
      * @param view             Visão que implementa o contrato {@link ICarteiraView}
-     * @param relatoriosService Serviço de relatórios e dados consolidados
+     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
      */
-    public CarteiraPresenter(ICarteiraView view, RelatoriosService relatoriosService) {
+    public CarteiraPresenter(ICarteiraView view, ContextoAplicacao contexto) {
+        this.contexto = contexto;
         this.view = view;
-        this.relatoriosService = relatoriosService;
     }
 
     /**
@@ -57,11 +53,12 @@ public class CarteiraPresenter {
      */
     public void carregarCarteiras() {
         try {
-            List<CarteiraDTO> carteiras = relatoriosService.listarCarteirasDTO();
-            view.exibirCarteiras(carteiras);
+            MovimentacaoService movimentacoes = contexto.getMovimentacaoService();
+            List<Carteira> carteiras = contexto.getCarteiraService().listarTodasCarteiras();
+            view.exibirCarteiras(movimentacoes.apurarPosicoes(carteiras), movimentacoes.buscarCotacaoAtual());
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar carteiras", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -73,7 +70,7 @@ public class CarteiraPresenter {
      */
     public void salvarNovaCarteira(String titular, String corretora) {
         LOG.fine("Usuário pediu: criar carteira");
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
 
         // Validação de regras de tamanho de campos da interface
         if (titular == null || titular.trim().length() < 3 || titular.trim().length() > 100) {
@@ -89,8 +86,8 @@ public class CarteiraPresenter {
         }
 
         try {
-            CarteiraController controller = AppContext.getInstancia().getCarteiraController();
-            Carteira criada = controller.criarCarteira(titular.trim(), corretora.trim());
+            CarteiraService servico = contexto.getCarteiraService();
+            Carteira criada = servico.criarCarteira(titular.trim(), corretora.trim());
             view.fecharModal();
             carregarCarteiras();
             view.exibirMensagemSucesso(mensagens.get("gui.carteira.sucesso.criada", criada.getId()));
@@ -99,7 +96,7 @@ public class CarteiraPresenter {
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "criar carteira", e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -112,7 +109,7 @@ public class CarteiraPresenter {
      */
     public void atualizarCarteira(int id, String novoTitular, String novaCorretora) {
         LOG.log(Level.FINE, "Usuário pediu: editar carteira {0}", id);
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        MensagensGui mensagens = contexto.getMensagens();
 
         if (novoTitular == null || novoTitular.trim().length() < 3 || novoTitular.trim().length() > 100) {
             LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.carteira.erro.titularTamanho");
@@ -127,8 +124,8 @@ public class CarteiraPresenter {
         }
 
         try {
-            CarteiraController controller = AppContext.getInstancia().getCarteiraController();
-            controller.editarCarteira(id, novoTitular.trim(), novaCorretora.trim());
+            CarteiraService servico = contexto.getCarteiraService();
+            servico.editarCarteira(id, novoTitular.trim(), novaCorretora.trim());
             view.fecharModal();
             carregarCarteiras();
             view.exibirMensagemSucesso(mensagens.get("gui.carteira.sucesso.atualizada", id));
@@ -137,7 +134,7 @@ public class CarteiraPresenter {
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "editar carteira " + id, e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 
@@ -145,9 +142,9 @@ public class CarteiraPresenter {
      * Exclui a carteira selecionada na tabela da visão caso não possua movimentações vinculadas.
      */
     public void excluirCarteira() {
-        CarteiraDTO selecionada = view.getCarteiraSelecionada();
-        LOG.log(Level.FINE, "Usuário pediu: excluir carteira {0}", selecionada == null ? "(nenhuma selecionada)" : selecionada.id());
-        MensagensGui mensagens = AppContext.getInstancia().getMensagens();
+        Carteira selecionada = view.getCarteiraSelecionada();
+        LOG.log(Level.FINE, "Usuário pediu: excluir carteira {0}", selecionada == null ? "(nenhuma selecionada)" : selecionada.getId());
+        MensagensGui mensagens = contexto.getMensagens();
 
         if (selecionada == null) {
             LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.carteira.erro.selecione");
@@ -156,16 +153,16 @@ public class CarteiraPresenter {
         }
 
         try {
-            CarteiraController controller = AppContext.getInstancia().getCarteiraController();
-            controller.excluirCarteira(selecionada.id());
+            CarteiraService servico = contexto.getCarteiraService();
+            servico.excluirCarteira(selecionada.getId());
             carregarCarteiras();
-            view.exibirMensagemSucesso(mensagens.get("gui.carteira.sucesso.excluida", selecionada.id()));
+            view.exibirMensagemSucesso(mensagens.get("gui.carteira.sucesso.excluida", selecionada.getId()));
         } catch (FTCoinException e) {
-            RegistroDeFalhas.registrar(LOG, "excluir carteira " + selecionada.id(), e);
+            RegistroDeFalhas.registrar(LOG, "excluir carteira " + selecionada.getId(), e);
             view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
         } catch (Exception e) {
-            RegistroDeFalhas.registrar(LOG, "excluir carteira " + selecionada.id(), e);
-            view.exibirMensagemErro(AppContext.getInstancia().getMensagens().descreverErro(e));
+            RegistroDeFalhas.registrar(LOG, "excluir carteira " + selecionada.getId(), e);
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
         }
     }
 }

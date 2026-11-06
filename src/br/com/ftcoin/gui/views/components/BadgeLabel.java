@@ -7,6 +7,7 @@ import java.awt.RenderingHints;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
+import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.common.OrigemCotacao;
 import br.com.ftcoin.gui.common.TemaCores;
 
@@ -20,11 +21,13 @@ import br.com.ftcoin.gui.common.TemaCores;
  * do <b>Cache Local</b> por meio de cores temáticas de alto contraste.
  * </p>
  *
- * @author Equipe FTCoin
+ * @author Grupo B.05
  * @version 1.0.0
  * @since 2026-10-20
  */
 public class BadgeLabel extends JLabel {
+
+    private static final long serialVersionUID = 1L;
 
     /**
      * Cor de preenchimento do fundo da etiqueta.
@@ -57,16 +60,17 @@ public class BadgeLabel extends JLabel {
     /**
      * Configura dinamicamente o texto, ícone e esquema de cores conforme a procedência da cotação.
      *
-     * @param origem Instância de {@link OrigemCotacao} que especifica a fonte do dado
+     * @param origem Instância de {@link OrigemCotacao} que especifica a fonte do dado; {@code null} quando desconhecida
+     * @param mensagens textos do idioma ativo
      */
-    public void configurarOrigem(OrigemCotacao origem) {
+    public void configurarOrigem(OrigemCotacao origem, MensagensGui mensagens) {
         if (origem == null) {
-            setText("INDETERMINADO");
+            setText(mensagens.get("gui.cotacao.badge.indeterminado"));
             setEstilo(new Color(243, 244, 246), new Color(107, 114, 128), new Color(209, 213, 219));
             return;
         }
 
-        setText(origem.getIcone() + " " + origem.getDescricao());
+        setText(origem.getIcone() + " " + origem.getDescricaoLocalizada(mensagens));
         setEstilo(origem.getCorFundo(), origem.getCorTexto(), origem.getCorTexto());
     }
 
