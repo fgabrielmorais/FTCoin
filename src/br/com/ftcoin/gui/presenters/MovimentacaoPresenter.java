@@ -2,8 +2,10 @@ package br.com.ftcoin.gui.presenters;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -12,11 +14,13 @@ import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
+import br.com.ftcoin.gui.common.TarefaEmSegundoPlano;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.views.contracts.IMovimentacaoView;
 import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.FTCoinException;
 import br.com.ftcoin.models.Movimentacao;
+import br.com.ftcoin.models.RegraNegocioException;
 import br.com.ftcoin.models.TipoOperacao;
 
 /**
@@ -51,6 +55,13 @@ public class MovimentacaoPresenter {
     private final CotacaoCacheService cotacaoService;
 
     private final ContextoAplicacao contexto;
+
+    /**
+     * Número da última estimativa pedida em cada operação; respostas de pedidos anteriores são descartadas.
+     */
+    private final Map<TipoOperacao, AtomicLong> ultimoPedidoEstimativa = new EnumMap<>(Map.of(
+            TipoOperacao.COMPRA, new AtomicLong(),
+            TipoOperacao.VENDA, new AtomicLong()));
 
     /**
      * Constrói o apresentador de movimentações injetando visão e serviços requeridos.
@@ -112,6 +123,9 @@ public class MovimentacaoPresenter {
      * @param strQuantidade Quantidade digitada no campo de texto
      */
     public void calcularEstimativas(TipoOperacao tipo, LocalDate data, String strQuantidade) {
+        // Invalida qualquer consulta anterior desta operação ainda em andamento
+        AtomicLong contador = ultimoPedidoEstimativa.get(tipo);
+        long pedido = contador.incrementAndGet();
         if (strQuantidade == null || strQuantidade.trim().isEmpty()) {
             view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
             return;
@@ -126,16 +140,31 @@ public class MovimentacaoPresenter {
             }
 
             LocalDate dataAlvo = (data != null) ? data : LocalDate.now();
-            BigDecimal cotacao = cotacaoService.obterCotacaoSincrona(dataAlvo);
-            BigDecimal total = qtd.multiply(cotacao);
-
-            view.atualizarEstimativas(tipo, cotacao, total);
+            // Consulta fora da thread do Swing; só a resposta da última digitação é exibida
+            TarefaEmSegundoPlano.executar(
+                    () -> cotacaoService.obterCotacaoSincrona(dataAlvo),
+                    cotacao -> {
+                        if (pedido != contador.get()) {
+                            return;
+                        }
+                        if (cotacao == null) {
+                            MensagensGui mensagens = contexto.getMensagens();
+                            view.informarCotacaoIndisponivel(tipo,
+                                    mensagens.descreverErro(new RegraNegocioException("erro.oraculo.semCotacao", dataAlvo)));
+                        } else {
+                            view.atualizarEstimativas(tipo, cotacao, qtd.multiply(cotacao));
+                        }
+                    },
+                    e -> {
+                        if (pedido != contador.get()) {
+                            return;
+                        }
+                        // Falha do oráculo (rede, autenticação): avisa na prévia sem derrubar a tela
+                        RegistroDeFalhas.registrar(LOG, "calcular estimativa", e);
+                        view.informarCotacaoIndisponivel(tipo, contexto.getMensagens().descreverErro(e));
+                    });
         } catch (NumberFormatException e) {
             LOG.log(Level.FINEST, "Estimativa ignorada: quantidade digitada ainda não é um número ({0})", strQuantidade);
-            view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
-        } catch (FTCoinException e) {
-            // Sem cotação para a data: a estimativa fica zerada e o registro da operação informa o erro
-            LOG.log(Level.FINE, "Estimativa sem cotação: {0}", e.getChave());
             view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
         }
     }

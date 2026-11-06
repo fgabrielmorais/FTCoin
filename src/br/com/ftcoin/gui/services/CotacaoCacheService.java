@@ -1,12 +1,11 @@
 package br.com.ftcoin.gui.services;
 
 import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -14,7 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 
-import br.com.ftcoin.daos.OraculoDAO;
+import br.com.ftcoin.daos.OraculoDAOCache;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.OrigemCotacao;
 import br.com.ftcoin.models.Cotacao;
@@ -23,13 +22,13 @@ import br.com.ftcoin.models.RegraNegocioException;
 
 /**
  * <p>
- * Serviço de alta performance para consulta e gerenciamento de cache de cotações de FTCoins.
+ * Serviço de consulta de cotações de FTCoins para a interface gráfica.
  * </p>
  *
  * <p>
- * Utiliza <i>Virtual Threads</i> do Java para execução de requisições de rede assíncronas ao Oráculo,
- * despachando as respostas para a <i>Event Dispatch Thread</i> (EDT) do Swing e reduzindo a latência
- * por meio de um cache temporal em memória.
+ * Utiliza <i>Virtual Threads</i> do Java para as consultas ao Oráculo (que pode estar na rede),
+ * despachando as respostas para a <i>Event Dispatch Thread</i> (EDT) do Swing. O cache fica no
+ * próprio oráculo ({@link OraculoDAOCache}): cada data é buscada uma vez por execução.
  * </p>
  *
  * @author Grupo B.05
@@ -39,39 +38,6 @@ import br.com.ftcoin.models.RegraNegocioException;
 public class CotacaoCacheService {
 
     private static final Logger LOG = Logger.getLogger(CotacaoCacheService.class.getName());
-
-    /**
-     * Tempo de vida limite (TTL) de uma cotação armazenada no cache local.
-     */
-    private static final Duration TTL_CACHE = Duration.ofSeconds(60);
-
-    /**
-     * <p>
-     * Registro interno que encapsula uma entrada de cache temporal com carimbo de data/hora.
-     * </p>
-     *
-     * @param cotacao        Valor unitário da cotação
-     * @param momentoCriacao Instante exato do registro em memória
-     * @author Grupo B.05
-     * @version 1.0.0
-     * @since 2026-10-20
-     */
-    private record EntradaCache(BigDecimal cotacao, Instant momentoCriacao) {
-
-        /**
-         * Retorna {@code true} se o registro ainda estiver dentro da janela de validade temporal.
-         *
-         * @return {@code true} se o item for válido; {@code false} caso tenha expirado
-         */
-        boolean estaValida() {
-            return Duration.between(momentoCriacao, Instant.now()).compareTo(TTL_CACHE) < 0;
-        }
-    }
-
-    /**
-     * Mapa concorrente thread-safe para armazenamento temporário das cotações por data.
-     */
-    private final Map<LocalDate, EntradaCache> mapaCache = new ConcurrentHashMap<>();
 
     /**
      * Executor baseado em Virtual Threads para processamento simultâneo e não bloqueante.
@@ -100,21 +66,20 @@ public class CotacaoCacheService {
     }
 
     /**
-     * Cria o serviço de cotações. O cache é esvaziado sempre que a persistência muda,
-     * para não misturar cotações de mecanismos diferentes.
+     * Cria o serviço de cotações. O oráculo (e o seu cache) é sempre o da persistência ativa,
+     * lido do contexto a cada consulta.
      *
-     * @param contexto contexto da aplicação, com os serviços e as mensagens ativos
+     * @param contexto contexto da aplicação, com o oráculo e as mensagens ativos
      */
     public CotacaoCacheService(ContextoAplicacao contexto) {
         this.contexto = contexto;
-        contexto.adicionarOuvintePersistencia(this::limparCache);
     }
 
     /**
      * Executa a consulta de cotação de forma assíncrona utilizando Virtual Threads.
      *
      * @param data          Data de referência da cotação desejada
-     * @param forcarOraculo Se {@code true}, ignora o cache local e requisita diretamente ao oráculo
+     * @param forcarOraculo Se {@code true}, ignora o cache e requisita diretamente ao oráculo
      * @param onSucesso     Callback acionado na Event Dispatch Thread em caso de êxito
      * @param onErro        Callback acionado na Event Dispatch Thread em caso de falha
      */
@@ -129,38 +94,25 @@ public class CotacaoCacheService {
         virtualThreadExecutor.submit(() -> {
             long instanteInicio = System.currentTimeMillis();
             try {
-                // 1. Verificação de existência válida em cache
-                if (!forcarOraculo) {
-                    EntradaCache itemCache = mapaCache.get(dataAlvo);
-                    if (itemCache != null && itemCache.estaValida()) {
-                        long tempoMs = Math.max(1, System.currentTimeMillis() - instanteInicio);
-                        LOG.log(Level.FINE, "Cotação de {0} servida pelo cache ({1} ms)", new Object[] { dataAlvo, tempoMs });
-                        Cotacao cotacao = new Cotacao(dataAlvo, itemCache.cotacao());
-                        SwingUtilities.invokeLater(() -> onSucesso.receber(cotacao, OrigemCotacao.CACHE, tempoMs));
-                        return;
-                    }
+                OraculoDAOCache oraculo = contexto.getOraculoDAO();
+                if (forcarOraculo) {
+                    oraculo.descartar(dataAlvo);
                 }
+                OraculoDAOCache.Consulta consulta = oraculo.consultar(dataAlvo);
 
-                // 2. Consulta ao Oráculo com simulação de latência de I/O em thread virtual
-                LOG.log(Level.FINE, "Cotação de {0}: consultando o Oráculo ({1})",
-                        new Object[] { dataAlvo, forcarOraculo ? "cache ignorado a pedido" : "cache vazio ou expirado" });
-                OraculoDAO oraculoDAO = contexto.getOraculoDAO();
-                BigDecimal cotacao = oraculoDAO.buscarCotacaoPorData(dataAlvo);
-
-                if (cotacao == null) {
+                if (consulta.valor() == null) {
                     throw new RegraNegocioException("erro.oraculo.semCotacao", dataAlvo);
                 }
 
-                mapaCache.put(dataAlvo, new EntradaCache(cotacao, Instant.now()));
-
-                long tempoMs = System.currentTimeMillis() - instanteInicio;
-                LOG.log(Level.FINE, "Cotação de {0} = {1}, respondida pelo Oráculo em {2} ms",
-                        new Object[] { dataAlvo, cotacao, tempoMs });
-                Cotacao consultada = new Cotacao(dataAlvo, cotacao);
-                SwingUtilities.invokeLater(() -> onSucesso.receber(consultada, OrigemCotacao.ORACULO, tempoMs));
+                long tempoMs = Math.max(1, System.currentTimeMillis() - instanteInicio);
+                OrigemCotacao origem = consulta.doCache() ? OrigemCotacao.CACHE : OrigemCotacao.ORACULO;
+                LOG.log(Level.FINE, "Cotação de {0} = {1}, origem {2}, {3} ms",
+                        new Object[] { dataAlvo, consulta.valor(), origem, tempoMs });
+                Cotacao consultada = new Cotacao(dataAlvo, consulta.valor());
+                SwingUtilities.invokeLater(() -> onSucesso.receber(consultada, origem, tempoMs));
 
             } catch (FTCoinException e) {
-                // Erro previsto (ex.: sem cotação para a data): quem o registra é o presenter
+                // Erro previsto (ex.: sem cotação, falha de rede): quem o registra é o presenter
                 SwingUtilities.invokeLater(() -> onErro.accept(e));
             } catch (Throwable e) {
                 // Erro inesperado em thread de fundo: registrado aqui, onde o stack trace ainda existe
@@ -171,68 +123,53 @@ public class CotacaoCacheService {
     }
 
     /**
-     * Devolve a cotação de uma data, pelo cache quando ainda válido ou pelo Oráculo.
+     * Devolve a cotação de uma data, pelo cache ou pelo Oráculo. Pode acessar a rede:
+     * não deve ser chamado na thread do Swing.
      *
      * @param data dia da cotação; {@code null} significa hoje
-     * @return a cotação do dia, em reais
-     * @throws RegraNegocioException se o Oráculo não tiver cotação para a data
+     * @return a cotação do dia, em reais, ou {@code null} se o Oráculo não tiver cotação para a data
+     *         (não é erro; quem chama decide o que mostrar)
      */
     public BigDecimal obterCotacaoSincrona(LocalDate data) {
         LocalDate dataAlvo = (data != null) ? data : LocalDate.now();
-        BigDecimal cotacao = buscarNoCacheOuOraculo(dataAlvo);
+        BigDecimal cotacao = contexto.getOraculoDAO().buscarCotacaoPorData(dataAlvo);
         if (cotacao == null) {
-            throw new RegraNegocioException("erro.oraculo.semCotacao", dataAlvo);
-        }
-        return cotacao;
-    }
-
-    // Devolve null quando o Oráculo não tem cotação para a data; nunca inventa um valor
-    private BigDecimal buscarNoCacheOuOraculo(LocalDate data) {
-        EntradaCache item = mapaCache.get(data);
-        if (item != null && item.estaValida()) {
-            LOG.log(Level.FINEST, "Cotação de {0} servida pelo cache", data);
-            return item.cotacao();
-        }
-
-        BigDecimal cotacao = contexto.getOraculoDAO().buscarCotacaoPorData(data);
-        if (cotacao != null) {
-            mapaCache.put(data, new EntradaCache(cotacao, Instant.now()));
-            LOG.log(Level.FINEST, "Cotação de {0} = {1}, guardada no cache", new Object[] { data, cotacao });
-        } else {
-            LOG.log(Level.FINE, "Oráculo sem cotação para {0}", data);
+            LOG.log(Level.FINE, "Oráculo sem cotação para {0}", dataAlvo);
         }
         return cotacao;
     }
 
     /**
-     * Limpa todas as entradas de cotação armazenadas na memória cache.
+     * Limpa todas as cotações guardadas no cache do oráculo.
      */
     public void limparCache() {
-        LOG.log(Level.FINE, "Cache de cotações limpo ({0} entrada(s) descartada(s))", mapaCache.size());
-        mapaCache.clear();
+        contexto.getOraculoDAO().limpar();
     }
 
     /**
      * Lista as cotações dos últimos dias, da mais recente para a mais antiga.
      * Dias sem cotação no Oráculo ficam fora da lista, em vez de receber um valor inventado.
+     * Pode acessar a rede: não deve ser chamado na thread do Swing.
      *
      * @param dias Quantidade de dias passados a serem consultados
      * @return as cotações da mais recente para a mais antiga, cada uma com a origem (Oráculo ou cache)
      */
     public Map<Cotacao, OrigemCotacao> obterHistoricoRecente(int dias) {
-        Map<Cotacao, OrigemCotacao> historico = new LinkedHashMap<>();
         LocalDate hoje = LocalDate.now();
 
-        for (int i = 0; i <= dias; i++) {
-            LocalDate data = hoje.minusDays(i);
-            // A origem é decidida antes da busca, que guarda a cotação no cache
-            EntradaCache noCache = mapaCache.get(data);
-            OrigemCotacao origem = (noCache != null && noCache.estaValida()) ? OrigemCotacao.CACHE : OrigemCotacao.ORACULO;
-            BigDecimal cotacao = buscarNoCacheOuOraculo(data);
-            if (cotacao == null) {
+        // Uma única consulta de faixa ao oráculo (em vez de uma por dia); vem do dia mais antigo ao mais recente
+        List<Map.Entry<LocalDate, OraculoDAOCache.Consulta>> consultas =
+                new ArrayList<>(contexto.getOraculoDAO().consultarPeriodo(hoje.minusDays(dias), hoje).entrySet());
+
+        Map<Cotacao, OrigemCotacao> historico = new LinkedHashMap<>();
+        for (Map.Entry<LocalDate, OraculoDAOCache.Consulta> item : consultas.reversed()) {
+            OraculoDAOCache.Consulta consulta = item.getValue();
+            if (consulta.valor() == null) {
+                LOG.log(Level.FINE, "Histórico: {0} sem cotação, dia omitido", item.getKey());
                 continue;
             }
-            historico.put(new Cotacao(data, cotacao), origem);
+            OrigemCotacao origem = consulta.doCache() ? OrigemCotacao.CACHE : OrigemCotacao.ORACULO;
+            historico.put(new Cotacao(item.getKey(), consulta.valor()), origem);
         }
 
         LOG.log(Level.FINE, "Histórico de cotações montado: {0} dia(s)", historico.size());

@@ -1,0 +1,16 @@
+# Copie este arquivo para oracle.properties (mesma pasta) e preencha os valores.
+# O oracle.properties está no .gitignore e não deve ser versionado.
+# Sem o oracle.properties, a aplicação usa o oráculo simulado.
+
+# De onde vêm as cotações:
+#   simulado - cotações calculadas localmente (não exige rede)
+#   api      - servidor de cotações configurado abaixo
+oracle.provider=api
+
+# Servidor do professor (mostrado em aula, 2026-11)
+oracle.host=143.106.243.64
+oracle.port=1234
+oracle.group=NOME_DO_GRUPO
+oracle.password=SENHA_DO_GRUPO
+# Tempo máximo de conexão e de espera pela resposta, em milissegundos
+oracle.timeoutMs=5000

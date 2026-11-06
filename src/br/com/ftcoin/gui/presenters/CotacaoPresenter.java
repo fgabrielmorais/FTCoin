@@ -5,6 +5,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
+import br.com.ftcoin.gui.common.TarefaEmSegundoPlano;
 import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.views.contracts.ICotacaoView;
@@ -110,11 +111,13 @@ public class CotacaoPresenter {
      * Recupera o histórico das cotações dos últimos 10 dias e atualiza a tabela da visão.
      */
     public void carregarHistorico() {
-        try {
-            view.exibirHistoricoOscilacoes(cotacaoService.obterHistoricoRecente(DIAS_HISTORICO));
-        } catch (Exception e) {
-            RegistroDeFalhas.registrar(LOG, "carregar histórico de cotações", e);
-            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
-        }
+        // Consulta o oráculo fora da thread do Swing para a tela não travar
+        TarefaEmSegundoPlano.executar(
+                () -> cotacaoService.obterHistoricoRecente(DIAS_HISTORICO),
+                view::exibirHistoricoOscilacoes,
+                e -> {
+                    RegistroDeFalhas.registrar(LOG, "carregar histórico de cotações", e);
+                    view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
+                });
     }
 }

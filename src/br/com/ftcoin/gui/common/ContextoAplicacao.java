@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 import br.com.ftcoin.daos.CarteiraDAO;
 import br.com.ftcoin.daos.DAOFactory;
 import br.com.ftcoin.daos.MovimentacaoDAO;
-import br.com.ftcoin.daos.OraculoDAO;
+import br.com.ftcoin.daos.OraculoDAOCache;
 import br.com.ftcoin.daos.PersistenciaException;
 import br.com.ftcoin.daos.TipoPersistencia;
 import br.com.ftcoin.services.CarteiraService;
@@ -37,7 +37,7 @@ public class ContextoAplicacao {
     private DAOFactory daoFactoryAtual;
     private CarteiraDAO carteiraDAO;
     private MovimentacaoDAO movimentacaoDAO;
-    private OraculoDAO oraculoDAO;
+    private OraculoDAOCache oraculoDAO;
     private CarteiraService carteiraService;
     private MovimentacaoService movimentacaoService;
 
@@ -53,10 +53,20 @@ public class ContextoAplicacao {
         inicializarCamadaPersistencia(tipoInicial);
     }
 
-    // Recria fábrica, DAOs e serviços; só substitui o estado atual se a nova fábrica for criada
+    // Recria fábrica, DAOs e serviços; só substitui o estado atual se a nova fábrica e o oráculo forem criados
     private void inicializarCamadaPersistencia(TipoPersistencia tipo) {
+        DAOFactory novaFabrica = DAOFactory.criar(tipo);
+        // O oráculo lê oracle.properties e pode falhar: é criado antes de descartar a fábrica atual
+        OraculoDAOCache novoOraculo;
+        try {
+            novoOraculo = novaFabrica.criarOraculoDAO();
+        } catch (RuntimeException e) {
+            novaFabrica.fechar();
+            throw e;
+        }
+
         DAOFactory fabricaAnterior = this.daoFactoryAtual;
-        this.daoFactoryAtual = DAOFactory.criar(tipo);
+        this.daoFactoryAtual = novaFabrica;
         if (fabricaAnterior != null) {
             // Libera a conexão do mecanismo que deixou de ser usado
             fabricaAnterior.fechar();
@@ -64,7 +74,7 @@ public class ContextoAplicacao {
 
         this.carteiraDAO = daoFactoryAtual.criarCarteiraDAO();
         this.movimentacaoDAO = daoFactoryAtual.criarMovimentacaoDAO();
-        this.oraculoDAO = daoFactoryAtual.criarOraculoDAO();
+        this.oraculoDAO = novoOraculo;
 
         this.carteiraService = new CarteiraService(this.carteiraDAO, this.movimentacaoDAO);
         this.movimentacaoService = new MovimentacaoService(this.movimentacaoDAO, this.carteiraDAO, this.oraculoDAO);
@@ -191,7 +201,7 @@ public class ContextoAplicacao {
      *
      * @return o DAO de cotações
      */
-    public synchronized OraculoDAO getOraculoDAO() {
+    public synchronized OraculoDAOCache getOraculoDAO() {
         return oraculoDAO;
     }
 }

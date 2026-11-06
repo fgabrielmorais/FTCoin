@@ -55,11 +55,22 @@ public abstract class DAOFactory {
 	public abstract MovimentacaoDAO criarMovimentacaoDAO();
 
 	/**
-	 * Devolve o DAO de cotações desta família.
+	 * Devolve o oráculo simulado desta família, usado quando {@code oracle.provider=simulado}.
 	 *
-	 * @return o DAO de cotações
+	 * @return o oráculo simulado (em memória ou na tabela do MariaDB)
 	 */
-	public abstract OraculoDAO criarOraculoDAO();
+	protected abstract OraculoDAO criarOraculoSimulado();
+
+	/**
+	 * Devolve o oráculo de cotações: o simulado desta família ou o servidor de cotações (API),
+	 * conforme {@code oracle.provider} em {@code oracle.properties}, sempre com cache.
+	 *
+	 * @return o oráculo ativo, com cache
+	 * @throws PersistenciaException se {@code oracle.properties} pedir a API com valores inválidos ou ausentes
+	 */
+	public final OraculoDAOCache criarOraculoDAO() {
+		return new OraculoDAOCache(FabricaOraculo.criar(criarOraculoSimulado()));
+	}
 
 	/**
 	 * Libera os recursos da família, como a conexão com o banco. A implementação padrão não faz nada.

@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
+import br.com.ftcoin.gui.common.TarefaEmSegundoPlano;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.views.contracts.IRelatoriosView;
 import br.com.ftcoin.models.Carteira;
@@ -157,11 +158,13 @@ public class RelatoriosPresenter {
      * @param dias Quantidade de dias a serem apurados no histórico
      */
     public void gerarRelatorio5Cotacoes(int dias) {
-        try {
-            view.exibirRelatorio5Cotacoes(cotacaoService.obterHistoricoRecente(dias));
-        } catch (Exception e) {
-            RegistroDeFalhas.registrar(LOG, "gerar o relatório 5 (cotações)", e);
-            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
-        }
+        // Consulta o oráculo fora da thread do Swing para a tela não travar
+        TarefaEmSegundoPlano.executar(
+                () -> cotacaoService.obterHistoricoRecente(dias),
+                view::exibirRelatorio5Cotacoes,
+                e -> {
+                    RegistroDeFalhas.registrar(LOG, "gerar o relatório 5 (cotações)", e);
+                    view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
+                });
     }
 }

@@ -15,7 +15,7 @@ O sistema cadastra carteiras, registra compras e vendas de FTCoins e apura o res
 - **Dashboard:** resumo do patrimônio, saldo, cotação do dia e últimas operações.
 - **Carteiras:** incluir, consultar, listar, editar e excluir. Uma carteira com movimentações não pode ser excluída.
 - **Movimentações:** compra e venda de FTCoins, com estimativa do valor antes de confirmar e recusa de venda acima do saldo.
-- **Cotação:** consulta por data no Oráculo, com cache de 60 segundos e indicação da origem (Oráculo ou cache).
+- **Cotação:** consulta por data no Oráculo (simulado ou servidor de cotações do professor), com cache e indicação da origem (Oráculo ou cache).
 - **Relatórios:** posição da carteira, histórico de operações, consolidado do portfólio, desempenho e histórico de cotações.
 - **Idiomas:** português, inglês e espanhol, com troca durante a execução.
 - **Ajuda e créditos:** manual do usuário e tela de créditos nos três idiomas.
@@ -40,6 +40,7 @@ Todos os cálculos usam `BigDecimal` com arredondamento `HALF_EVEN`.
 - **Modelo:** as entidades (`Carteira`, `Movimentacao`, `Cotacao`), a apuração da posição (`Posicao`) e os serviços `CarteiraService` e `MovimentacaoService` concentram as regras e os cálculos, inclusive os dos relatórios (ROI, participação no portfólio, variação da cotação). As telas recebem as próprias entidades, sem objetos intermediários.
 - **Contexto da aplicação:** a GUI cria um único `ContextoAplicacao` na inicialização e o injeta nas telas. Ele guarda os DAOs, os serviços e as mensagens, e é o único ponto que troca entre memória e MariaDB.
 - **Persistência:** padrão DAO com classes abstratas (`CarteiraDAO`, `MovimentacaoDAO`, `OraculoDAO`) e duas implementações de cada: em memória e em MariaDB. A `DAOFactory` (Abstract Factory) escolhe entre elas. Os DAOs não são Singleton; o Singleton fica só na conexão com o banco (`ConexaoMariaDB`), fechada ao sair.
+- **Oráculo:** a chave `oracle.provider` em `oracle.properties` escolhe a origem das cotações: `simulado` (padrão, sem rede) ou `api` (servidor de cotações, cliente `OraculoDAOApi` sobre as classes de protocolo do pacote `network`). Em qualquer caso o oráculo é envolvido pelo `OraculoDAOCache`, que busca cada data uma vez por execução, guarda também as datas passadas sem cotação e nunca guarda falhas. As consultas que podem ir à rede rodam em virtual threads, sem travar a tela.
 - **Textos:** nenhum texto de interface fica no código. Os textos curtos vêm dos arquivos `Messages_<idioma>.properties`, e o manual e os créditos, de arquivos HTML por idioma em `gui/textos`.
 - **Erros:** as exceções do sistema carregam a chave da mensagem, e a interface as exibe no idioma ativo.
 - **Logs:** `java.util.logging`, configurado em `logging.properties`, grava em `logs/`.
@@ -49,21 +50,23 @@ Todos os cálculos usam `BigDecimal` com arredondamento `HALF_EVEN`.
 ```text
 src/
 ├── database.properties.example    # modelo das credenciais do banco
+├── oracle.properties.example      # modelo da configuração do oráculo (simulado ou API)
 ├── logging.properties             # configuração dos logs
 ├── Messages_pt.properties         # textos em português
 ├── Messages_en.properties         # textos em inglês
 ├── Messages_es.properties         # textos em espanhol
+├── network/                       # protocolo de rede do servidor de cotações (fornecido pelo professor)
 └── br/com/ftcoin/
     ├── models/        # entidades, apuração da posição e exceções do domínio
     ├── services/      # casos de uso (carteiras e movimentações)
-    ├── daos/          # persistência em memória e em MariaDB
+    ├── daos/          # persistência em memória e em MariaDB, oráculos e cache de cotações
     ├── config/        # configuração dos logs
     └── gui/           # interface gráfica (Swing, padrão MVP)
         ├── main/          # ponto de entrada da GUI
         ├── common/        # contexto, mensagens, formatação e enums da interface
         ├── presenters/    # um presenter por tela
         ├── views/         # telas, contratos (contracts/) e componentes visuais
-        ├── services/      # cache de cotações do Oráculo
+        ├── services/      # consultas de cotação da interface (em segundo plano)
         └── textos/        # manual e créditos em HTML, um arquivo por idioma
 ```
 
@@ -105,7 +108,15 @@ A interface inicia no modo memória, com carteiras e operações de demonstraç�
 
 ### Modo memória
 
-Os dados são perdidos ao encerrar e as cotações são simuladas: variam conforme a data, e a mesma data devolve sempre o mesmo valor. Não representam preços reais de mercado.
+Os dados são perdidos ao encerrar. Com o oráculo simulado (padrão), as cotações variam conforme a data, e a mesma data devolve sempre o mesmo valor. Não representam preços reais de mercado.
+
+### Usando o servidor de cotações (API)
+
+1. Copie `src/oracle.properties.example` para `src/oracle.properties`.
+2. Mantenha `oracle.provider=api` e preencha `oracle.group` e `oracle.password` com os dados do grupo. Host, porta e tempo limite já vêm com os valores do servidor do professor. Esse arquivo está no `.gitignore` e não deve ser versionado.
+3. Recompile e abra a interface. As cotações passam a vir do servidor, tanto no modo memória quanto no MariaDB.
+
+Sem o `oracle.properties`, ou com `oracle.provider=simulado`, a aplicação usa o oráculo simulado. Datas sem cotação no servidor aparecem como "Sem cotação", e falhas de rede são exibidas com a mensagem traduzida, sem travar a tela.
 
 ### Usando o MariaDB
 

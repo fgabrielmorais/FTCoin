@@ -53,6 +53,15 @@ public interface IMovimentacaoView {
     void atualizarEstimativas(TipoOperacao tipo, BigDecimal cotacao, BigDecimal valorTotal);
 
     /**
+     * Mostra nos rótulos de prévia da operação que não há cotação disponível, com o motivo
+     * (data sem cotação ou falha ao consultar o oráculo).
+     *
+     * @param tipo   Operação cuja prévia é atualizada ({@code COMPRA} ou {@code VENDA})
+     * @param motivo Texto já traduzido explicando por que não há estimativa
+     */
+    void informarCotacaoIndisponivel(TipoOperacao tipo, String motivo);
+
+    /**
      * Exibe um diálogo modal com mensagem de confirmação de compra ou venda registrada.
      *
      * @param mensagem Texto formatado com o sucesso da transação
