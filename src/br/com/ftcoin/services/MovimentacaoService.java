@@ -3,14 +3,19 @@ package br.com.ftcoin.services;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import br.com.ftcoin.daos.CarteiraDAO;
 import br.com.ftcoin.daos.MovimentacaoDAO;
 import br.com.ftcoin.daos.OraculoDAO;
+import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.Movimentacao;
 import br.com.ftcoin.models.Posicao;
 import br.com.ftcoin.models.RegraNegocioException;
@@ -81,7 +86,7 @@ public class MovimentacaoService {
 	 * @throws RegraNegocioException se não houver cotação para a data da operação
 	 */
 	public BigDecimal calcularValorDaOperacao(Movimentacao movimentacao) {
-		return movimentacao.getQuantidadeMovimentada().multiply(buscarCotacao(movimentacao.getDataOperacao()));
+		return movimentacao.calcularValor(buscarCotacao(movimentacao.getDataOperacao()));
 	}
 
 	/**
@@ -119,6 +124,50 @@ public class MovimentacaoService {
 		LOG.log(Level.FINE, "Posição da carteira {0} apurada: {1} movimentação(ões), saldo={2}, custo médio={3}",
 				new Object[] { idCarteira, historico.size(), posicao.getSaldo(), posicao.getCustoMedio() });
 		return posicao;
+	}
+
+	/**
+	 * Apura a posição de várias carteiras.
+	 *
+	 * @param carteiras carteiras a apurar
+	 * @return a posição de cada carteira, na mesma ordem da lista
+	 * @throws RegraNegocioException se faltar cotação para alguma data de algum histórico
+	 */
+	public Map<Carteira, Posicao> apurarPosicoes(List<Carteira> carteiras) {
+		Map<Carteira, Posicao> posicoes = new LinkedHashMap<>();
+		for (Carteira carteira : carteiras) {
+			posicoes.put(carteira, apurarPosicao(carteira.getId()));
+		}
+		return posicoes;
+	}
+
+	/**
+	 * Lista as movimentações mais recentes de todas as carteiras.
+	 *
+	 * @param limite quantidade máxima de movimentações
+	 * @return as movimentações da mais recente para a mais antiga
+	 */
+	public List<Movimentacao> buscarUltimasMovimentacoes(int limite) {
+		return movimentacaoDAO.listarTodas().stream()
+				.sorted(Comparator.comparing(Movimentacao::getDataOperacao)
+						.thenComparing(Movimentacao::getIdMovimento).reversed())
+				.limit(limite)
+				.toList();
+	}
+
+	/**
+	 * Busca a cotação de cada dia em que houve alguma das movimentações informadas.
+	 *
+	 * @param movimentacoes movimentações cujas datas serão consultadas
+	 * @return a cotação de cada data, sem repetir datas
+	 * @throws RegraNegocioException se faltar cotação para alguma das datas
+	 */
+	public Map<LocalDate, BigDecimal> buscarCotacoesDasOperacoes(Collection<Movimentacao> movimentacoes) {
+		Map<LocalDate, BigDecimal> cotacoes = new HashMap<>();
+		for (Movimentacao movimentacao : movimentacoes) {
+			cotacoes.computeIfAbsent(movimentacao.getDataOperacao(), this::buscarCotacao);
+		}
+		return cotacoes;
 	}
 
 	/**

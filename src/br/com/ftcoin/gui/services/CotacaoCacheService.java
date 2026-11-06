@@ -21,6 +21,7 @@ import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.OrigemCotacao;
 import br.com.ftcoin.gui.dto.CotacaoDTO;
 import br.com.ftcoin.gui.dto.RelatorioHistoricoCotacaoDTO;
+import br.com.ftcoin.models.Cotacao;
 import br.com.ftcoin.models.FTCoinException;
 import br.com.ftcoin.models.RegraNegocioException;
 
@@ -219,7 +220,7 @@ public class CotacaoCacheService {
     public List<RelatorioHistoricoCotacaoDTO> obterHistoricoRecente(int dias) {
         List<RelatorioHistoricoCotacaoDTO> lista = new ArrayList<>();
         LocalDate hoje = LocalDate.now();
-        BigDecimal cotacaoAnterior = null;
+        Cotacao anterior = null;
 
         for (int i = dias; i >= 0; i--) {
             LocalDate data = hoje.minusDays(i);
@@ -230,17 +231,10 @@ public class CotacaoCacheService {
             if (cotacao == null) {
                 continue;
             }
-            BigDecimal variacaoAbs = BigDecimal.ZERO;
-            BigDecimal variacaoPerc = BigDecimal.ZERO;
-
-            if (cotacaoAnterior != null && cotacaoAnterior.signum() > 0) {
-                variacaoAbs = cotacao.subtract(cotacaoAnterior);
-                variacaoPerc = variacaoAbs.multiply(BigDecimal.valueOf(100))
-                        .divide(cotacaoAnterior, 2, java.math.RoundingMode.HALF_EVEN);
-            }
-
-            lista.add(new RelatorioHistoricoCotacaoDTO(data, cotacao, variacaoAbs, variacaoPerc, origem));
-            cotacaoAnterior = cotacao;
+            Cotacao atual = new Cotacao(data, cotacao);
+            lista.add(new RelatorioHistoricoCotacaoDTO(data, cotacao,
+                    atual.calcularVariacao(anterior), atual.calcularVariacaoPercentual(anterior), origem));
+            anterior = atual;
         }
 
         LOG.log(Level.FINE, "Histórico de cotações montado: {0} dia(s)", lista.size());

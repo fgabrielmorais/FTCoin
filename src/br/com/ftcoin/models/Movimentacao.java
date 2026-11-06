@@ -135,4 +135,14 @@ public class Movimentacao {
 		}
 		this.quantidadeMovimentada = quantidade;
 	}
+
+	/**
+	 * Calcula o valor em reais da operação por uma cotação.
+	 *
+	 * @param cotacao cotação da FTCoin no dia da operação
+	 * @return quantidade movimentada vezes a cotação
+	 */
+	public BigDecimal calcularValor(BigDecimal cotacao) {
+		return quantidadeMovimentada.multiply(cotacao);
+	}
 }

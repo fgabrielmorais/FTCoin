@@ -1,10 +1,10 @@
 package br.com.ftcoin.gui.services;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -80,10 +80,7 @@ public class RelatoriosService {
         BigDecimal ganhoNaoRealizado = posicao.calcularGanhoNaoRealizado(cotacaoAtual);
         BigDecimal ganhoTotal = posicao.calcularGanhoTotal(cotacaoAtual);
 
-        BigDecimal roi = BigDecimal.ZERO;
-        if (valorACusto.signum() > 0) {
-            roi = ganhoTotal.multiply(BigDecimal.valueOf(100)).divide(valorACusto, 2, RoundingMode.HALF_EVEN);
-        }
+        BigDecimal roi = posicao.calcularRoi(cotacaoAtual);
 
         LOG.log(Level.FINE, "Relatório de posição da carteira {0} gerado (ganho total={1}, ROI={2}%)",
                 new Object[] { idCarteira, ganhoTotal, roi });
@@ -153,27 +150,17 @@ public class RelatoriosService {
             return Collections.emptyList();
         }
 
-        BigDecimal patrimonioTotal = BigDecimal.ZERO;
-        List<Posicao> posicoes = new ArrayList<>();
-
-        for (Carteira c : carteiras) {
-            Posicao p = movimentacaoService.apurarPosicao(c.getId());
-            posicoes.add(p);
-            patrimonioTotal = patrimonioTotal.add(p.calcularValorDeMercado(cotacaoAtual));
-        }
+        Map<Carteira, Posicao> posicoes = movimentacaoService.apurarPosicoes(carteiras);
+        Posicao portfolio = Posicao.consolidar(posicoes.values());
+        BigDecimal patrimonioTotal = portfolio.calcularValorDeMercado(cotacaoAtual);
 
         List<RelatorioConsolidadoItemDTO> itens = new ArrayList<>();
-        for (int i = 0; i < carteiras.size(); i++) {
-            Carteira c = carteiras.get(i);
-            Posicao p = posicoes.get(i);
+        for (Map.Entry<Carteira, Posicao> item : posicoes.entrySet()) {
+            Carteira c = item.getKey();
+            Posicao p = item.getValue();
 
             BigDecimal valorMercado = p.calcularValorDeMercado(cotacaoAtual);
-            BigDecimal participacao = BigDecimal.ZERO;
-            if (patrimonioTotal.signum() > 0) {
-                participacao = valorMercado.multiply(BigDecimal.valueOf(100))
-                        .divide(patrimonioTotal, 2, RoundingMode.HALF_EVEN);
-            }
-
+            BigDecimal participacao = p.calcularParticipacao(portfolio, cotacaoAtual);
             BigDecimal ganhoTotal = p.calcularGanhoTotal(cotacaoAtual);
 
             itens.add(new RelatorioConsolidadoItemDTO(
@@ -211,10 +198,7 @@ public class RelatoriosService {
             BigDecimal valorAtual = p.calcularValorDeMercado(cotacaoAtual);
             BigDecimal lucroPrejuizo = p.calcularGanhoTotal(cotacaoAtual);
 
-            BigDecimal roi = BigDecimal.ZERO;
-            if (investido.signum() > 0) {
-                roi = lucroPrejuizo.multiply(BigDecimal.valueOf(100)).divide(investido, 2, RoundingMode.HALF_EVEN);
-            }
+            BigDecimal roi = p.calcularRoi(cotacaoAtual);
 
             resultado.add(new RelatorioDesempenhoDTO(
                     c.getId(),
@@ -252,16 +236,13 @@ public class RelatoriosService {
         BigDecimal cotacaoAtual = movimentacaoService.buscarCotacaoAtual();
 
         List<Carteira> carteiras = carteiraService.listarTodasCarteiras();
-        BigDecimal patrimonioTotal = BigDecimal.ZERO;
-        BigDecimal saldoTotalFTC = BigDecimal.ZERO;
-        BigDecimal ganhoTotalConsolidado = BigDecimal.ZERO;
+        Posicao portfolio = Posicao.consolidar(movimentacaoService.apurarPosicoes(carteiras).values());
+        BigDecimal patrimonioTotal = portfolio.calcularValorDeMercado(cotacaoAtual);
+        BigDecimal saldoTotalFTC = portfolio.getSaldo();
+        BigDecimal ganhoTotalConsolidado = portfolio.calcularGanhoTotal(cotacaoAtual);
         List<MovimentacaoDTO> ultimasMovs = new ArrayList<>();
 
         for (Carteira c : carteiras) {
-            Posicao p = movimentacaoService.apurarPosicao(c.getId());
-            patrimonioTotal = patrimonioTotal.add(p.calcularValorDeMercado(cotacaoAtual));
-            saldoTotalFTC = saldoTotalFTC.add(p.getSaldo());
-            ganhoTotalConsolidado = ganhoTotalConsolidado.add(p.calcularGanhoTotal(cotacaoAtual));
 
             List<Movimentacao> historico = movimentacaoService.buscarHistorico(c.getId());
             for (Movimentacao m : historico) {
