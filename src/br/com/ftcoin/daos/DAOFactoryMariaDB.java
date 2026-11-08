@@ -30,11 +30,6 @@ public class DAOFactoryMariaDB extends DAOFactory {
 		return new MovimentacaoDAOMariaDB(conexao);
 	}
 
-	@Override
-	protected OraculoDAO criarOraculoSimulado() {
-		return new OraculoDAOMariaDB(conexao);
-	}
-
 	/**
 	 * Fecha a conexão compartilhada com o MariaDB.
 	 */

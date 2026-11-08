@@ -81,6 +81,20 @@ public interface IRelatoriosView {
     void exibirRelatorio5Cotacoes(Map<Cotacao, OrigemCotacao> historico);
 
     /**
+     * Exibe a listagem de carteiras ordenadas pelo identificador.
+     *
+     * @param carteiras carteiras do menor para o maior identificador
+     */
+    void exibirCarteirasPorIdentificador(List<Carteira> carteiras);
+
+    /**
+     * Exibe a listagem de carteiras ordenadas pelo nome do titular.
+     *
+     * @param carteiras carteiras em ordem alfabética do titular
+     */
+    void exibirCarteirasPorTitular(List<Carteira> carteiras);
+
+    /**
      * Exibe uma mensagem de erro ao usuário.
      *
      * @param mensagem texto já traduzido

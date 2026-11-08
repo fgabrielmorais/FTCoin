@@ -56,6 +56,9 @@ public final class FormatadorLog extends Formatter {
      * Substitui os {@code {0}}, {@code {1}}... da mensagem pelos parâmetros.
      * Números saem sem separador de milhar e com ponto decimal, iguais em qualquer idioma:
      * um ID 1000 continua "1000" e uma cotação sai "5.79", nunca "1.000" ou "5,79".
+     *
+     * @param registro registro de log com a mensagem e seus parâmetros
+     * @return a mensagem pronta, ou o texto original se o modelo for inválido
      */
     private static String montarMensagem(LogRecord registro) {
         String mensagem = registro.getMessage();
@@ -77,6 +80,9 @@ public final class FormatadorLog extends Formatter {
 
     /**
      * Converte números em texto neutro; os demais objetos mantêm o próprio {@code toString}.
+     *
+     * @param parametro valor de um parâmetro da mensagem
+     * @return o texto neutro de um número, ou o próprio parâmetro
      */
     private static Object paraTexto(Object parametro) {
         if (parametro instanceof BigDecimal decimal) {
@@ -91,6 +97,8 @@ public final class FormatadorLog extends Formatter {
     /**
      * O formatador roda na mesma thread que chamou o log; threads virtuais não têm nome,
      * então recebem um identificador.
+     *
+     * @return o nome da thread, ou {@code virtual-<id>} para threads virtuais
      */
     private static String nomeDaThreadAtual() {
         Thread atual = Thread.currentThread();
@@ -99,6 +107,9 @@ public final class FormatadorLog extends Formatter {
 
     /**
      * Converte a exceção em texto com o stack trace completo, em uma nova linha.
+     *
+     * @param excecao exceção registrada, ou {@code null}
+     * @return o stack trace, ou texto vazio se não houver exceção
      */
     private static String pilhaDaExcecao(Throwable excecao) {
         if (excecao == null) {

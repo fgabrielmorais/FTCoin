@@ -72,6 +72,8 @@ public class MainFrame extends JFrame {
     private final ModernButton botaoAjuda = new ModernButton("", ModernButton.Variante.NEUTRO);
     /** Botão que abre os créditos. */
     private final ModernButton botaoSobre = new ModernButton("", ModernButton.Variante.NEUTRO);
+    /** Botão que encerra o programa, fechando as conexões. */
+    private final ModernButton botaoSair = new ModernButton("", ModernButton.Variante.PERIGO);
     /** Rótulo do seletor de idioma. */
     private final JLabel lblIdioma = new JLabel();
     /** Rótulo do seletor de banco de dados. */
@@ -171,6 +173,11 @@ public class MainFrame extends JFrame {
 
         botaoAjuda.addActionListener(e -> new AjudaDialog(this, mensagens).setVisible(true));
         botaoSobre.addActionListener(e -> new CreditosDialog(this, mensagens).setVisible(true));
+        // Sair: fecha as conexões e encerra o programa
+        botaoSair.addActionListener(e -> {
+            contexto.encerrar();
+            System.exit(0);
+        });
 
         pnlConfig.add(lblIdioma);
         pnlConfig.add(cmbIdioma);
@@ -180,6 +187,7 @@ public class MainFrame extends JFrame {
         pnlConfig.add(Box.createHorizontalStrut(5));
         pnlConfig.add(botaoAjuda);
         pnlConfig.add(botaoSobre);
+        pnlConfig.add(botaoSair);
         pnlBarra.add(pnlConfig, BorderLayout.EAST);
 
         return pnlBarra;
@@ -268,6 +276,7 @@ public class MainFrame extends JFrame {
         botoesNavegacao.forEach((modo, botao) -> botao.setText(modo.getTituloLocalizado(mensagens)));
         botaoAjuda.setText(mensagens.get("gui.nav.btn.ajuda"));
         botaoSobre.setText(mensagens.get("gui.nav.btn.sobre"));
+        botaoSair.setText(mensagens.get("gui.nav.btn.sair"));
         lblIdioma.setText(mensagens.get("gui.nav.label.idioma"));
         lblBanco.setText(mensagens.get("gui.nav.label.banco"));
         cmbIdioma.repaint();

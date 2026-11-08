@@ -11,6 +11,7 @@ import br.com.ftcoin.gui.views.contracts.IRelatoriosView;
 import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.Movimentacao;
 import br.com.ftcoin.models.Posicao;
+import br.com.ftcoin.services.CarteiraService;
 import br.com.ftcoin.services.MovimentacaoService;
 
 /**
@@ -59,9 +60,24 @@ public class RelatoriosPresenter {
      */
     public void inicializar() {
         carregarCarteirasFiltro();
+        gerarListagensDeCarteiras();
         gerarRelatorio3Consolidado();
         gerarRelatorio4Desempenho();
         gerarRelatorio5Cotacoes(15);
+    }
+
+    /**
+     * Carrega as listagens de carteiras ordenadas por identificador e por nome do titular.
+     */
+    public void gerarListagensDeCarteiras() {
+        try {
+            CarteiraService carteiras = contexto.getCarteiraService();
+            view.exibirCarteirasPorIdentificador(carteiras.listarPorIdentificador());
+            view.exibirCarteirasPorTitular(carteiras.listarPorTitular());
+        } catch (Exception e) {
+            RegistroDeFalhas.registrar(LOG, "gerar as listagens de carteiras", e);
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
+        }
     }
 
     /**

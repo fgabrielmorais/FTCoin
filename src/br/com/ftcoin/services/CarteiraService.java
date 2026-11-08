@@ -1,5 +1,7 @@
 package br.com.ftcoin.services;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -59,6 +61,45 @@ public class CarteiraService {
 	 */
 	public List<Carteira> listarTodasCarteiras() {
 		return carteiraDAO.listarTodas();
+	}
+
+	/**
+	 * Lista as carteiras ordenadas pelo identificador (relatório "carteiras por identificador").
+	 *
+	 * @return uma nova lista, do menor para o maior identificador
+	 */
+	public List<Carteira> listarPorIdentificador() {
+		// Cópia da lista do DAO: ordenar a original mudaria a ordem guardada
+		List<Carteira> ordenadas = new ArrayList<>(carteiraDAO.listarTodas());
+		for (int i = 0; i < ordenadas.size() - 1; i++) {
+			for (int j = i + 1; j < ordenadas.size(); j++) {
+				if (ordenadas.get(j).getId() < ordenadas.get(i).getId()) {
+					Collections.swap(ordenadas, i, j);
+				}
+			}
+		}
+		return ordenadas;
+	}
+
+	/**
+	 * Lista as carteiras ordenadas pelo nome do titular, sem diferenciar maiúsculas de minúsculas
+	 * (relatório "carteiras por titular"). Titulares iguais ficam em ordem de identificador.
+	 *
+	 * @return uma nova lista, em ordem alfabética do titular
+	 */
+	public List<Carteira> listarPorTitular() {
+		List<Carteira> ordenadas = new ArrayList<>(carteiraDAO.listarTodas());
+		for (int i = 0; i < ordenadas.size() - 1; i++) {
+			for (int j = i + 1; j < ordenadas.size(); j++) {
+				Carteira atual = ordenadas.get(i);
+				Carteira outra = ordenadas.get(j);
+				int comparacao = outra.getNomeTitular().compareToIgnoreCase(atual.getNomeTitular());
+				if (comparacao < 0 || (comparacao == 0 && outra.getId() < atual.getId())) {
+					Collections.swap(ordenadas, i, j);
+				}
+			}
+		}
+		return ordenadas;
 	}
 
 	/**

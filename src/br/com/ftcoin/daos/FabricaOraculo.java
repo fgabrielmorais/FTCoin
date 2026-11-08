@@ -6,10 +6,17 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-// Decide qual oráculo usar a partir de oracle.provider, em oracle.properties:
-//   simulado - oráculo da fábrica de persistência (padrão; funciona sem rede)
-//   api      - servidor de cotações, com endereço e credenciais no mesmo arquivo
-// Sem oracle.properties (ele não é versionado), o oráculo é o simulado.
+/**
+ * Decide qual oráculo usar a partir da chave {@code oracle.provider}, em {@code oracle.properties}.
+ * <ul>
+ * <li>{@code simulado}: oráculo calculado localmente (padrão; funciona sem rede e sem banco);</li>
+ * <li>{@code api}: servidor de cotações, com endereço e credenciais no mesmo arquivo.</li>
+ * </ul>
+ * Sem o arquivo {@code oracle.properties} (que não é versionado), o oráculo é o simulado.
+ *
+ * @author Grupo B.05
+ * @version 1.0.0
+ */
 final class FabricaOraculo {
 
 	private static final String ARQUIVO_CONFIGURACAO = "oracle.properties";
@@ -19,8 +26,18 @@ final class FabricaOraculo {
 
 	private static final Logger LOG = Logger.getLogger(FabricaOraculo.class.getName());
 
-	private FabricaOraculo() {}
+	private FabricaOraculo() {
+		// Classe utilitária: não deve ser instanciada
+	}
 
+	/**
+	 * Cria o oráculo configurado.
+	 *
+	 * @param simulado oráculo simulado, usado quando o provedor é {@code simulado} ou não há configuração
+	 * @return o oráculo simulado ou o cliente do servidor de cotações
+	 * @throws PersistenciaException se o provedor for desconhecido, faltar uma chave obrigatória da API
+	 *         ou o arquivo não puder ser lido
+	 */
 	static OraculoDAO criar(OraculoDAO simulado) {
 		Properties configuracao = lerConfiguracao();
 		String provedor = configuracao.getProperty(CHAVE_PROVEDOR, PROVEDOR_PADRAO).trim();
@@ -33,6 +50,12 @@ final class FabricaOraculo {
 		};
 	}
 
+	/**
+	 * Monta o cliente da API com host, porta, grupo, senha e tempo limite lidos da configuração.
+	 *
+	 * @param p configuração lida de {@code oracle.properties}
+	 * @return o cliente do servidor de cotações
+	 */
 	private static OraculoDAO criarApi(Properties p) {
 		try {
 			return new OraculoDAOApi(
@@ -46,6 +69,13 @@ final class FabricaOraculo {
 		}
 	}
 
+	/**
+	 * Lê uma chave que não pode faltar nem estar em branco.
+	 *
+	 * @param p configuração lida de {@code oracle.properties}
+	 * @param chave nome da chave
+	 * @return o valor da chave
+	 */
 	private static String obrigatoria(Properties p, String chave) {
 		String valor = p.getProperty(chave);
 		if (valor == null || valor.isBlank()) {
@@ -55,7 +85,11 @@ final class FabricaOraculo {
 		return valor;
 	}
 
-	// Arquivo ausente não é erro: devolve propriedades vazias e o oráculo fica no padrão
+	/**
+	 * Lê {@code oracle.properties} do classpath; arquivo ausente não é erro e devolve propriedades vazias.
+	 *
+	 * @return a configuração lida, possivelmente vazia
+	 */
 	private static Properties lerConfiguracao() {
 		Properties propriedades = new Properties();
 		try (InputStream input = FabricaOraculo.class.getClassLoader().getResourceAsStream(ARQUIVO_CONFIGURACAO)) {

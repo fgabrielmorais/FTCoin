@@ -14,7 +14,6 @@ public class DAOFactoryMemoria extends DAOFactory {
 
 	private final CarteiraDAO carteiraDAO = new CarteiraDAOMemoria();
 	private final MovimentacaoDAO movimentacaoDAO = new MovimentacaoDAOMemoria();
-	private final OraculoDAO oraculoDAO = new OraculoDAOMemoria();
 
 	/**
 	 * Cria uma família vazia de DAOs em memória.
@@ -31,10 +30,5 @@ public class DAOFactoryMemoria extends DAOFactory {
 	@Override
 	public MovimentacaoDAO criarMovimentacaoDAO() {
 		return movimentacaoDAO;
-	}
-
-	@Override
-	protected OraculoDAO criarOraculoSimulado() {
-		return oraculoDAO;
 	}
 }

@@ -1,17 +1,20 @@
 -- ====================================================================
--- SCRIPT DE DEFINITION DATA (DDL) - FTCOIN 
--- Ambiente: Universidade de Campinas (UNICAMP) - WindServer
--- Base de Dados: PooI_1s26_B02
+-- SCRIPT DE DEFINIÇÃO DE DADOS (DDL) - FTCOIN
+-- Banco de dados relacional (MariaDB), com as duas tabelas do enunciado:
+-- CARTEIRA e MOVIMENTACAO.
+--
+-- O banco é escolhido na URL de conexão (db.url, em database.properties).
+-- Crie o banco, selecione-o e só então execute este script, por exemplo:
+--   USE NOME_DO_BANCO;
+-- O oráculo de cotações NÃO é uma tabela: vem do servidor (API) ou do
+-- oráculo simulado, ambos com cache.
 -- ====================================================================
-
-CREATE DATABASE IF NOT EXISTS PooI_1s26_B02;
-USE PooI_1s26_B02;
 
 -- --------------------------------------------------------
 -- Tabela: CARTEIRA
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS CARTEIRA (
-  IdCarteira INT(11) NOT NULL AUTO_INCREMENT,
+  IdCarteira INT NOT NULL AUTO_INCREMENT,
   Titular VARCHAR(50) NOT NULL,
   Corretora VARCHAR(50) NOT NULL,
   PRIMARY KEY (IdCarteira)
@@ -21,21 +24,14 @@ CREATE TABLE IF NOT EXISTS CARTEIRA (
 -- Tabela: MOVIMENTACAO
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS MOVIMENTACAO (
-  IdCarteira INT(11) NOT NULL,
-  IdMovimento INT(11) NOT NULL AUTO_INCREMENT,
-  Data DATE DEFAULT NULL,
-  TipoOperacao CHAR(1) DEFAULT NULL,
-  Quantidade DECIMAL(10,3) DEFAULT NULL,
+  IdCarteira INT NOT NULL,
+  IdMovimento INT NOT NULL AUTO_INCREMENT,
+  Data DATE NOT NULL,
+  TipoOperacao CHAR(1) NOT NULL,
+  Quantidade DECIMAL(10,3) NOT NULL,
   PRIMARY KEY (IdMovimento),
   KEY idx_carteira_movimentacao (IdCarteira),
-  CONSTRAINT fk_mov_carteira FOREIGN KEY (IdCarteira) REFERENCES CARTEIRA (IdCarteira)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- --------------------------------------------------------
--- Tabela: ORACULO
--- --------------------------------------------------------
-CREATE TABLE IF NOT EXISTS ORACULO (
-  Data DATE NOT NULL,
-  Cotacao DECIMAL(6,2) NOT NULL,
-  PRIMARY KEY (Data)
+  CONSTRAINT fk_mov_carteira FOREIGN KEY (IdCarteira) REFERENCES CARTEIRA (IdCarteira) ON DELETE RESTRICT,
+  CONSTRAINT ck_mov_tipo CHECK (TipoOperacao IN ('C', 'V')),
+  CONSTRAINT ck_mov_quantidade CHECK (Quantidade >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

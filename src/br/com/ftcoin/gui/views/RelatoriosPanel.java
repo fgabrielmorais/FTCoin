@@ -99,6 +99,16 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     /** Tabela do relatório 5 (oráculo). */
     private final JTable tabelaRel5;
 
+    // Componentes das listagens de carteiras
+    /** Dados da listagem de carteiras por identificador. */
+    private final DefaultTableModel modelRel6;
+    /** Tabela da listagem de carteiras por identificador. */
+    private final JTable tabelaRel6;
+    /** Dados da listagem de carteiras por titular. */
+    private final DefaultTableModel modelRel7;
+    /** Tabela da listagem de carteiras por titular. */
+    private final JTable tabelaRel7;
+
     private record ItemFiltroCarteira(int id, String descricao) {
         @Override
         public String toString() {
@@ -273,6 +283,25 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         tabRelatorios.addTab("", new JScrollPane(tabelaRel5));
         textos.vincular(titulo -> tabRelatorios.setTitleAt(4, titulo), "gui.rel.tab5.titulo");
 
+        // 6 e 7. Listagens de carteiras ordenadas por identificador e por nome do titular
+        String[] colRel6 = chaves("gui.rel.tab6.col.", "id", "titular", "corretora");
+        modelRel6 = new DefaultTableModel(colRel6, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        tabelaRel6 = criarTabelaFormatada(modelRel6);
+        textos.vincularColunas(tabelaRel6, colRel6);
+        tabRelatorios.addTab("", new JScrollPane(tabelaRel6));
+        textos.vincular(titulo -> tabRelatorios.setTitleAt(5, titulo), "gui.rel.tab6.titulo");
+
+        String[] colRel7 = chaves("gui.rel.tab7.col.", "id", "titular", "corretora");
+        modelRel7 = new DefaultTableModel(colRel7, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        tabelaRel7 = criarTabelaFormatada(modelRel7);
+        textos.vincularColunas(tabelaRel7, colRel7);
+        tabRelatorios.addTab("", new JScrollPane(tabelaRel7));
+        textos.vincular(titulo -> tabRelatorios.setTitleAt(6, titulo), "gui.rel.tab7.titulo");
+
         add(tabRelatorios, BorderLayout.CENTER);
     }
 
@@ -407,6 +436,24 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     @Override
     public void exibirRelatorio5Cotacoes(Map<Cotacao, OrigemCotacao> historico) {
         CotacaoPanel.preencherHistorico(modelRel5, historico, contexto.getMensagens().getFormatador());
+    }
+
+    @Override
+    public void exibirCarteirasPorIdentificador(List<Carteira> carteiras) {
+        preencherListagem(modelRel6, carteiras);
+    }
+
+    @Override
+    public void exibirCarteirasPorTitular(List<Carteira> carteiras) {
+        preencherListagem(modelRel7, carteiras);
+    }
+
+    // Uma linha por carteira: identificador, titular e corretora
+    private static void preencherListagem(DefaultTableModel modelo, List<Carteira> carteiras) {
+        modelo.setRowCount(0);
+        for (Carteira c : carteiras) {
+            modelo.addRow(new Object[]{ c.getId(), c.getNomeTitular(), c.getCorretora() });
+        }
     }
 
     @Override
