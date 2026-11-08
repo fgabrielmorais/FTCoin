@@ -17,6 +17,8 @@ public final class TarefaEmSegundoPlano {
     private TarefaEmSegundoPlano() {}
 
     /**
+     * Executa o trabalho numa virtual thread e devolve o resultado, ou a falha, na thread do Swing.
+     *
      * @param trabalho  o que roda fora da EDT
      * @param onSucesso recebe o resultado na EDT
      * @param onErro    recebe a exceção na EDT

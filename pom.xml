@@ -5,8 +5,13 @@
   <groupId>br.com.ftcoin</groupId>
   <artifactId>FTCoin</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  <properties>
+    <junit.version>5.10.2</junit.version>
+  </properties>
   <build>
     <sourceDirectory>src</sourceDirectory>
+    <!-- Testes ficam em test/ (e não em src/test) porque src/ já é o diretório do código principal -->
+    <testSourceDirectory>test</testSourceDirectory>
     <resources>
       <resource>
         <directory>src</directory>
@@ -24,9 +29,23 @@
           <release>21</release>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+        <configuration>
+          <!-- O projeto tem module-info; os testes rodam no classpath para enxergar as classes de teste -->
+          <useModulePath>false</useModulePath>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>

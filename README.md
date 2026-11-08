@@ -16,9 +16,9 @@ O sistema cadastra carteiras, registra compras e vendas de FTCoins e apura o res
 - **Carteiras:** incluir, consultar, listar, editar e excluir. Uma carteira com movimentações não pode ser excluída.
 - **Movimentações:** compra e venda de FTCoins, com estimativa do valor antes de confirmar e recusa de venda acima do saldo.
 - **Cotação:** consulta por data no Oráculo (simulado ou servidor de cotações do professor), com cache e indicação da origem (Oráculo ou cache).
-- **Relatórios:** posição da carteira, histórico de operações, consolidado do portfólio, desempenho e histórico de cotações.
+- **Relatórios:** posição da carteira, histórico de operações, consolidado do portfólio, desempenho, histórico de cotações e listagens de carteiras ordenadas por identificador e por titular.
 - **Idiomas:** português, inglês e espanhol, com troca durante a execução.
-- **Ajuda e créditos:** manual do usuário e tela de créditos nos três idiomas.
+- **Ajuda, créditos e saída:** manual do usuário e tela de créditos nos três idiomas, e o botão **Sair**, que fecha as conexões e encerra o programa.
 
 ### Como o ganho/perda é calculado
 
@@ -39,8 +39,8 @@ Todos os cálculos usam `BigDecimal` com arredondamento `HALF_EVEN`.
 - **Interface gráfica (MVP):** cada tela implementa um contrato `I*View` e só exibe e lê dados. O presenter da tela recebe a view e os serviços pelo construtor, trata os eventos e decide o que mostrar.
 - **Modelo:** as entidades (`Carteira`, `Movimentacao`, `Cotacao`), a apuração da posição (`Posicao`) e os serviços `CarteiraService` e `MovimentacaoService` concentram as regras e os cálculos, inclusive os dos relatórios (ROI, participação no portfólio, variação da cotação). As telas recebem as próprias entidades, sem objetos intermediários.
 - **Contexto da aplicação:** a GUI cria um único `ContextoAplicacao` na inicialização e o injeta nas telas. Ele guarda os DAOs, os serviços e as mensagens, e é o único ponto que troca entre memória e MariaDB.
-- **Persistência:** padrão DAO com classes abstratas (`CarteiraDAO`, `MovimentacaoDAO`, `OraculoDAO`) e duas implementações de cada: em memória e em MariaDB. A `DAOFactory` (Abstract Factory) escolhe entre elas. Os DAOs não são Singleton; o Singleton fica só na conexão com o banco (`ConexaoMariaDB`), fechada ao sair.
-- **Oráculo:** a chave `oracle.provider` em `oracle.properties` escolhe a origem das cotações: `simulado` (padrão, sem rede) ou `api` (servidor de cotações, cliente `OraculoDAOApi` sobre as classes de protocolo do pacote `network`). Em qualquer caso o oráculo é envolvido pelo `OraculoDAOCache`, que busca cada data uma vez por execução, guarda também as datas passadas sem cotação e nunca guarda falhas. As consultas que podem ir à rede rodam em virtual threads, sem travar a tela.
+- **Persistência:** padrão DAO com classes abstratas (`CarteiraDAO`, `MovimentacaoDAO`) e duas implementações de cada, uma por tabela: em memória e em MariaDB. A `DAOFactory` (Abstract Factory) escolhe entre elas. Os DAOs não são Singleton; o Singleton fica só na conexão com o banco (`ConexaoMariaDB`), fechada ao sair.
+- **Oráculo:** a chave `oracle.provider` em `oracle.properties` escolhe a origem das cotações: `simulado` (padrão, sem rede e sem banco: a cotação é calculada localmente nos dois modos de persistência) ou `api` (servidor de cotações, cliente `OraculoDAOApi` sobre as classes de protocolo do pacote `network`). Em qualquer caso o oráculo é envolvido pelo `OraculoDAOCache`, que busca cada data uma vez por execução, guarda também as datas passadas sem cotação e nunca guarda falhas. As consultas que podem ir à rede rodam em virtual threads, sem travar a tela.
 - **Textos:** nenhum texto de interface fica no código. Os textos curtos vêm dos arquivos `Messages_<idioma>.properties`, e o manual e os créditos, de arquivos HTML por idioma em `gui/textos`.
 - **Erros:** as exceções do sistema carregam a chave da mensagem, e a interface as exibe no idioma ativo.
 - **Logs:** `java.util.logging`, configurado em `logging.properties`, grava em `logs/`.
@@ -123,6 +123,16 @@ Sem o `oracle.properties`, ou com `oracle.provider=simulado`, a aplicação usa 
 1. Execute o script `docs/script.sql` no banco.
 2. Copie `src/database.properties.example` para `src/database.properties` e preencha a URL, o usuário e a senha. Esse arquivo está no `.gitignore` e não deve ser versionado.
 3. Na interface, escolha MariaDB no seletor **Banco**.
+
+### Testes
+
+Os testes unitários e de integração (JUnit 5) ficam em `test/`, fora de `src/`. Para executá-los:
+
+```bash
+mvn test
+```
+
+Cobrem a apuração por custo médio (inclusive os 30 dias da planilha de simulação do professor), as entidades, os serviços com DAOs em memória, o cache do oráculo, o cliente da API contra um servidor local falso (sucesso, sem cotação, credenciais recusadas, resposta inválida, rede e timeout) e a paridade das chaves de mensagens nos três idiomas. Nenhum teste precisa de rede ou de banco de dados.
 
 ### Idioma
 

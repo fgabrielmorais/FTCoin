@@ -1,5 +1,7 @@
 package br.com.ftcoin.services;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -59,6 +61,30 @@ public class CarteiraService {
 	 */
 	public List<Carteira> listarTodasCarteiras() {
 		return carteiraDAO.listarTodas();
+	}
+
+	/**
+	 * Lista as carteiras ordenadas pelo identificador (relatório "carteiras por identificador").
+	 *
+	 * @return uma nova lista, do menor para o maior identificador
+	 */
+	public List<Carteira> listarPorIdentificador() {
+		List<Carteira> ordenadas = new ArrayList<>(carteiraDAO.listarTodas());
+		ordenadas.sort(Comparator.comparingInt(Carteira::getId));
+		return ordenadas;
+	}
+
+	/**
+	 * Lista as carteiras ordenadas pelo nome do titular, sem diferenciar maiúsculas de minúsculas
+	 * (relatório "carteiras por titular"). Titulares iguais ficam em ordem de identificador.
+	 *
+	 * @return uma nova lista, em ordem alfabética do titular
+	 */
+	public List<Carteira> listarPorTitular() {
+		List<Carteira> ordenadas = new ArrayList<>(carteiraDAO.listarTodas());
+		ordenadas.sort(Comparator.comparing(Carteira::getNomeTitular, String.CASE_INSENSITIVE_ORDER)
+				.thenComparingInt(Carteira::getId));
+		return ordenadas;
 	}
 
 	/**
