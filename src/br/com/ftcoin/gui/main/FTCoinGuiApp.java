@@ -10,6 +10,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import br.com.ftcoin.config.ConfiguracaoLog;
+import br.com.ftcoin.config.RegistroDeFalhas;
+import br.com.ftcoin.models.FTCoinException;
 import br.com.ftcoin.services.CarteiraService;
 import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.daos.TipoPersistencia;
@@ -113,6 +115,15 @@ public class FTCoinGuiApp {
             MovimentacaoService movimentacaoService = contexto.getMovimentacaoService();
 
             if (carteiraService.listarTodasCarteiras().isEmpty()) {
+                // As operações de demonstração usam a cotação de hoje. Sem cotação (por exemplo, servidor
+                // fora do ar), a demonstração é pulada e o programa abre normalmente, sem dados de exemplo
+                try {
+                    movimentacaoService.buscarCotacaoAtual();
+                } catch (FTCoinException e) {
+                    RegistroDeFalhas.registrar(LOG, "carregar os dados de demonstração", e);
+                    return;
+                }
+
                 LOG.fine("Carregando dados de demonstração na persistência em memória");
                 // Popula carteiras iniciais para demonstração
                 Carteira c1 = carteiraService.criarCarteira("Gabriel Morais Felix", "Binance");
