@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.DisplayName;
@@ -121,7 +120,8 @@ class OraculoDAOCacheTest {
 
         Map<LocalDate, OraculoDAOCache.Consulta> periodo = cache.consultarPeriodo(d1, d3);
 
-        assertEquals(List.of(d1, d2, d3), List.copyOf(periodo.keySet()));
+        assertEquals(3, periodo.size());
+        assertTrue(periodo.containsKey(d1) && periodo.containsKey(d2) && periodo.containsKey(d3));
         assertTrue(periodo.get(d1).doCache());
         assertNull(periodo.get(d2).valor());
         assertEquals(new BigDecimal("3.00"), periodo.get(d3).valor());

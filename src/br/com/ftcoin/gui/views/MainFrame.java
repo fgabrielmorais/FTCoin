@@ -173,8 +173,11 @@ public class MainFrame extends JFrame {
 
         botaoAjuda.addActionListener(e -> new AjudaDialog(this, mensagens).setVisible(true));
         botaoSobre.addActionListener(e -> new CreditosDialog(this, mensagens).setVisible(true));
-        // Simula o fechamento da janela: dispara o encerramento registrado (fecha as conexões) e sai
-        botaoSair.addActionListener(e -> dispatchEvent(new java.awt.event.WindowEvent(this, java.awt.event.WindowEvent.WINDOW_CLOSING)));
+        // Sair: fecha as conexões e encerra o programa
+        botaoSair.addActionListener(e -> {
+            contexto.encerrar();
+            System.exit(0);
+        });
 
         pnlConfig.add(lblIdioma);
         pnlConfig.add(cmbIdioma);

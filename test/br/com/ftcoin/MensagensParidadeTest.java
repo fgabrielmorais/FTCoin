@@ -8,12 +8,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.api.Test;
 
 /**
  * Garante a internacionalização: os arquivos de mensagens em português, inglês e espanhol têm exatamente as
@@ -21,20 +18,25 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 class MensagensParidadeTest {
 
-    private static Set<Object> chaves(String idioma) throws IOException {
-        try (InputStream entrada = MensagensParidadeTest.class.getClassLoader()
-                .getResourceAsStream("Messages_" + idioma + ".properties")) {
-            assertNotNull(entrada, "Messages_" + idioma + ".properties não está no classpath");
-            Properties propriedades = new Properties();
-            propriedades.load(new InputStreamReader(entrada, StandardCharsets.UTF_8));
-            return new TreeSet<>(propriedades.keySet());
-        }
+    private static Properties carregar(String idioma) throws IOException {
+        InputStream entrada = MensagensParidadeTest.class.getClassLoader()
+                .getResourceAsStream("Messages_" + idioma + ".properties");
+        assertNotNull(entrada, "Messages_" + idioma + ".properties não está no classpath");
+        Properties propriedades = new Properties();
+        propriedades.load(new InputStreamReader(entrada, StandardCharsets.UTF_8));
+        entrada.close();
+        return propriedades;
     }
 
-    @ParameterizedTest(name = "{0} tem as mesmas chaves do português")
-    @ValueSource(strings = { "en", "es" })
-    @DisplayName("Chaves de mensagens iguais nos três idiomas")
-    void mesmasChavesDoPortugues(String idioma) throws IOException {
-        assertEquals(chaves("pt"), chaves(idioma));
+    @Test
+    @DisplayName("Inglês tem as mesmas chaves do português")
+    void inglesTemAsMesmasChaves() throws IOException {
+        assertEquals(carregar("pt").keySet(), carregar("en").keySet());
+    }
+
+    @Test
+    @DisplayName("Espanhol tem as mesmas chaves do português")
+    void espanholTemAsMesmasChaves() throws IOException {
+        assertEquals(carregar("pt").keySet(), carregar("es").keySet());
     }
 }

@@ -132,7 +132,7 @@ Os testes unitários e de integração (JUnit 5) ficam em `test/`, fora de `src/
 mvn test
 ```
 
-Cobrem a apuração por custo médio (inclusive os 30 dias da planilha de simulação do professor), as entidades, os serviços com DAOs em memória, o cache do oráculo, o cliente da API contra um servidor local falso (sucesso, sem cotação, credenciais recusadas, resposta inválida, rede e timeout) e a paridade das chaves de mensagens nos três idiomas. Nenhum teste precisa de rede ou de banco de dados.
+Cobrem a apuração por custo médio, as entidades, os serviços com DAOs em memória, o cache do oráculo, o cliente da API contra um servidor local falso (sucesso, sem cotação, credenciais recusadas, resposta inválida, rede e timeout) e a paridade das chaves de mensagens nos três idiomas. Nenhum teste precisa de rede ou de banco de dados.
 
 ### Idioma
 

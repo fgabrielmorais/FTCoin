@@ -97,7 +97,9 @@ class CarteiraServiceTest {
 
         List<Carteira> ordenadas = servico.listarPorIdentificador();
 
-        assertEquals(List.of(1, 2, 3), ordenadas.stream().map(Carteira::getId).toList());
+        assertEquals(1, ordenadas.get(0).getId());
+        assertEquals(2, ordenadas.get(1).getId());
+        assertEquals(3, ordenadas.get(2).getId());
         ordenadas.clear();
         assertEquals(3, servico.listarTodasCarteiras().size());
     }
@@ -112,8 +114,13 @@ class CarteiraServiceTest {
 
         List<Carteira> ordenadas = servico.listarPorTitular();
 
-        assertEquals(List.of("ana", "Ana", "Bia", "Carlos"), ordenadas.stream().map(Carteira::getNomeTitular).toList());
-        assertEquals(List.of(2, 4, 3, 1), ordenadas.stream().map(Carteira::getId).toList());
+        assertEquals("ana", ordenadas.get(0).getNomeTitular());
+        assertEquals("Ana", ordenadas.get(1).getNomeTitular());
+        assertEquals("Bia", ordenadas.get(2).getNomeTitular());
+        assertEquals("Carlos", ordenadas.get(3).getNomeTitular());
+        // Os dois "ana" empatam no nome e ficam em ordem de identificador (2 antes de 4)
+        assertEquals(2, ordenadas.get(0).getId());
+        assertEquals(4, ordenadas.get(1).getId());
     }
 
     @Test

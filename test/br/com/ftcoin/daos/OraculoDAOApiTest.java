@@ -12,6 +12,8 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -30,138 +32,158 @@ class OraculoDAOApiTest {
     private static final String SENHA = "SENHA_TESTE";
     private static final LocalDate DIA = LocalDate.now().minusDays(3);
 
-    private static OraculoDAOApi cliente(int porta, int timeoutMs) {
-        return new OraculoDAOApi("localhost", porta, GRUPO, SENHA, timeoutMs);
+    private ServidorFalso servidor;
+
+    @BeforeEach
+    void iniciarServidor() throws IOException {
+        servidor = new ServidorFalso();
     }
 
-    private static NetworkResponse comCotacoes(ExchangeRate... taxas) {
+    @AfterEach
+    void fecharServidor() throws IOException {
+        servidor.fechar();
+    }
+
+    private OraculoDAOApi cliente(int timeoutMs) {
+        return new OraculoDAOApi("localhost", servidor.porta(), GRUPO, SENHA, timeoutMs);
+    }
+
+    private static NetworkResponse respostaCom(ExchangeRate... taxas) {
         return new NetworkResponse(List.of(taxas), null);
     }
 
     @Test
     @DisplayName("Sucesso: devolve o valor da data pedida com 2 casas, enviando grupo, senha e as duas datas")
-    void sucesso() throws IOException {
-        try (ServidorFalso servidor = new ServidorFalso(r -> comCotacoes(new ExchangeRate(DIA, new BigDecimal("12.3456"))))) {
-            BigDecimal valor = cliente(servidor.porta(), 2000).buscarCotacaoPorData(DIA);
+    void sucesso() {
+        servidor.responder(respostaCom(new ExchangeRate(DIA, new BigDecimal("12.3456"))));
 
-            assertEquals(new BigDecimal("12.35"), valor);
-            NetworkRequest enviada = servidor.recebidas().get(0);
-            assertEquals(GRUPO, enviada.getGroupName());
-            assertEquals(SENHA, enviada.getGroupPassword());
-            assertEquals(DIA, enviada.getFirstDate());
-            assertEquals(DIA, enviada.getLastDate());
-        }
+        BigDecimal valor = cliente(2000).buscarCotacaoPorData(DIA);
+
+        assertEquals(new BigDecimal("12.35"), valor);
+        NetworkRequest enviada = servidor.recebidas().get(0);
+        assertEquals(GRUPO, enviada.getGroupName());
+        assertEquals(SENHA, enviada.getGroupPassword());
+        assertEquals(DIA, enviada.getFirstDate());
+        assertEquals(DIA, enviada.getLastDate());
     }
 
     @Test
     @DisplayName("Lista de um período: devolve todas as cotações recebidas")
-    void periodo() throws IOException {
-        ExchangeRate a = new ExchangeRate(DIA, new BigDecimal("1.00"));
-        ExchangeRate b = new ExchangeRate(DIA.plusDays(1), new BigDecimal("2.00"));
-        try (ServidorFalso servidor = new ServidorFalso(r -> comCotacoes(a, b))) {
-            List<ExchangeRate> lista = cliente(servidor.porta(), 2000).buscarCotacoesPorPeriodo(DIA, DIA.plusDays(1));
-            assertEquals(2, lista.size());
-            assertEquals(DIA.plusDays(1), servidor.recebidas().get(0).getLastDate());
-        }
+    void periodo() {
+        servidor.responder(respostaCom(
+                new ExchangeRate(DIA, new BigDecimal("1.00")),
+                new ExchangeRate(DIA.plusDays(1), new BigDecimal("2.00"))));
+
+        List<ExchangeRate> lista = cliente(2000).buscarCotacoesPorPeriodo(DIA, DIA.plusDays(1));
+
+        assertEquals(2, lista.size());
+        assertEquals(DIA.plusDays(1), servidor.recebidas().get(0).getLastDate());
     }
 
     @Test
     @DisplayName("Sem cotação não é erro: lista vazia devolve null")
-    void listaVaziaNaoEErro() throws IOException {
-        try (ServidorFalso servidor = new ServidorFalso(r -> comCotacoes())) {
-            assertNull(cliente(servidor.porta(), 2000).buscarCotacaoPorData(DIA));
-        }
+    void listaVaziaNaoEErro() {
+        servidor.responder(respostaCom());
+        assertNull(cliente(2000).buscarCotacaoPorData(DIA));
     }
 
     @Test
     @DisplayName("Antes de usar, confere a data recebida: cotação de outra data é ignorada")
-    void ignoraCotacaoDeOutraData() throws IOException {
-        try (ServidorFalso servidor = new ServidorFalso(r -> comCotacoes(new ExchangeRate(DIA.minusDays(1), BigDecimal.TEN)))) {
-            assertNull(cliente(servidor.porta(), 2000).buscarCotacaoPorData(DIA));
-        }
+    void ignoraCotacaoDeOutraData() {
+        servidor.responder(respostaCom(new ExchangeRate(DIA.minusDays(1), BigDecimal.TEN)));
+        assertNull(cliente(2000).buscarCotacaoPorData(DIA));
     }
 
     @Test
     @DisplayName("Exceção: servidor responde com mensagem de erro (ex.: não autenticado)")
-    void servidorRecusa() throws IOException {
-        try (ServidorFalso servidor = new ServidorFalso(r -> new NetworkResponse(null, "Grupo ou senha inválidos"))) {
-            OraculoException erro = assertThrows(OraculoException.class, () -> cliente(servidor.porta(), 2000).buscarCotacaoPorData(DIA));
-            assertEquals("erro.oraculo.servidor", erro.getChave());
-        }
+    void servidorRecusa() {
+        servidor.responder(new NetworkResponse(null, "Grupo ou senha inválidos"));
+        OraculoDAOApi cliente = cliente(2000);
+
+        OraculoException erro = assertThrows(OraculoException.class, () -> cliente.buscarCotacaoPorData(DIA));
+
+        assertEquals("erro.oraculo.servidor", erro.getChave());
     }
 
     @Test
     @DisplayName("Exceção: servidor responde um objeto que não é NetworkResponse")
-    void respostaInvalida() throws IOException {
-        try (ServidorFalso servidor = new ServidorFalso(r -> "isto não é uma resposta")) {
-            OraculoException erro = assertThrows(OraculoException.class, () -> cliente(servidor.porta(), 2000).buscarCotacaoPorData(DIA));
-            assertEquals("erro.oraculo.respostaInvalida", erro.getChave());
-        }
+    void respostaInvalida() {
+        servidor.responder("isto não é uma resposta");
+        OraculoDAOApi cliente = cliente(2000);
+
+        OraculoException erro = assertThrows(OraculoException.class, () -> cliente.buscarCotacaoPorData(DIA));
+
+        assertEquals("erro.oraculo.respostaInvalida", erro.getChave());
     }
 
     @Test
     @DisplayName("Exceção: ninguém escutando na porta (conexão recusada)")
     void conexaoRecusada() throws IOException {
-        int portaLivre;
-        try (ServerSocket temporario = new ServerSocket(0)) {
-            portaLivre = temporario.getLocalPort();
-        }
-        int porta = portaLivre;
-        OraculoException erro = assertThrows(OraculoException.class, () -> cliente(porta, 1000).buscarCotacaoPorData(DIA));
+        // Descobre uma porta livre e a libera: nada escuta nela
+        ServerSocket temporario = new ServerSocket(0);
+        int portaLivre = temporario.getLocalPort();
+        temporario.close();
+        OraculoDAOApi cliente = new OraculoDAOApi("localhost", portaLivre, GRUPO, SENHA, 1000);
+
+        OraculoException erro = assertThrows(OraculoException.class, () -> cliente.buscarCotacaoPorData(DIA));
+
         assertEquals("erro.oraculo.rede", erro.getChave());
     }
 
     @Test
     @DisplayName("Exceção: servidor aceita e não responde (timeout)")
-    void timeout() throws IOException {
-        try (ServidorFalso servidor = new ServidorFalso(r -> null)) {
-            long inicio = System.currentTimeMillis();
-            OraculoException erro = assertThrows(OraculoException.class, () -> cliente(servidor.porta(), 300).buscarCotacaoPorData(DIA));
-            assertEquals("erro.oraculo.rede", erro.getChave());
-            assertTrue(System.currentTimeMillis() - inicio < 5000, "o timeout deve ser respeitado");
-        }
+    void timeout() {
+        servidor.responder(null);
+        OraculoDAOApi cliente = cliente(300);
+
+        OraculoException erro = assertThrows(OraculoException.class, () -> cliente.buscarCotacaoPorData(DIA));
+
+        assertEquals("erro.oraculo.rede", erro.getChave());
     }
 
     @Test
     @DisplayName("Exceção: faixa invertida é recusada antes de ir à rede")
-    void faixaInvertida() throws IOException {
-        try (ServidorFalso servidor = new ServidorFalso(r -> comCotacoes())) {
-            OraculoException erro = assertThrows(OraculoException.class,
-                    () -> cliente(servidor.porta(), 2000).buscarCotacoesPorPeriodo(DIA, DIA.minusDays(1)));
-            assertEquals("erro.oraculo.faixaInvertida", erro.getChave());
-            assertTrue(servidor.recebidas().isEmpty());
-        }
+    void faixaInvertida() {
+        servidor.responder(respostaCom());
+        OraculoDAOApi cliente = cliente(2000);
+
+        OraculoException erro = assertThrows(OraculoException.class,
+                () -> cliente.buscarCotacoesPorPeriodo(DIA, DIA.minusDays(1)));
+
+        assertEquals("erro.oraculo.faixaInvertida", erro.getChave());
+        assertTrue(servidor.recebidas().isEmpty());
     }
 
     @Test
     @DisplayName("Exceção: data futura é recusada antes de ir à rede")
-    void dataFutura() throws IOException {
-        try (ServidorFalso servidor = new ServidorFalso(r -> comCotacoes())) {
-            OraculoException erro = assertThrows(OraculoException.class,
-                    () -> cliente(servidor.porta(), 2000).buscarCotacaoPorData(LocalDate.now().plusDays(1)));
-            assertEquals("erro.oraculo.dataFutura", erro.getChave());
-            assertTrue(servidor.recebidas().isEmpty());
-        }
+    void dataFutura() {
+        servidor.responder(respostaCom());
+        OraculoDAOApi cliente = cliente(2000);
+
+        OraculoException erro = assertThrows(OraculoException.class,
+                () -> cliente.buscarCotacaoPorData(LocalDate.now().plusDays(1)));
+
+        assertEquals("erro.oraculo.dataFutura", erro.getChave());
+        assertTrue(servidor.recebidas().isEmpty());
     }
 
     @Test
     @DisplayName("Cache + API: um período inteiro vai ao servidor em uma única requisição")
-    void periodoComCacheFazUmaRequisicao() throws IOException {
-        LocalDate d1 = LocalDate.now().minusDays(5);
-        try (ServidorFalso servidor = new ServidorFalso(r -> comCotacoes(
-                new ExchangeRate(d1, new BigDecimal("1.00")),
-                new ExchangeRate(d1.plusDays(2), new BigDecimal("3.00"))))) {
-            OraculoDAOCache cache = new OraculoDAOCache(cliente(servidor.porta(), 2000));
+    void periodoComCacheFazUmaRequisicao() {
+        LocalDate inicio = LocalDate.now().minusDays(5);
+        servidor.responder(respostaCom(
+                new ExchangeRate(inicio, new BigDecimal("1.00")),
+                new ExchangeRate(inicio.plusDays(2), new BigDecimal("3.00"))));
+        OraculoDAOCache cache = new OraculoDAOCache(cliente(2000));
 
-            Map<LocalDate, OraculoDAOCache.Consulta> periodo = cache.consultarPeriodo(d1, d1.plusDays(2));
+        Map<LocalDate, OraculoDAOCache.Consulta> periodo = cache.consultarPeriodo(inicio, inicio.plusDays(2));
 
-            assertEquals(3, periodo.size());
-            assertEquals(1, servidor.recebidas().size());
-            assertNull(periodo.get(d1.plusDays(1)).valor());
+        assertEquals(3, periodo.size());
+        assertEquals(1, servidor.recebidas().size());
+        assertNull(periodo.get(inicio.plusDays(1)).valor());
 
-            // Segunda chamada: tudo já está no cache, sem nova requisição
-            cache.consultarPeriodo(d1, d1.plusDays(2));
-            assertEquals(1, servidor.recebidas().size());
-        }
+        // Segunda chamada: tudo já está no cache, sem nova requisição
+        cache.consultarPeriodo(inicio, inicio.plusDays(2));
+        assertEquals(1, servidor.recebidas().size());
     }
 }

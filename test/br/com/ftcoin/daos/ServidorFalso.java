@@ -6,30 +6,27 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 
 import network.NetworkRequest;
 
 /**
- * Servidor de cotações de teste, em uma porta local livre, no mesmo protocolo do servidor do professor:
- * lê um {@link NetworkRequest} e responde um objeto Java. Guarda as requisições recebidas.
+ * Servidor de cotações de teste, em uma porta local livre, que fala o mesmo protocolo do servidor do professor:
+ * lê um {@link NetworkRequest} e responde com um objeto Java. Guarda as requisições recebidas.
+ * <p>
+ * Se a resposta for {@code null}, o servidor aceita a conexão e não responde (usado para testar o timeout).
+ * </p>
  */
-final class ServidorFalso implements AutoCloseable {
+class ServidorFalso {
 
     private final ServerSocket servidor;
-    private final Function<NetworkRequest, Object> resposta;
-    private final List<NetworkRequest> recebidas = Collections.synchronizedList(new ArrayList<>());
-    private final List<Socket> abertos = Collections.synchronizedList(new ArrayList<>());
+    private final List<NetworkRequest> recebidas = new ArrayList<>();
+    private Object resposta;
 
-    /**
-     * @param resposta calcula o objeto a enviar; devolver {@code null} faz o servidor aceitar e ficar mudo
-     */
-    ServidorFalso(Function<NetworkRequest, Object> resposta) throws IOException {
+    ServidorFalso() throws IOException {
+        // Porta 0: o sistema escolhe uma porta livre
         this.servidor = new ServerSocket(0);
-        this.resposta = resposta;
-        Thread atendimento = new Thread(this::atender, "servidor-falso");
+        Thread atendimento = new Thread(this::atender);
         atendimento.setDaemon(true);
         atendimento.start();
     }
@@ -38,19 +35,31 @@ final class ServidorFalso implements AutoCloseable {
         return servidor.getLocalPort();
     }
 
-    List<NetworkRequest> recebidas() {
+    synchronized void responder(Object resposta) {
+        this.resposta = resposta;
+    }
+
+    synchronized List<NetworkRequest> recebidas() {
         return recebidas;
+    }
+
+    private synchronized Object respostaAtual() {
+        return resposta;
+    }
+
+    private synchronized void guardar(NetworkRequest requisicao) {
+        recebidas.add(requisicao);
     }
 
     private void atender() {
         while (!servidor.isClosed()) {
             try {
                 Socket socket = servidor.accept();
-                abertos.add(socket);
                 ObjectInputStream entrada = new ObjectInputStream(socket.getInputStream());
                 NetworkRequest requisicao = (NetworkRequest) entrada.readObject();
-                recebidas.add(requisicao);
-                Object objeto = resposta.apply(requisicao);
+                guardar(requisicao);
+
+                Object objeto = respostaAtual();
                 if (objeto != null) {
                     ObjectOutputStream saida = new ObjectOutputStream(socket.getOutputStream());
                     saida.writeObject(objeto);
@@ -58,18 +67,12 @@ final class ServidorFalso implements AutoCloseable {
                     socket.close();
                 }
             } catch (IOException | ClassNotFoundException e) {
-                // Conexão encerrada pelo cliente (ex.: timeout) ou servidor fechado: nada a fazer
+                // Cliente desconectou (ex.: timeout) ou o servidor foi fechado: nada a fazer
             }
         }
     }
 
-    @Override
-    public void close() throws IOException {
+    void fechar() throws IOException {
         servidor.close();
-        synchronized (abertos) {
-            for (Socket socket : abertos) {
-                socket.close();
-            }
-        }
     }
 }
