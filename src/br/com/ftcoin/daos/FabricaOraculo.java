@@ -70,11 +70,12 @@ final class FabricaOraculo {
 	}
 
 	/**
-	 * Lê uma chave que não pode faltar nem estar em branco.
+	 * Lê uma chave que não pode faltar nem estar em branco. Os espaços das pontas são removidos, porque um
+	 * espaço sobrando no arquivo (por exemplo, depois do nome do grupo) faria o servidor recusar a autenticação.
 	 *
 	 * @param p configuração lida de {@code oracle.properties}
 	 * @param chave nome da chave
-	 * @return o valor da chave
+	 * @return o valor da chave, sem espaços nas pontas
 	 */
 	private static String obrigatoria(Properties p, String chave) {
 		String valor = p.getProperty(chave);
@@ -82,7 +83,7 @@ final class FabricaOraculo {
 			LOG.log(Level.SEVERE, "Chave {0} ausente em {1}", new Object[] { chave, ARQUIVO_CONFIGURACAO });
 			throw new PersistenciaException("erro.configuracao.chaveAusente", chave, ARQUIVO_CONFIGURACAO);
 		}
-		return valor;
+		return valor.trim();
 	}
 
 	/**
