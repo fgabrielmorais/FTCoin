@@ -9,10 +9,16 @@ if defined JAVA_HOME (
     set "JAVA_BIN=java"
 )
 
+set "MAVEN_CMD="
 if defined MAVEN_HOME (
     set "MAVEN_CMD=%MAVEN_HOME%\bin\mvn.cmd"
 ) else (
-    set "MAVEN_CMD=mvn.cmd"
+    rem O "call" falha com o nome puro entre aspas; por isso usamos o caminho completo achado no PATH
+    for /f "delims=" %%i in ('where mvn.cmd 2^>nul') do if not defined MAVEN_CMD set "MAVEN_CMD=%%i"
+)
+if not defined MAVEN_CMD (
+    echo Maven nao encontrado. Configure MAVEN_HOME ou o PATH.
+    goto :erro
 )
 
 echo ========================================================
