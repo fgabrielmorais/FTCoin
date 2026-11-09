@@ -7,7 +7,7 @@
 #   api      - servidor de cotações configurado abaixo
 oracle.provider=api
 
-# Servidor do professor (mostrado em aula, 2026-11)
+# Servidor do professor
 oracle.host=143.106.243.64
 oracle.port=1234
 oracle.group=NOME_DO_GRUPO
