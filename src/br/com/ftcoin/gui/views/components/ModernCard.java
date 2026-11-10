@@ -62,7 +62,7 @@ public class ModernCard extends JPanel {
         setBackground(TemaCores.SUPERFICIE_CARD);
         setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
 
-        lblTitulo = new JLabel(titulo != null ? titulo.toUpperCase() : "");
+        lblTitulo = new JLabel(titulo != null ? titulo : "");
         lblTitulo.setFont(TemaCores.FONTE_LABEL);
         lblTitulo.setForeground(TemaCores.TEXTO_SECUNDARIO);
 
@@ -90,7 +90,7 @@ public class ModernCard extends JPanel {
      * @param titulo Novo texto do título
      */
     public void setTitulo(String titulo) {
-        lblTitulo.setText(titulo != null ? titulo.toUpperCase() : "");
+        lblTitulo.setText(titulo != null ? titulo : "");
     }
 
     /**

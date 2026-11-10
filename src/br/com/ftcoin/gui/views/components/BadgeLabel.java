@@ -70,7 +70,7 @@ public class BadgeLabel extends JLabel {
             return;
         }
 
-        setText(origem.getIcone() + " " + origem.getDescricaoLocalizada(mensagens));
+        setText(origem.getDescricaoLocalizada(mensagens));
         setEstilo(origem.getCorFundo(), origem.getCorTexto(), origem.getCorTexto());
     }
 

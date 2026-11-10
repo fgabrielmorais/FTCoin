@@ -39,17 +39,17 @@ public final class TemaCores {
     /**
      * Tom índigo moderno para botões secundários e seletores de relevância média.
      */
-    public static final Color SECUNDARIA = new Color(79, 70, 229);
+    public static final Color SECUNDARIA = new Color(37, 99, 235);
 
     /**
      * Tom ciano para acentuações visuais e indicadores numéricos especiais.
      */
-    public static final Color ACCENT = new Color(14, 165, 233);
+    public static final Color ACCENT = new Color(37, 99, 235);
 
     /**
      * Cor neutra suave aplicada ao fundo de janelas e painéis principais.
      */
-    public static final Color FUNDO_APP = new Color(243, 244, 246);
+    public static final Color FUNDO_APP = new Color(247, 248, 250);
 
     /**
      * Cor branca pura para preenchimento de cartões, formulários e células de tabelas.
@@ -92,6 +92,21 @@ public final class TemaCores {
     public static final Color NEGATIVO_FUNDO = new Color(254, 242, 242);
 
     /**
+     * Tom âmbar para ações de atenção, como a venda de FTCoins.
+     */
+    public static final Color ALERTA = new Color(217, 119, 6);
+
+    /**
+     * Âmbar mais escuro usado quando o cursor está sobre um botão de atenção.
+     */
+    public static final Color ALERTA_HOVER = new Color(180, 83, 9);
+
+    /**
+     * Fundo âmbar suave para selos e destaques de atenção.
+     */
+    public static final Color ALERTA_FUNDO = new Color(254, 243, 199);
+
+    /**
      * Cor de alto contraste para leitura de textos principais e títulos da interface.
      */
     public static final Color TEXTO_PRINCIPAL = new Color(17, 24, 39);
@@ -109,12 +124,12 @@ public final class TemaCores {
     /**
      * Fonte em negrito de tamanho 22 para títulos principais de telas.
      */
-    public static final Font FONTE_TITULO_GRANDE = new Font("Segoe UI", Font.BOLD, 22);
+    public static final Font FONTE_TITULO_GRANDE = new Font("Segoe UI", Font.BOLD, 20);
 
     /**
      * Fonte em negrito de tamanho 16 para títulos de seções internas e tabelas.
      */
-    public static final Font FONTE_TITULO_MEDIO = new Font("Segoe UI", Font.BOLD, 16);
+    public static final Font FONTE_TITULO_MEDIO = new Font("Segoe UI", Font.BOLD, 14);
 
     /**
      * Fonte regular de tamanho 13 para subtítulos e mensagens da barra de status.
@@ -134,10 +149,33 @@ public final class TemaCores {
     /**
      * Fonte em negrito de tamanho 20 para destaque de valores numéricos e saldos em cartões.
      */
-    public static final Font FONTE_DESTAQUE_NUMERO = new Font("Segoe UI", Font.BOLD, 20);
+    public static final Font FONTE_DESTAQUE_NUMERO = new Font("Segoe UI", Font.BOLD, 22);
 
     /**
      * Fonte em negrito de tamanho 11 para badges e etiquetas de estado.
      */
     public static final Font FONTE_BADGE = new Font("Segoe UI", Font.BOLD, 11);
+
+    /**
+     * Define as fontes e as cores padrão dos componentes do Swing, para todas as telas ficarem iguais
+     * mesmo nos componentes que não definem a própria fonte. Deve ser chamado antes de criar as janelas.
+     */
+    public static void aplicarPadroesSwing() {
+        javax.swing.UIManager.put("Label.font", FONTE_PADRAO);
+        javax.swing.UIManager.put("Label.foreground", TEXTO_PRINCIPAL);
+        javax.swing.UIManager.put("TextField.font", FONTE_PADRAO);
+        javax.swing.UIManager.put("TextArea.font", FONTE_PADRAO);
+        javax.swing.UIManager.put("ComboBox.font", FONTE_PADRAO);
+        javax.swing.UIManager.put("Button.font", FONTE_LABEL);
+        javax.swing.UIManager.put("TabbedPane.font", FONTE_LABEL);
+        javax.swing.UIManager.put("Table.font", FONTE_PADRAO);
+        javax.swing.UIManager.put("OptionPane.messageFont", FONTE_PADRAO);
+        javax.swing.UIManager.put("OptionPane.buttonFont", FONTE_PADRAO);
+        javax.swing.UIManager.put("Panel.background", FUNDO_APP);
+        javax.swing.UIManager.put("TabbedPane.tabInsets", new java.awt.Insets(8, 20, 8, 20));
+        // Campos de texto com borda fina e respiro interno
+        javax.swing.UIManager.put("TextField.border", javax.swing.BorderFactory.createCompoundBorder(
+                javax.swing.BorderFactory.createLineBorder(BORDA_DIVISOR),
+                javax.swing.BorderFactory.createEmptyBorder(6, 8, 6, 8)));
+    }
 }

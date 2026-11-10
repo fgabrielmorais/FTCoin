@@ -33,7 +33,7 @@ public final class Info {
     /**
      * Versão corrente de distribuição e homologação do software.
      */
-    public static final String VERSAO = "2.5 (LTS)";
+    public static final String VERSAO = "1.0.0";
 
     /**
      * Identificador da plataforma de linguagem e tempo de execução.

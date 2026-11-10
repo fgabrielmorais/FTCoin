@@ -69,9 +69,9 @@ public class MainFrame extends JFrame {
     /** Botões da barra de navegação, um por tela. */
     private final EnumMap<ModoNavegacao, ModernButton> botoesNavegacao = new EnumMap<>(ModoNavegacao.class);
     /** Botão que abre o manual. */
-    private final ModernButton botaoAjuda = new ModernButton("", ModernButton.Variante.NEUTRO);
+    private final ModernButton botaoAjuda = new ModernButton("", ModernButton.Variante.NAVEGACAO);
     /** Botão que abre os créditos. */
-    private final ModernButton botaoSobre = new ModernButton("", ModernButton.Variante.NEUTRO);
+    private final ModernButton botaoSobre = new ModernButton("", ModernButton.Variante.NAVEGACAO);
     /** Botão que encerra o programa, fechando as conexões. */
     private final ModernButton botaoSair = new ModernButton("", ModernButton.Variante.PERIGO);
     /** Rótulo do seletor de idioma. */
@@ -79,10 +79,6 @@ public class MainFrame extends JFrame {
     /** Rótulo do seletor de banco de dados. */
     private final JLabel lblBanco = new JLabel();
 
-    /** Rótulo da barra de status com o banco ativo. */
-    private final JLabel lblStatusBanco = new JLabel();
-    /** Rótulo da barra de status com o idioma ativo. */
-    private final JLabel lblStatusIdioma = new JLabel();
     /** Rótulo da barra de status com a última mensagem. */
     private final JLabel lblStatusMensagem = new JLabel("");
 
@@ -90,6 +86,8 @@ public class MainFrame extends JFrame {
     private final JComboBox<IdiomaSelector> cmbIdioma = new JComboBox<>(IdiomaSelector.values());
     /** Seletor do mecanismo de persistência. */
     private final JComboBox<DatabaseSelector> cmbBanco = new JComboBox<>(DatabaseSelector.values());
+
+    private static final java.util.logging.Logger LOG = java.util.logging.Logger.getLogger(MainFrame.class.getName());
 
     private final transient ContextoAplicacao contexto;
     private final transient MensagensGui mensagens;
@@ -104,7 +102,14 @@ public class MainFrame extends JFrame {
         this.contexto = contexto;
         this.mensagens = contexto.getMensagens();
 
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        // O X da janela também pede confirmação, igual ao botão Sair
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent evento) {
+                sair();
+            }
+        });
         setMinimumSize(new Dimension(1100, 720));
         setSize(1240, 780);
         setLocationRelativeTo(null);
@@ -131,6 +136,7 @@ public class MainFrame extends JFrame {
 
         configurarSeletores();
         aplicarTextos();
+        botoesNavegacao.get(ModoNavegacao.DASHBOARD).setAtivo(true);
 
         contexto.adicionarOuvintePersistencia(this::recarregarTodosPaineis);
         mensagens.adicionarOuvinte(() -> {
@@ -142,78 +148,88 @@ public class MainFrame extends JFrame {
         recarregarTodosPaineis();
     }
 
+    // Pergunta se o usuário quer mesmo sair; se sim, fecha as conexões e encerra o programa
+    private void sair() {
+        Object[] opcoes = { mensagens.get("gui.sair.sim"), mensagens.get("gui.sair.nao") };
+        int escolha = JOptionPane.showOptionDialog(this, mensagens.get("gui.sair.mensagem"),
+                mensagens.get("gui.sair.titulo"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
+                null, opcoes, opcoes[1]);
+        if (escolha == 0) {
+            LOG.info("Encerrando FTCoin Studio");
+            contexto.encerrar();
+            System.exit(0);
+        }
+    }
+
     private JPanel criarBarraNavegacaoSuperior() {
         JPanel pnlBarra = new JPanel(new BorderLayout(15, 0));
         pnlBarra.setBackground(TemaCores.SUPERFICIE_CARD);
         pnlBarra.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, TemaCores.BORDA_SUAVE),
-                BorderFactory.createEmptyBorder(10, 15, 10, 15)
+                BorderFactory.createEmptyBorder(6, 20, 0, 20)
         ));
 
-        JPanel pnlBotoesNav = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        // Esquerda: nome do sistema e as cinco telas
+        JPanel pnlBotoesNav = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         pnlBotoesNav.setOpaque(false);
+
+        JLabel lblMarca = new JLabel("FTCoin");
+        lblMarca.setFont(TemaCores.FONTE_TITULO_GRANDE);
+        lblMarca.setForeground(TemaCores.PRIMARIA);
+        lblMarca.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 24));
+        pnlBotoesNav.add(lblMarca);
+
         for (ModoNavegacao modo : ModoNavegacao.values()) {
-            ModernButton botao = new ModernButton("", ModernButton.Variante.NEUTRO);
+            ModernButton botao = new ModernButton("", ModernButton.Variante.NAVEGACAO);
             botao.addActionListener(e -> navegarPara(modo.getIdentificadorCard()));
             botoesNavegacao.put(modo, botao);
             pnlBotoesNav.add(botao);
         }
         pnlBarra.add(pnlBotoesNav, BorderLayout.WEST);
 
-        JPanel pnlConfig = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
-        pnlConfig.setOpaque(false);
-
-        lblIdioma.setFont(TemaCores.FONTE_LABEL);
-        cmbIdioma.setFont(TemaCores.FONTE_PADRAO);
-        cmbIdioma.setPreferredSize(new Dimension(150, 30));
-
-        lblBanco.setFont(TemaCores.FONTE_LABEL);
-        cmbBanco.setFont(TemaCores.FONTE_PADRAO);
-        cmbBanco.setPreferredSize(new Dimension(190, 30));
-
+        // Direita: ajuda, sobre e sair
         botaoAjuda.addActionListener(e -> new AjudaDialog(this, mensagens).setVisible(true));
         botaoSobre.addActionListener(e -> new CreditosDialog(this, mensagens).setVisible(true));
-        // Sair: fecha as conexões e encerra o programa
-        botaoSair.addActionListener(e -> {
-            contexto.encerrar();
-            System.exit(0);
-        });
+        botaoSair.addActionListener(e -> sair());
 
-        pnlConfig.add(lblIdioma);
-        pnlConfig.add(cmbIdioma);
-        pnlConfig.add(Box.createHorizontalStrut(5));
-        pnlConfig.add(lblBanco);
-        pnlConfig.add(cmbBanco);
-        pnlConfig.add(Box.createHorizontalStrut(5));
-        pnlConfig.add(botaoAjuda);
-        pnlConfig.add(botaoSobre);
-        pnlConfig.add(botaoSair);
-        pnlBarra.add(pnlConfig, BorderLayout.EAST);
+        JPanel pnlAcoes = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        pnlAcoes.setOpaque(false);
+        pnlAcoes.add(botaoAjuda);
+        pnlAcoes.add(botaoSobre);
+        pnlAcoes.add(botaoSair);
+        pnlBarra.add(pnlAcoes, BorderLayout.EAST);
 
         return pnlBarra;
     }
 
+    // Rodapé: mensagem de estado à esquerda; banco e idioma, que mudam pouco, à direita
     private JPanel criarBarraStatus() {
         JPanel pnlStatus = new JPanel(new BorderLayout(15, 0));
-        pnlStatus.setBackground(TemaCores.SUPERFICIE_HEADER);
+        pnlStatus.setBackground(TemaCores.SUPERFICIE_CARD);
         pnlStatus.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, TemaCores.BORDA_SUAVE),
-                BorderFactory.createEmptyBorder(6, 15, 6, 15)
+                BorderFactory.createEmptyBorder(8, 20, 8, 20)
         ));
 
         lblStatusMensagem.setFont(TemaCores.FONTE_SUBTITULO);
-        lblStatusMensagem.setForeground(TemaCores.TEXTO_PRINCIPAL);
+        lblStatusMensagem.setForeground(TemaCores.TEXTO_SECUNDARIO);
         pnlStatus.add(lblStatusMensagem, BorderLayout.WEST);
 
-        JPanel pnlInfoDir = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 0));
-        pnlInfoDir.setOpaque(false);
-        lblStatusBanco.setFont(TemaCores.FONTE_LABEL);
-        lblStatusBanco.setForeground(TemaCores.SECUNDARIA);
-        lblStatusIdioma.setFont(TemaCores.FONTE_LABEL);
-        lblStatusIdioma.setForeground(TemaCores.TEXTO_SECUNDARIO);
-        pnlInfoDir.add(lblStatusBanco);
-        pnlInfoDir.add(lblStatusIdioma);
-        pnlStatus.add(pnlInfoDir, BorderLayout.EAST);
+        lblBanco.setFont(TemaCores.FONTE_LABEL);
+        lblBanco.setForeground(TemaCores.TEXTO_SECUNDARIO);
+        cmbBanco.setPreferredSize(new Dimension(200, 28));
+        lblIdioma.setFont(TemaCores.FONTE_LABEL);
+        lblIdioma.setForeground(TemaCores.TEXTO_SECUNDARIO);
+        cmbIdioma.setPreferredSize(new Dimension(130, 28));
+
+        JPanel pnlSeletores = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        pnlSeletores.setOpaque(false);
+        pnlSeletores.add(lblBanco);
+        pnlSeletores.add(cmbBanco);
+        pnlSeletores.add(javax.swing.Box.createHorizontalStrut(12));
+        pnlSeletores.add(lblIdioma);
+        pnlSeletores.add(cmbIdioma);
+        pnlStatus.add(pnlSeletores, BorderLayout.EAST);
 
         return pnlStatus;
     }
@@ -241,8 +257,7 @@ public class MainFrame extends JFrame {
                 contexto.alternarPersistencia(escolhido.getTipoPersistencia());
                 lblStatusMensagem.setText(mensagens.get("gui.status.persistencia.alterada",
                         escolhido.getDescricaoLocalizada(mensagens)));
-                atualizarStatusBar();
-            } catch (RuntimeException ex) {
+                    } catch (RuntimeException ex) {
                 // Volta o seletor para o mecanismo que continua ativo
                 cmbBanco.setSelectedItem(DatabaseSelector.porTipo(contexto.getTipoPersistenciaAtual()));
                 JOptionPane.showMessageDialog(
@@ -281,7 +296,6 @@ public class MainFrame extends JFrame {
         lblBanco.setText(mensagens.get("gui.nav.label.banco"));
         cmbIdioma.repaint();
         cmbBanco.repaint();
-        atualizarStatusBar();
         revalidate();
         repaint();
     }
@@ -293,6 +307,7 @@ public class MainFrame extends JFrame {
      */
     public void navegarPara(String tela) {
         cardLayout.show(pnlConteudo, tela);
+        botoesNavegacao.forEach((modo, botao) -> botao.setAtivo(modo.getIdentificadorCard().equals(tela)));
         if (TELA_DASHBOARD.equals(tela)) {
             pnlDashboard.inicializar();
         } else if (TELA_CARTEIRAS.equals(tela)) {
@@ -322,14 +337,5 @@ public class MainFrame extends JFrame {
         pnlMovimentacoes.inicializar();
         pnlCotacao.inicializar();
         pnlRelatorios.inicializar();
-        atualizarStatusBar();
-    }
-
-    private void atualizarStatusBar() {
-        String chaveBanco = (contexto.getTipoPersistenciaAtual() == TipoPersistencia.MEMORIA)
-                ? "gui.status.banco.memoria" : "gui.status.banco.mariadb";
-        lblStatusBanco.setText(mensagens.get("gui.status.label.persistencia", mensagens.get(chaveBanco)));
-        lblStatusIdioma.setText(mensagens.get("gui.status.label.idioma",
-                mensagens.getLocaleAtual().getDisplayLanguage(mensagens.getLocaleAtual())));
     }
 }

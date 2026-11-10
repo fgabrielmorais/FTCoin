@@ -32,6 +32,7 @@ import br.com.ftcoin.gui.presenters.CotacaoPresenter;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.views.components.BadgeLabel;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
+import br.com.ftcoin.gui.views.components.EstiloTabela;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.contracts.ICotacaoView;
 import br.com.ftcoin.models.Cotacao;
@@ -127,7 +128,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         MensagensGui mensagens = contexto.getMensagens();
         this.textos = new TextosTraduzidos(mensagens);
 
-        this.campoDataConsulta = new JTextField(LocalDate.now().toString(), 10);
+        this.campoDataConsulta = new JTextField(contexto.getMensagens().getFormatador().data(LocalDate.now()), 10);
         this.botaoConsultarCotacao = new ModernButton("", ModernButton.Variante.PRIMARIA);
         this.botaoLimparCacheOraculo = new ModernButton("", ModernButton.Variante.NEUTRO);
         textos.vincular(botaoConsultarCotacao::setText, "gui.cotacao.btn.consultar");
@@ -156,6 +157,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         JLabel rotuloData = new JLabel();
         textos.vincular(rotuloData::setText, "gui.cotacao.label.data");
         rotuloData.setFont(TemaCores.FONTE_LABEL);
+        rotuloData.setForeground(TemaCores.TEXTO_SECUNDARIO);
         painelBarraConsulta.add(rotuloData);
 
         campoDataConsulta.setFont(TemaCores.FONTE_PADRAO);
@@ -213,6 +215,9 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         rotuloLatenciaResposta.setForeground(TemaCores.TEXTO_SECUNDARIO);
         rotuloHorarioConsulta.setFont(TemaCores.FONTE_SUBTITULO);
         rotuloHorarioConsulta.setForeground(TemaCores.TEXTO_SECUNDARIO);
+        // Largura folgada: o texto muda a cada consulta e não pode ser cortado
+        rotuloLatenciaResposta.setPreferredSize(new Dimension(210, 22));
+        rotuloHorarioConsulta.setPreferredSize(new Dimension(230, 22));
         painelTelemetria.add(rotuloLatenciaResposta);
         painelTelemetria.add(rotuloHorarioConsulta);
 
@@ -248,10 +253,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
 
         tabelaHistoricoOscilacoes = new JTable(modeloTabelaHistorico);
         textos.vincularColunas(tabelaHistoricoOscilacoes, chavesColunas);
-        tabelaHistoricoOscilacoes.setRowHeight(32);
-        tabelaHistoricoOscilacoes.setFont(TemaCores.FONTE_PADRAO);
-        tabelaHistoricoOscilacoes.getTableHeader().setFont(TemaCores.FONTE_LABEL);
-        tabelaHistoricoOscilacoes.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
+        EstiloTabela.aplicar(tabelaHistoricoOscilacoes);
 
         tabelaHistoricoOscilacoes.getColumnModel().getColumn(1).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
@@ -262,8 +264,7 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         tabelaHistoricoOscilacoes.getColumnModel().getColumn(4).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.ORIGEM_BADGE, contexto.getMensagens()));
 
-        JScrollPane painelRolagemHistorico = new JScrollPane(tabelaHistoricoOscilacoes);
-        painelRolagemHistorico.setBorder(BorderFactory.createLineBorder(TemaCores.BORDA_SUAVE));
+        JScrollPane painelRolagemHistorico = EstiloTabela.comRolagem(tabelaHistoricoOscilacoes);
         painelHistorico.add(painelRolagemHistorico, BorderLayout.CENTER);
 
         painelCentro.add(painelHistorico, BorderLayout.CENTER);
@@ -279,12 +280,12 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         MensagensGui mensagens = contexto.getMensagens();
         LocalDate data;
         try {
-            data = LocalDate.parse(campoDataConsulta.getText().trim());
+            data = GuiFormatador.lerData(campoDataConsulta.getText());
         } catch (DateTimeParseException ex) {
             JOptionPane.showMessageDialog(
                     this,
-                    "gui.cotacao.dataInvalida",
-                    "gui.cotacao.dataInvalidaTitulo",
+                    mensagens.get("gui.cotacao.dataInvalida"),
+                    mensagens.get("gui.cotacao.dataInvalidaTitulo"),
                     JOptionPane.WARNING_MESSAGE
             );
             return;
