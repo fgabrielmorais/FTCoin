@@ -66,6 +66,12 @@ public class GuiFormatador {
     private final DateTimeFormatter formatoData;
 
     /**
+     * Formato único de data da interface, igual em todos os idiomas: dia/mês/ano com quatro dígitos.
+     */
+    private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/uuuu")
+            .withResolverStyle(java.time.format.ResolverStyle.STRICT);
+
+    /**
      * Constrói o formatador gráfico associado à localidade informada.
      *
      * @param locale Localidade desejada; caso seja {@code null}, adota Português do Brasil
@@ -86,7 +92,7 @@ public class GuiFormatador {
         this.formatoPercentual.setMinimumFractionDigits(CASAS_PORCENTAGEM);
         this.formatoPercentual.setMaximumFractionDigits(CASAS_PORCENTAGEM);
 
-        this.formatoData = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(this.locale);
+        this.formatoData = FORMATO_DATA;
     }
 
     /**
@@ -140,7 +146,36 @@ public class GuiFormatador {
     }
 
     /**
-     * Formata uma data cronológica no padrão resumido da localidade ativa.
+     * Formata um valor percentual sem sinal, como a participação de uma carteira no portfólio.
+     *
+     * @param percentual Taxa percentual a ser formatada; {@code null} vale zero
+     * @return O percentual com símbolo, sem sinal explícito (ex: {@code "12,50%"})
+     */
+    public String percentualSimples(BigDecimal percentual) {
+        if (percentual == null) {
+            percentual = BigDecimal.ZERO;
+        }
+        return formatoPercentual.format(percentual) + "%";
+    }
+
+    /**
+     * Lê uma data digitada pelo usuário, no formato {@code DD/MM/AAAA}. O formato {@code AAAA-MM-DD}
+     * também é aceito.
+     *
+     * @param texto Texto digitado
+     * @return A data lida
+     * @throws java.time.format.DateTimeParseException se o texto não for uma data válida
+     */
+    public static LocalDate lerData(String texto) {
+        String limpo = texto.trim();
+        if (limpo.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            return LocalDate.parse(limpo);
+        }
+        return LocalDate.parse(limpo, FORMATO_DATA);
+    }
+
+    /**
+     * Formata uma data cronológica no formato {@code DD/MM/AAAA}.
      *
      * @param data Data a ser convertida
      * @return A data formatada em texto, ou {@code "-"} caso seja {@code null}

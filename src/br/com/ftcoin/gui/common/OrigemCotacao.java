@@ -4,7 +4,7 @@ import java.awt.Color;
 
 /**
  * Procedência de uma cotação exibida na interface: consultada no Oráculo ou recuperada do cache local.
- * O nome exibido vem dos arquivos de mensagens; o enum guarda só a chave, as cores e o ícone.
+ * O nome exibido vem dos arquivos de mensagens; o enum guarda só a chave e as cores.
  *
  * @author Grupo B.05
  * @version 1.0.0
@@ -12,21 +12,19 @@ import java.awt.Color;
 public enum OrigemCotacao {
 
     /** Cotação consultada no Oráculo. */
-    ORACULO("gui.cotacao.badge.oraculo", new Color(46, 125, 50), new Color(232, 245, 233), "🌐"),
+    ORACULO("gui.cotacao.badge.oraculo", new Color(37, 99, 235), new Color(219, 234, 254)),
 
     /** Cotação recuperada do cache local. */
-    CACHE("gui.cotacao.badge.cache", new Color(21, 101, 192), new Color(227, 242, 253), "⚡");
+    CACHE("gui.cotacao.badge.cache", new Color(107, 114, 128), new Color(243, 244, 246));
 
     private final String chaveMensagem;
     private final Color corTexto;
     private final Color corFundo;
-    private final String icone;
 
-    OrigemCotacao(String chaveMensagem, Color corTexto, Color corFundo, String icone) {
+    OrigemCotacao(String chaveMensagem, Color corTexto, Color corFundo) {
         this.chaveMensagem = chaveMensagem;
         this.corTexto = corTexto;
         this.corFundo = corFundo;
-        this.icone = icone;
     }
 
     /**
@@ -45,15 +43,6 @@ public enum OrigemCotacao {
      */
     public Color getCorFundo() {
         return corFundo;
-    }
-
-    /**
-     * Devolve o ícone exibido antes do nome da origem.
-     *
-     * @return o ícone
-     */
-    public String getIcone() {
-        return icone;
     }
 
     /**

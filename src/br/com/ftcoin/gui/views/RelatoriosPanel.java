@@ -28,6 +28,7 @@ import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.presenters.RelatoriosPresenter;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
+import br.com.ftcoin.gui.views.components.EstiloTabela;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.components.ModernCard;
 import br.com.ftcoin.gui.views.contracts.IRelatoriosView;
@@ -52,6 +53,8 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
 
     /** Seletor da carteira dos relatórios por carteira. */
     private final JComboBox<ItemFiltroCarteira> cmbCarteiraFiltro = new JComboBox<>();
+    /** Rótulo e seletor de carteira, visíveis só nas abas que dependem da carteira. */
+    private final JPanel grupoCarteira = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
     /** Abas dos cinco relatórios. */
     private final JTabbedPane tabRelatorios = new JTabbedPane();
     /** Evita gerar relatório enquanto o seletor de carteiras é preenchido. */
@@ -165,10 +168,14 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         JPanel pnlFiltro = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         pnlFiltro.setOpaque(false);
 
+        // Grupo do seletor de carteira: só aparece nas abas Posição e Histórico, as únicas que dependem dele
+        grupoCarteira.setOpaque(false);
+
         JLabel lblFiltrar = new JLabel();
         textos.vincular(lblFiltrar::setText, "gui.rel.filtro.label");
         lblFiltrar.setFont(TemaCores.FONTE_LABEL);
-        pnlFiltro.add(lblFiltrar);
+        lblFiltrar.setForeground(TemaCores.TEXTO_SECUNDARIO);
+        grupoCarteira.add(lblFiltrar);
 
         cmbCarteiraFiltro.setPreferredSize(new Dimension(320, 32));
         cmbCarteiraFiltro.setFont(TemaCores.FONTE_PADRAO);
@@ -181,7 +188,8 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
                 presenter.gerarRelatoriosCarteiraEspecifica(sel.id());
             }
         });
-        pnlFiltro.add(cmbCarteiraFiltro);
+        grupoCarteira.add(cmbCarteiraFiltro);
+        pnlFiltro.add(grupoCarteira);
 
         ModernButton btnRecarregar = new ModernButton("", ModernButton.Variante.NEUTRO);
         textos.vincular(btnRecarregar::setText, "gui.rel.btn.atualizarTodos");
@@ -208,7 +216,11 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         pnlRel1.add(cardGanhoNaoRealizado);
         pnlRel1.add(cardGanhoTotal);
         pnlRel1.add(cardRoi);
-        tabRelatorios.addTab("", pnlRel1);
+        // Cartões no topo, com altura própria, para não esticarem até o rodapé
+        JPanel envoltorioRel1 = new JPanel(new BorderLayout());
+        envoltorioRel1.setOpaque(false);
+        envoltorioRel1.add(pnlRel1, BorderLayout.NORTH);
+        tabRelatorios.addTab("", envoltorioRel1);
         textos.vincular(titulo -> tabRelatorios.setTitleAt(0, titulo), "gui.rel.tab1.titulo");
 
         // 2. Histórico da Carteira
@@ -226,7 +238,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, mensagens));
         tabelaRel2.getColumnModel().getColumn(4).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, mensagens));
-        tabRelatorios.addTab("", new JScrollPane(tabelaRel2));
+        tabRelatorios.addTab("", EstiloTabela.comRolagemSemBorda(tabelaRel2));
         textos.vincular(titulo -> tabRelatorios.setTitleAt(1, titulo), "gui.rel.tab2.titulo");
 
         // 3. Consolidado de Todas as Carteiras
@@ -241,10 +253,10 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         tabelaRel3.getColumnModel().getColumn(4).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, mensagens));
         tabelaRel3.getColumnModel().getColumn(5).setCellRenderer(
-                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, mensagens));
+                new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_SIMPLES, mensagens));
         tabelaRel3.getColumnModel().getColumn(6).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, mensagens));
-        tabRelatorios.addTab("", new JScrollPane(tabelaRel3));
+        tabRelatorios.addTab("", EstiloTabela.comRolagemSemBorda(tabelaRel3));
         textos.vincular(titulo -> tabRelatorios.setTitleAt(2, titulo), "gui.rel.tab3.titulo");
 
         // 4. Desempenho e Lucratividade
@@ -262,7 +274,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA_COM_COR, mensagens));
         tabelaRel4.getColumnModel().getColumn(6).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, mensagens));
-        tabRelatorios.addTab("", new JScrollPane(tabelaRel4));
+        tabRelatorios.addTab("", EstiloTabela.comRolagemSemBorda(tabelaRel4));
         textos.vincular(titulo -> tabRelatorios.setTitleAt(3, titulo), "gui.rel.tab4.titulo");
 
         // 5. Histórico do Oráculo
@@ -280,7 +292,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.PERCENTUAL_COM_COR, mensagens));
         tabelaRel5.getColumnModel().getColumn(4).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.ORIGEM_BADGE, mensagens));
-        tabRelatorios.addTab("", new JScrollPane(tabelaRel5));
+        tabRelatorios.addTab("", EstiloTabela.comRolagemSemBorda(tabelaRel5));
         textos.vincular(titulo -> tabRelatorios.setTitleAt(4, titulo), "gui.rel.tab5.titulo");
 
         // 6 e 7. Listagens de carteiras ordenadas por identificador e por nome do titular
@@ -290,7 +302,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         };
         tabelaRel6 = criarTabelaFormatada(modelRel6);
         textos.vincularColunas(tabelaRel6, colRel6);
-        tabRelatorios.addTab("", new JScrollPane(tabelaRel6));
+        tabRelatorios.addTab("", EstiloTabela.comRolagemSemBorda(tabelaRel6));
         textos.vincular(titulo -> tabRelatorios.setTitleAt(5, titulo), "gui.rel.tab6.titulo");
 
         String[] colRel7 = chaves("gui.rel.tab7.col.", "id", "titular", "corretora");
@@ -299,9 +311,10 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         };
         tabelaRel7 = criarTabelaFormatada(modelRel7);
         textos.vincularColunas(tabelaRel7, colRel7);
-        tabRelatorios.addTab("", new JScrollPane(tabelaRel7));
+        tabRelatorios.addTab("", EstiloTabela.comRolagemSemBorda(tabelaRel7));
         textos.vincular(titulo -> tabRelatorios.setTitleAt(6, titulo), "gui.rel.tab7.titulo");
 
+        tabRelatorios.addChangeListener(e -> grupoCarteira.setVisible(tabRelatorios.getSelectedIndex() <= 1));
         add(tabRelatorios, BorderLayout.CENTER);
     }
 
@@ -316,10 +329,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
 
     private JTable criarTabelaFormatada(DefaultTableModel model) {
         JTable table = new JTable(model);
-        table.setRowHeight(32);
-        table.setFont(TemaCores.FONTE_PADRAO);
-        table.getTableHeader().setFont(TemaCores.FONTE_LABEL);
-        table.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
+        EstiloTabela.aplicar(table);
         return table;
     }
 
@@ -386,7 +396,10 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     }
 
     private static Color corDoResultado(BigDecimal valor) {
-        return valor.signum() >= 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO;
+        if (valor.signum() == 0) {
+            return TemaCores.TEXTO_PRINCIPAL;
+        }
+        return valor.signum() > 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO;
     }
 
     @Override

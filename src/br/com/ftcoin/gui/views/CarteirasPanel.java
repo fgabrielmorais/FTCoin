@@ -28,6 +28,7 @@ import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.presenters.CarteiraPresenter;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
+import br.com.ftcoin.gui.views.components.EstiloTabela;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.contracts.ICarteiraView;
 import br.com.ftcoin.models.Carteira;
@@ -107,11 +108,11 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         JPanel painelBotoesAcao = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         painelBotoesAcao.setOpaque(false);
 
-        ModernButton botaoNovaCarteira = new ModernButton("", ModernButton.Variante.SUCESSO);
+        ModernButton botaoNovaCarteira = new ModernButton("", ModernButton.Variante.PRIMARIA);
         textos.vincular(botaoNovaCarteira::setText, "gui.carteira.btn.novo");
-        ModernButton botaoEditarCarteira = new ModernButton("", ModernButton.Variante.PRIMARIA);
+        ModernButton botaoEditarCarteira = new ModernButton("", ModernButton.Variante.NEUTRO);
         textos.vincular(botaoEditarCarteira::setText, "gui.carteira.btn.editar");
-        ModernButton botaoExcluirCarteira = new ModernButton("", ModernButton.Variante.PERIGO);
+        ModernButton botaoExcluirCarteira = new ModernButton("", ModernButton.Variante.PERIGO_SUAVE);
         textos.vincular(botaoExcluirCarteira::setText, "gui.carteira.btn.excluir");
         ModernButton botaoAtualizarLista = new ModernButton("", ModernButton.Variante.NEUTRO);
         textos.vincular(botaoAtualizarLista::setText, "gui.carteira.btn.atualizar");
@@ -147,21 +148,15 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
 
         tabelaCarteiras = new JTable(modeloTabelaCarteiras);
         textos.vincularColunas(tabelaCarteiras, chavesColunas);
-        tabelaCarteiras.setRowHeight(34);
+        EstiloTabela.aplicar(tabelaCarteiras);
         tabelaCarteiras.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        tabelaCarteiras.setFont(TemaCores.FONTE_PADRAO);
-        tabelaCarteiras.getTableHeader().setFont(TemaCores.FONTE_LABEL);
-        tabelaCarteiras.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
-        tabelaCarteiras.getTableHeader().setForeground(TemaCores.TEXTO_PRINCIPAL);
 
         tabelaCarteiras.getColumnModel().getColumn(3).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, contexto.getMensagens()));
         tabelaCarteiras.getColumnModel().getColumn(4).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
 
-        JScrollPane painelRolagemTabela = new JScrollPane(tabelaCarteiras);
-        painelRolagemTabela.setBorder(BorderFactory.createLineBorder(TemaCores.BORDA_SUAVE));
-        painelRolagemTabela.getViewport().setBackground(TemaCores.SUPERFICIE_CARD);
+        JScrollPane painelRolagemTabela = EstiloTabela.comRolagem(tabelaCarteiras);
 
         add(painelRolagemTabela, BorderLayout.CENTER);
     }
@@ -306,7 +301,7 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
 
         modalFormularioAtivo = new JDialog(janelaMae, tituloModal, true);
         modalFormularioAtivo.setLayout(new BorderLayout());
-        modalFormularioAtivo.setSize(440, 260);
+        modalFormularioAtivo.setSize(520, 300);
         modalFormularioAtivo.setLocationRelativeTo(this);
         modalFormularioAtivo.setResizable(false);
 
@@ -321,15 +316,17 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
 
         JLabel rotuloTitular = new JLabel(mensagens.get("gui.carteira.form.titular"));
         rotuloTitular.setFont(TemaCores.FONTE_LABEL);
+        rotuloTitular.setForeground(TemaCores.TEXTO_SECUNDARIO);
         JTextField campoTextoTitular = new JTextField(existente != null ? existente.getNomeTitular() : "", 20);
         campoTextoTitular.setFont(TemaCores.FONTE_PADRAO);
-        campoTextoTitular.setPreferredSize(new Dimension(280, 32));
+        campoTextoTitular.setPreferredSize(new Dimension(360, 36));
 
         JLabel rotuloCorretora = new JLabel(mensagens.get("gui.carteira.form.corretora"));
         rotuloCorretora.setFont(TemaCores.FONTE_LABEL);
+        rotuloCorretora.setForeground(TemaCores.TEXTO_SECUNDARIO);
         JTextField campoTextoCorretora = new JTextField(existente != null ? existente.getCorretora() : "", 20);
         campoTextoCorretora.setFont(TemaCores.FONTE_PADRAO);
-        campoTextoCorretora.setPreferredSize(new Dimension(280, 32));
+        campoTextoCorretora.setPreferredSize(new Dimension(360, 36));
 
         restricoes.gridy = 0;
         painelFormulario.add(rotuloTitular, restricoes);

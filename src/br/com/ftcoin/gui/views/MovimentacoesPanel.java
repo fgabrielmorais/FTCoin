@@ -31,6 +31,7 @@ import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.presenters.MovimentacaoPresenter;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
+import br.com.ftcoin.gui.views.components.EstiloTabela;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.contracts.IMovimentacaoView;
 import br.com.ftcoin.models.Carteira;
@@ -74,22 +75,22 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     /**
      * Campo de texto para data da operação de compra.
      */
-    private final JTextField campoDataCompra = new JTextField(LocalDate.now().toString(), 12);
+    private final JTextField campoDataCompra = new JTextField(12);
 
     /**
      * Campo de texto para data da operação de venda.
      */
-    private final JTextField campoDataVenda = new JTextField(LocalDate.now().toString(), 12);
+    private final JTextField campoDataVenda = new JTextField(12);
 
     /**
      * Campo de texto para quantidade de moedas a comprar.
      */
-    private final JTextField campoQuantidadeCompra = new JTextField("10.000", 12);
+    private final JTextField campoQuantidadeCompra = new JTextField(12);
 
     /**
      * Campo de texto para quantidade de moedas a vender.
      */
-    private final JTextField campoQuantidadeVenda = new JTextField("5.000", 12);
+    private final JTextField campoQuantidadeVenda = new JTextField(12);
 
     /**
      * Rótulo de exibição da cotação unitária estimada para compra.
@@ -165,6 +166,10 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         this.presenter = new MovimentacaoPresenter(this, cotacaoService, contexto);
         MensagensGui mensagens = contexto.getMensagens();
         this.textos = new TextosTraduzidos(mensagens);
+        // O campo só mostra a data de hoje, no formato da interface
+        String hoje = mensagens.getFormatador().data(LocalDate.now());
+        campoDataCompra.setText(hoje);
+        campoDataVenda.setText(hoje);
 
         setLayout(new BorderLayout(15, 15));
         setBackground(TemaCores.FUNDO_APP);
@@ -218,10 +223,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         tabelaHistoricoOperacoes = new JTable(modeloTabelaHistorico);
         textos.vincularColunas(tabelaHistoricoOperacoes, chavesColunas);
-        tabelaHistoricoOperacoes.setRowHeight(32);
-        tabelaHistoricoOperacoes.setFont(TemaCores.FONTE_PADRAO);
-        tabelaHistoricoOperacoes.getTableHeader().setFont(TemaCores.FONTE_LABEL);
-        tabelaHistoricoOperacoes.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
+        EstiloTabela.aplicar(tabelaHistoricoOperacoes);
 
         tabelaHistoricoOperacoes.getColumnModel().getColumn(2).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, contexto.getMensagens()));
@@ -232,8 +234,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         tabelaHistoricoOperacoes.getColumnModel().getColumn(5).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
 
-        JScrollPane painelRolagemHistorico = new JScrollPane(tabelaHistoricoOperacoes);
-        painelRolagemHistorico.setBorder(BorderFactory.createLineBorder(TemaCores.BORDA_SUAVE));
+        JScrollPane painelRolagemHistorico = EstiloTabela.comRolagem(tabelaHistoricoOperacoes);
         painelRolagemHistorico.setPreferredSize(new Dimension(800, 220));
         painelHistorico.add(painelRolagemHistorico, BorderLayout.CENTER);
 
@@ -261,9 +262,12 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         GridBagConstraints restricoes = new GridBagConstraints();
         restricoes.insets = new Insets(8, 8, 8, 8);
         restricoes.fill = GridBagConstraints.HORIZONTAL;
+        restricoes.anchor = GridBagConstraints.WEST;
 
         JComboBox<ItemCarteiraCombo> comboCarteira = ehCompra ? comboCarteiraCompra : comboCarteiraVenda;
         JTextField campoData = ehCompra ? campoDataCompra : campoDataVenda;
+        // A operação é sempre registrada na data de hoje, então o campo só mostra a data
+        campoData.setEditable(false);
         JTextField campoQuantidade = ehCompra ? campoQuantidadeCompra : campoQuantidadeVenda;
         JLabel rotuloCotacao = ehCompra ? rotuloCotacaoEstimadaCompra : rotuloCotacaoEstimadaVenda;
         JLabel rotuloTotal = ehCompra ? rotuloTotalEstimadoCompra : rotuloTotalEstimadoVenda;
@@ -298,6 +302,8 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         restricoes.gridx = 2; restricoes.gridy = 1;
         painelForm.add(rotulo("gui.mov.label.quantidadeFTC"), restricoes);
         restricoes.gridx = 3; restricoes.gridy = 1;
+        // A quantidade começa vazia; a dica explica o formato aceito
+        textos.vincular(campoQuantidade::setToolTipText, "gui.mov.dica.quantidade");
         painelForm.add(campoQuantidade, restricoes);
 
         // Linha 2: Cotação e Total Estimado
@@ -315,7 +321,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         restricoes.gridx = 3; restricoes.gridy = 3;
         ModernButton botaoConfirmar = new ModernButton(
                 "",
-                ehCompra ? ModernButton.Variante.SUCESSO : ModernButton.Variante.PRIMARIA
+                ehCompra ? ModernButton.Variante.SUCESSO : ModernButton.Variante.ALERTA
         );
         textos.vincular(botaoConfirmar::setText, ehCompra ? "gui.mov.btn.confirmarCompra" : "gui.mov.btn.confirmarVenda");
         botaoConfirmar.setPreferredSize(new Dimension(230, 38));
@@ -327,7 +333,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
             }
             LocalDate dataOperacao;
             try {
-                dataOperacao = LocalDate.parse(campoData.getText().trim());
+                dataOperacao = GuiFormatador.lerData(campoData.getText());
             } catch (DateTimeParseException ex) {
                 exibirMensagemErro(mensagens.get("gui.mov.erro.dataInvalida"));
                 return;
@@ -343,6 +349,8 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     // Rótulo de formulário cujo texto acompanha o idioma ativo
     private JLabel rotulo(String chave) {
         JLabel rotulo = new JLabel();
+        rotulo.setFont(TemaCores.FONTE_LABEL);
+        rotulo.setForeground(TemaCores.TEXTO_SECUNDARIO);
         textos.vincular(rotulo::setText, chave);
         return rotulo;
     }
@@ -394,7 +402,7 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
      */
     private LocalDate converterTextoEmData(String texto) {
         try {
-            return LocalDate.parse(texto.trim());
+            return GuiFormatador.lerData(texto);
         } catch (Exception e) {
             return LocalDate.now();
         }
@@ -465,8 +473,10 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         boolean ehCompra = (tipo == TipoOperacao.COMPRA);
         JLabel rotuloCotacao = ehCompra ? rotuloCotacaoEstimadaCompra : rotuloCotacaoEstimadaVenda;
         JLabel rotuloTotal = ehCompra ? rotuloTotalEstimadoCompra : rotuloTotalEstimadoVenda;
-        rotuloCotacao.setText(formatador.moeda(cotacao));
-        rotuloTotal.setText(formatador.moeda(valorTotal));
+        // Sem quantidade informada não há estimativa: mostra um traço em vez de R$ 0,00
+        boolean semEstimativa = cotacao.signum() == 0;
+        rotuloCotacao.setText(semEstimativa ? "-" : formatador.moeda(cotacao));
+        rotuloTotal.setText(semEstimativa ? "-" : formatador.moeda(valorTotal));
         rotuloCotacao.setToolTipText(null);
     }
 
@@ -510,11 +520,11 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     }
 
     /**
-     * Restaura os campos de quantidade dos formulários para seus valores padrão.
+     * Esvazia os campos de quantidade dos formulários.
      */
     @Override
     public void limparFormulario() {
-        campoQuantidadeCompra.setText("10.000");
-        campoQuantidadeVenda.setText("5.000");
+        campoQuantidadeCompra.setText("");
+        campoQuantidadeVenda.setText("");
     }
 }

@@ -24,6 +24,7 @@ import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.presenters.DashboardPresenter;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
+import br.com.ftcoin.gui.views.components.EstiloTabela;
 import br.com.ftcoin.gui.views.components.ModernButton;
 import br.com.ftcoin.gui.views.components.ModernCard;
 import br.com.ftcoin.gui.views.contracts.IDashboardView;
@@ -154,7 +155,7 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         textos.vincular(cardCotacaoHoje::setTitulo, "gui.dash.card.cotacaoHoje");
         cardCarteirasAtivas = new ModernCard(null, "0", TemaCores.ACCENT);
         textos.vincular(cardCarteirasAtivas::setTitulo, "gui.dash.card.carteirasAtivas");
-        cardResultadoTotal = new ModernCard(null, formatadorInicial.moeda(BigDecimal.ZERO), TemaCores.POSITIVO_LUCRO);
+        cardResultadoTotal = new ModernCard(null, formatadorInicial.moeda(BigDecimal.ZERO), TemaCores.TEXTO_PRINCIPAL);
         textos.vincular(cardResultadoTotal::setTitulo, "gui.dash.card.resultadoTotal");
 
         // Topo: Título da tela e Ações Rápidas
@@ -170,11 +171,11 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         JPanel painelAcoesRapidas = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         painelAcoesRapidas.setOpaque(false);
 
-        botaoNovaCarteira = new ModernButton("", ModernButton.Variante.SUCESSO);
+        botaoNovaCarteira = new ModernButton("", ModernButton.Variante.PRIMARIA);
         textos.vincular(botaoNovaCarteira::setText, "gui.dash.btn.novaCarteira");
-        botaoComprarMoedas = new ModernButton("", ModernButton.Variante.PRIMARIA);
+        botaoComprarMoedas = new ModernButton("", ModernButton.Variante.SUCESSO);
         textos.vincular(botaoComprarMoedas::setText, "gui.dash.btn.comprarFTC");
-        botaoVenderMoedas = new ModernButton("", ModernButton.Variante.NEUTRO);
+        botaoVenderMoedas = new ModernButton("", ModernButton.Variante.ALERTA);
         textos.vincular(botaoVenderMoedas::setText, "gui.dash.btn.venderFTC");
         botaoAbrirRelatorios = new ModernButton("", ModernButton.Variante.NEUTRO);
         textos.vincular(botaoAbrirRelatorios::setText, "gui.dash.btn.relatorios");
@@ -234,10 +235,7 @@ public class DashboardPanel extends JPanel implements IDashboardView {
 
         tabelaFeedOperacoes = new JTable(modeloTabelaFeed);
         textos.vincularColunas(tabelaFeedOperacoes, chavesColunas);
-        tabelaFeedOperacoes.setRowHeight(32);
-        tabelaFeedOperacoes.setFont(TemaCores.FONTE_PADRAO);
-        tabelaFeedOperacoes.getTableHeader().setFont(TemaCores.FONTE_LABEL);
-        tabelaFeedOperacoes.getTableHeader().setBackground(TemaCores.SUPERFICIE_HEADER);
+        EstiloTabela.aplicar(tabelaFeedOperacoes);
 
         tabelaFeedOperacoes.getColumnModel().getColumn(2).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, contexto.getMensagens()));
@@ -248,8 +246,7 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         tabelaFeedOperacoes.getColumnModel().getColumn(5).setCellRenderer(
                 new CurrencyTableCellRenderer(CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, contexto.getMensagens()));
 
-        JScrollPane painelRolagemFeed = new JScrollPane(tabelaFeedOperacoes);
-        painelRolagemFeed.setBorder(BorderFactory.createLineBorder(TemaCores.BORDA_SUAVE));
+        JScrollPane painelRolagemFeed = EstiloTabela.comRolagem(tabelaFeedOperacoes);
         painelFeedRecente.add(painelRolagemFeed, BorderLayout.CENTER);
 
         painelCorpoCentral.add(painelFeedRecente, BorderLayout.CENTER);
@@ -292,7 +289,8 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         cardCarteirasAtivas.setValor(String.valueOf(quantidadeCarteiras), TemaCores.ACCENT);
         // Lucro em verde e prejuízo em vermelho
         cardResultadoTotal.setValor(formatador.moeda(ganhoTotal),
-                ganhoTotal.signum() >= 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO);
+                ganhoTotal.signum() == 0 ? TemaCores.TEXTO_PRINCIPAL
+                        : (ganhoTotal.signum() > 0 ? TemaCores.POSITIVO_LUCRO : TemaCores.NEGATIVO_PREJUIZO));
     }
 
     /**

@@ -13,16 +13,16 @@ import br.com.ftcoin.gui.common.TemaCores;
 
 /**
  * <p>
- * Componente visual de botão com acabamento moderno, cantos arredondados e microinteração hover.
+ * Botão de visual minimalista, com cantos suaves e efeito de passagem do mouse.
  * </p>
  *
  * <p>
- * Estende {@link JButton} para fornecer estilização consistente conforme a paleta de cores
- * do sistema, dispensando bordas quadradas nativas e aplicando antialiasing gráfico.
+ * A cor indica o tipo da ação: azul-marinho para a ação principal, verde para comprar, âmbar para vender,
+ * vermelho para sair ou excluir, e só contorno ou texto para as ações secundárias.
  * </p>
  *
  * @author Grupo B.05
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2026-10-20
  */
 public class ModernButton extends JButton {
@@ -30,112 +30,91 @@ public class ModernButton extends JButton {
     private static final long serialVersionUID = 1L;
 
     /**
-     * <p>
-     * Enumeração das variantes semânticas de estilo visual do botão moderno.
-     * </p>
-     *
-     * @author Grupo B.05
-     * @version 1.0.0
-     * @since 2026-10-20
+     * Estilos visuais disponíveis para o botão.
      */
     public enum Variante {
 
-        /**
-         * Estilo primário com fundo azul-marinho para ações de destaque padrão.
-         */
-        PRIMARIA(TemaCores.PRIMARIA, TemaCores.PRIMARIA_HOVER, Color.WHITE),
+        /** Ação principal da tela: fundo azul-marinho e texto branco. */
+        PRIMARIA(TemaCores.PRIMARIA, TemaCores.PRIMARIA_HOVER, Color.WHITE, null),
 
-        /**
-         * Estilo positivo com fundo verde esmeralda para confirmações e inclusões.
-         */
-        SUCESSO(TemaCores.POSITIVO_LUCRO, new Color(13, 126, 78), Color.WHITE),
+        /** Ação positiva, como comprar: fundo verde e texto branco. */
+        SUCESSO(TemaCores.POSITIVO_LUCRO, new Color(13, 126, 78), Color.WHITE, null),
 
-        /**
-         * Estilo de alerta com fundo vermelho carmesim para exclusões e cancelamentos.
-         */
-        PERIGO(TemaCores.NEGATIVO_PREJUIZO, new Color(185, 28, 28), Color.WHITE),
+        /** Ação de atenção, como vender: fundo âmbar e texto branco. */
+        ALERTA(TemaCores.ALERTA, TemaCores.ALERTA_HOVER, Color.WHITE, null),
 
-        /**
-         * Estilo neutro com fundo cinza suave para botões secundários e filtros.
-         */
-        NEUTRO(new Color(243, 244, 246), new Color(229, 231, 235), TemaCores.TEXTO_PRINCIPAL);
+        /** Ação que encerra ou apaga, como sair: fundo vermelho e texto branco. */
+        PERIGO(TemaCores.NEGATIVO_PREJUIZO, new Color(185, 28, 28), Color.WHITE, null),
 
-        /**
-         * Cor de preenchimento padrão em repouso.
-         */
+        /** Ação destrutiva secundária, como excluir: fundo branco, texto e contorno vermelhos. */
+        PERIGO_SUAVE(Color.WHITE, TemaCores.NEGATIVO_FUNDO, TemaCores.NEGATIVO_PREJUIZO, TemaCores.NEGATIVO_PREJUIZO),
+
+        /** Ação secundária: fundo branco, contorno cinza e texto escuro. */
+        NEUTRO(Color.WHITE, TemaCores.SUPERFICIE_HEADER, TemaCores.TEXTO_PRINCIPAL, TemaCores.BORDA_DIVISOR),
+
+        /** Menu de navegação: sem fundo nem contorno, só texto; o item ativo recebe um sublinhado. */
+        NAVEGACAO(null, TemaCores.BORDA_SUAVE, TemaCores.TEXTO_SECUNDARIO, null);
+
         final Color fundoPadrao;
 
-        /**
-         * Cor de preenchimento acionada sob o ponteiro do mouse (hover).
-         */
         final Color fundoHover;
 
-        /**
-         * Cor da tipografia textual.
-         */
         final Color texto;
 
-        /**
-         * Construtor da variante semântica do botão.
-         *
-         * @param fundoPadrao Cor de repouso
-         * @param fundoHover  Cor de sobreposição do cursor
-         * @param texto       Cor do texto
-         */
-        Variante(Color fundoPadrao, Color fundoHover, Color texto) {
+        final Color contorno;
+
+        Variante(Color fundoPadrao, Color fundoHover, Color texto, Color contorno) {
             this.fundoPadrao = fundoPadrao;
             this.fundoHover = fundoHover;
             this.texto = texto;
+            this.contorno = contorno;
         }
 
         /**
-         * Retorna a cor de fundo padrão da variante.
+         * Devolve a cor de fundo do botão em repouso.
          *
-         * @return A cor {@code Color} de repouso
+         * @return a cor de fundo, ou {@code null} se o botão não tem fundo
          */
         public Color getFundoPadrao() {
             return fundoPadrao;
         }
 
         /**
-         * Retorna a cor de fundo para o estado de hover.
+         * Devolve a cor de fundo com o mouse sobre o botão.
          *
-         * @return A cor {@code Color} ativada no foco
+         * @return a cor de fundo ao passar o mouse
          */
         public Color getFundoHover() {
             return fundoHover;
         }
 
         /**
-         * Retorna a cor do texto para contraste adequado.
+         * Devolve a cor do texto.
          *
-         * @return A cor {@code Color} do texto
+         * @return a cor do texto
          */
         public Color getTexto() {
             return texto;
         }
     }
 
-    /**
-     * Variante de estilização visual associada a este botão.
-     */
+    /** Estilo visual do botão. */
     private final Variante variante;
 
-    /**
-     * Estado que indica se o cursor do mouse está atualmente posicionado sobre o botão.
-     */
+    /** Indica se o mouse está sobre o botão. */
     private boolean mouseOver = false;
 
-    /**
-     * Raio de curvatura dos cantos arredondados em pixels.
-     */
-    private int raioArredondamento = 10;
+    /** Indica se é o item ativo do menu de navegação. */
+    private boolean ativo = false;
+
+    /** Raio dos cantos, em pixels. */
+    private int raioArredondamento = 8;
 
     /**
-     * Constrói um botão moderno com o texto informado e a variante visual escolhida.
+     * Cria o botão com o texto e o estilo informados.
      *
-     * @param texto    Rótulo textual a ser exibido
-     * @param variante Variante semântica de cores; se {@code null}, adota {@code Variante.PRIMARIA}
+     * @param texto texto exibido no botão
+     * @param variante estilo visual; {@code null} equivale a {@link Variante#PRIMARIA}
      */
     public ModernButton(String texto, Variante variante) {
         super(texto);
@@ -145,7 +124,7 @@ public class ModernButton extends JButton {
         setForeground(this.variante.texto);
         setFocusPainted(false);
         setContentAreaFilled(false);
-        setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        setBorder(BorderFactory.createEmptyBorder(9, 18, 9, 18));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         addMouseListener(new MouseAdapter() {
@@ -164,47 +143,67 @@ public class ModernButton extends JButton {
     }
 
     /**
-     * Retorna a variante de estilo aplicada a este botão.
+     * Devolve o estilo do botão.
      *
-     * @return A {@link Variante} em uso
+     * @return a variante
      */
     public Variante getVariante() {
         return variante;
     }
 
     /**
-     * Retorna o raio de arredondamento das bordas em pixels.
+     * Marca o botão como o item ativo do menu de navegação: texto escuro e sublinhado.
      *
-     * @return O valor do raio {@code int}
+     * @param ativo {@code true} para o item da tela que está aberta
+     */
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
+        setForeground(ativo ? TemaCores.ACCENT : variante.texto);
+        repaint();
+    }
+
+    /**
+     * Devolve o raio dos cantos.
+     *
+     * @return o raio, em pixels
      */
     public int getRaioArredondamento() {
         return raioArredondamento;
     }
 
     /**
-     * Define o raio de arredondamento das bordas do botão.
+     * Define o raio dos cantos.
      *
-     * @param raioArredondamento Novo raio em pixels
+     * @param raioArredondamento raio, em pixels
      */
     public void setRaioArredondamento(int raioArredondamento) {
         this.raioArredondamento = raioArredondamento;
         repaint();
     }
 
-    /**
-     * Renderiza o fundo arredondado e efeitos de transição cromática suave.
-     *
-     * @param g Contexto gráfico do componente
-     */
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Renderiza fundo dinâmico conforme estado do cursor
+        // Fundo: muda ao passar o mouse; o menu de navegação só tem fundo no hover
         Color corFundo = mouseOver ? variante.fundoHover : variante.fundoPadrao;
-        g2.setColor(corFundo);
-        g2.fillRoundRect(0, 0, getWidth(), getHeight(), raioArredondamento, raioArredondamento);
+        if (corFundo != null && !(variante == Variante.NAVEGACAO && ativo)) {
+            g2.setColor(corFundo);
+            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, raioArredondamento, raioArredondamento);
+        }
+
+        // Contorno fino nos botões secundários
+        if (variante.contorno != null) {
+            g2.setColor(variante.contorno);
+            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, raioArredondamento, raioArredondamento);
+        }
+
+        // Sublinhado do item ativo do menu
+        if (variante == Variante.NAVEGACAO && ativo) {
+            g2.setColor(TemaCores.ACCENT);
+            g2.fillRect(14, getHeight() - 3, getWidth() - 28, 2);
+        }
 
         g2.dispose();
         super.paintComponent(g);

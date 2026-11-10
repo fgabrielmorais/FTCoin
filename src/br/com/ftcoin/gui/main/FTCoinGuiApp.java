@@ -1,7 +1,5 @@
 package br.com.ftcoin.gui.main;
 
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.logging.Level;
@@ -17,6 +15,7 @@ import br.com.ftcoin.services.MovimentacaoService;
 import br.com.ftcoin.daos.TipoPersistencia;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.MensagensGui;
+import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.views.MainFrame;
 import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.TipoOperacao;
@@ -63,7 +62,6 @@ public class FTCoinGuiApp {
                 carregarMassaDadosDemonstracao(contexto);
 
                 MainFrame janelaPrincipal = new MainFrame(contexto);
-                registrarEncerramento(janelaPrincipal, contexto);
                 janelaPrincipal.setVisible(true);
 
                 LOG.log(Level.INFO, "FTCoin Studio pronto (persistência={0}, idioma={1})", new Object[] {
@@ -76,22 +74,6 @@ public class FTCoinGuiApp {
     }
 
     /**
-     * Registra o encerramento da aplicação quando a janela principal é fechada.
-     *
-     * @param janelaPrincipal Janela cujo fechamento encerra a aplicação
-     * @param contexto Contexto cuja persistência é fechada ao sair
-     */
-    private static void registrarEncerramento(MainFrame janelaPrincipal, ContextoAplicacao contexto) {
-        janelaPrincipal.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent evento) {
-                LOG.info("Encerrando FTCoin Studio");
-                contexto.encerrar();
-            }
-        });
-    }
-
-    /**
      * Configura propriedades de renderização visual e temas do sistema operacional.
      */
     private static void configurarAparenciaVisual() {
@@ -99,6 +81,7 @@ public class FTCoinGuiApp {
             System.setProperty("awt.useSystemAAFontSettings", "on");
             System.setProperty("swing.aatext", "true");
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            TemaCores.aplicarPadroesSwing();
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Tema visual do sistema indisponível; usando o tema padrão do Swing", e);
         }

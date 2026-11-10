@@ -2,6 +2,7 @@ package br.com.ftcoin.gui.views.components;
 
 import java.awt.Component;
 import java.math.BigDecimal;
+import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
@@ -61,6 +62,9 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
          */
         PERCENTUAL_COM_COR,
 
+        /** Percentual sem sinal nem cor, como a participação no portfólio. */
+        PERCENTUAL_SIMPLES,
+
         /**
          * Formatação da fonte de cotação com badge e ícones característicos.
          */
@@ -91,6 +95,17 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
         this.mensagens = mensagens;
     }
 
+    /**
+     * Devolve o alinhamento do texto deste renderizador, usado também pelo cabeçalho da coluna.
+     *
+     * @return {@code SwingConstants.RIGHT} para valores e quantidades, {@code SwingConstants.CENTER} para
+     *         origem e tipo de operação
+     */
+    public int getAlinhamento() {
+        return (modo == ModoRenderizacao.ORIGEM_BADGE || modo == ModoRenderizacao.TIPO_OPERACAO)
+                ? SwingConstants.CENTER : SwingConstants.RIGHT;
+    }
+
     // Consultado a cada célula, para acompanhar a troca de idioma em tempo de execução
     private GuiFormatador obterFormatadorAtivo() {
         return mensagens.getFormatador();
@@ -113,9 +128,10 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
     ) {
         JLabel rotulo = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-        // Aplica padrão zebrado suave em linhas não selecionadas
+        // Respiro interno; o fundo fica branco (minimalismo: sem zebra)
+        rotulo.setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 14));
         if (!isSelected) {
-            rotulo.setBackground(row % 2 == 0 ? TemaCores.SUPERFICIE_CARD : TemaCores.SUPERFICIE_HEADER);
+            rotulo.setBackground(TemaCores.SUPERFICIE_CARD);
         }
 
         rotulo.setFont(TemaCores.FONTE_PADRAO);
@@ -149,7 +165,7 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
                         } else if (bd.signum() < 0) {
                             rotulo.setForeground(TemaCores.NEGATIVO_PREJUIZO);
                         } else {
-                            rotulo.setForeground(TemaCores.TEXTO_SECUNDARIO);
+                            rotulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
                         }
                     }
                 } else {
@@ -174,9 +190,17 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
                         } else if (bd.signum() < 0) {
                             rotulo.setForeground(TemaCores.NEGATIVO_PREJUIZO);
                         } else {
-                            rotulo.setForeground(TemaCores.TEXTO_SECUNDARIO);
+                            rotulo.setForeground(TemaCores.TEXTO_PRINCIPAL);
                         }
                     }
+                } else {
+                    rotulo.setText(value.toString());
+                }
+            }
+            case PERCENTUAL_SIMPLES -> {
+                rotulo.setHorizontalAlignment(SwingConstants.RIGHT);
+                if (value instanceof BigDecimal bd) {
+                    rotulo.setText(fmt != null ? fmt.percentualSimples(bd) : value.toString());
                 } else {
                     rotulo.setText(value.toString());
                 }
@@ -184,7 +208,7 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
             case ORIGEM_BADGE -> {
                 rotulo.setHorizontalAlignment(SwingConstants.CENTER);
                 if (value instanceof OrigemCotacao origem) {
-                    rotulo.setText(origem.getIcone() + " " + origem.getDescricaoLocalizada(mensagens));
+                    rotulo.setText(origem.getDescricaoLocalizada(mensagens));
                     if (!isSelected) {
                         rotulo.setForeground(origem.getCorTexto());
                     }
@@ -197,15 +221,15 @@ public class CurrencyTableCellRenderer extends DefaultTableCellRenderer {
                 if (value instanceof TipoOperacao tipo) {
                     if (tipo == TipoOperacao.COMPRA) {
                         String textoCompra = mensagens.get("operacao.compra").toUpperCase();
-                        rotulo.setText("🛒 " + textoCompra);
+                        rotulo.setText(textoCompra);
                         if (!isSelected) {
                             rotulo.setForeground(TemaCores.POSITIVO_LUCRO);
                         }
                     } else {
                         String textoVenda = mensagens.get("operacao.venda").toUpperCase();
-                        rotulo.setText("💰 " + textoVenda);
+                        rotulo.setText(textoVenda);
                         if (!isSelected) {
-                            rotulo.setForeground(TemaCores.PRIMARIA);
+                            rotulo.setForeground(TemaCores.ALERTA);
                         }
                     }
                 } else {
