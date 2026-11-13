@@ -105,7 +105,25 @@ No Linux ou macOS, troque o separador do classpath por `:` (`target/classes:targ
 
 Também é possível importar o projeto na IDE como **projeto Maven** e executar a classe `br.com.ftcoin.gui.main.FTCoinGuiApp`.
 
-A interface inicia no modo memória, com carteiras e operações de demonstração, e roda sem banco de dados. O seletor **Banco** da barra superior troca para MariaDB durante a execução; a troca não copia os dados de um modo para o outro.
+A interface inicia no modo memória, sem carteiras cadastradas, e roda sem banco de dados.
+
+#### Argumentos de partida
+
+| Argumento | Valores | Padrão |
+|---|---|---|
+| `--lang=` | `pt`, `en` ou `es` (também `pt_BR`, `en_US`, `es_ES`) | idioma do sistema, se for pt, en ou es; senão pt |
+| `--db=` | `memory` ou `mariadb` | `memory` |
+| `--demo` | carrega carteiras e operações de exemplo (datas de 2026) | desligado |
+
+Exemplos:
+
+```powershell
+.\iniciar_interface.bat --lang=es
+.\iniciar_interface.bat --lang=en --demo
+java -cp "target\classes;target\dependency\*" br.com.ftcoin.gui.main.FTCoinGuiApp --db=mariadb
+```
+
+Argumento desconhecido ou valor inválido imprime a linha de uso e encerra com código 2, sem abrir a janela. Se `--db=mariadb` não conectar, a interface avisa e abre em memória. O seletor **Banco** da barra superior troca para MariaDB durante a execução; a troca não copia os dados de um modo para o outro.
 
 ### Modo memória
 
