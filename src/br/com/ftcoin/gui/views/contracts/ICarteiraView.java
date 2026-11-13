@@ -13,7 +13,8 @@ import br.com.ftcoin.models.Posicao;
  *
  * <p>
  * Define as operações de renderização de carteiras cadastradas, abertura e fechamento de diálogos modais,
- * recuperação da linha selecionada na tabela e disparo de notificações ao usuário.
+ * recuperação da linha selecionada na tabela, consulta de uma carteira, confirmação de exclusão e disparo
+ * de notificações ao usuário.
  * </p>
  *
  * @author Grupo B.05
@@ -50,6 +51,22 @@ public interface ICarteiraView {
      * @return a carteira selecionada, ou {@code null} se nenhuma linha estiver selecionada
      */
     Carteira getCarteiraSelecionada();
+
+    /**
+     * Mostra os dados de uma carteira consultada.
+     *
+     * @param carteira carteira consultada
+     * @param posicao posição da carteira, com o saldo
+     */
+    void exibirDetalhesCarteira(Carteira carteira, Posicao posicao);
+
+    /**
+     * Pede ao usuário que confirme a exclusão de uma carteira.
+     *
+     * @param carteira carteira a excluir
+     * @return {@code true} se o usuário confirmou
+     */
+    boolean confirmarExclusao(Carteira carteira);
 
     /**
      * Abre o formulário vazio de inclusão de carteira.

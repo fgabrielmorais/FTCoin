@@ -110,13 +110,12 @@ Estado e utilitários compartilhados pela interface.
 - **`IdiomaSelector`** (enum): opções do seletor de idioma da barra superior.
 - **`ModoNavegacao`** (enum): as telas principais e a chave do texto do botão de cada uma.
 - **`OrigemCotacao`** (enum): procedência de uma cotação exibida, Oráculo ou cache.
-- **`OperacaoResultado`** (interface selada): modela o resultado de uma operação como sucesso ou falha. Exemplo de recursos do Java moderno (interface selada e registros); nenhuma tela a usa hoje.
 
 ## Pacote `br.com.ftcoin.gui.presenters`
 
 Presenters do padrão MVP. Tratam os eventos da tela, validam a entrada e decidem o que a view mostra.
 
-- **`CarteiraPresenter`**: valida e executa a inclusão, a edição e a exclusão de carteiras.
+- **`CarteiraPresenter`**: valida e executa a consulta, a inclusão, a edição e a exclusão de carteiras, por ID ou pela linha selecionada, recusando IDs que não existem.
 - **`MovimentacaoPresenter`**: valida a data e a quantidade digitadas, calcula a estimativa de valor e registra compras e
   vendas.
 - **`CotacaoPresenter`**: dispara a consulta de cotação por data e mostra o resultado, a origem e os erros.
@@ -136,7 +135,7 @@ Telas Swing (as views do MVP). Só exibem dados e repassam eventos ao presenter.
 
 - **`MainFrame`**: janela principal, com a navegação, os seletores de idioma e de banco, a barra de status e as telas.
 - **`DashboardPanel`**: painel inicial, com indicadores, atalhos e as últimas operações.
-- **`CarteirasPanel`**: lista de carteiras e os diálogos de criação e edição.
+- **`CarteirasPanel`**: lista de carteiras, campo de ID para consultar, editar ou excluir, e os diálogos de criação, edição, consulta e confirmação de exclusão.
 - **`MovimentacoesPanel`**: formulários de compra e venda, com estimativa de valor, e o histórico geral.
 - **`CotacaoPanel`**: consulta de cotação por data, com a origem da resposta e o histórico recente.
 - **`RelatoriosPanel`**: relatórios em tabelas, com destaque de cor para lucro e prejuízo, e a impressão.

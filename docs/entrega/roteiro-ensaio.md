@@ -23,8 +23,8 @@ Preparação, antes de gravar:
    ```
 
    Resultado esperado: sem nenhum aviso. Apague o `fontes.txt` depois (ele não deve ir para o ZIP).
-2. Abrir `target/site/apidocs/index.html`. Mostrar a página inicial e a lista de todas as classes (73 arquivos de código:
-   72 tipos mais o `module-info`), percorrendo os pacotes `models`, `services`, `daos`, `network`, `config` e `gui`.
+2. Abrir `target/site/apidocs/index.html`. Mostrar a página inicial e a lista de todas as classes (72 arquivos de código:
+   71 tipos mais o `module-info`), percorrendo os pacotes `models`, `services`, `daos`, `network`, `config` e `gui`.
 3. Abrir os detalhes de duas ou três classes (sugestão: `Posicao`, `OraculoDAOCache`, `MovimentacaoService`) e de uma
    interface (`ICarteiraView`, em `gui.views.contracts`).
 
@@ -41,7 +41,7 @@ Preparação, antes de gravar:
 2. Abrir alguns testes como exemplo: `PlanilhaApuracaoTest` (compara o custo médio com a planilha oficial),
    `CenarioRoteiroTest` (executa o roteiro 3.11 em código) e `OraculoDAOCacheTest` (descarte LRU).
 3. Gerar e abrir a cobertura: `mvn -B clean test`, depois `target/site/jacoco/index.html`. Cobertura de linhas por
-   pacote: `models` 92,8%, `services` 85,6%, `daos` 45,2%, `network` 100%. Explicar que `daos` fica abaixo porque as classes
+   pacote: `models` 92,8%, `services` 89,0%, `daos` 51,8%, `network` 100%. Explicar que `daos` fica abaixo porque as classes
    de MariaDB exigem um banco, e que `gui.views` (telas Swing) não tem teste automatizado.
 
 ## 3.4. Cache de cotações
@@ -68,7 +68,7 @@ essa ausência de avisos.
 mvn -B clean test
 ```
 
-Resultado esperado: `Tests run: 114, Failures: 0, Errors: 0` e `BUILD SUCCESS`. Mostrar o resumo por classe e a geração do
+Resultado esperado: `Tests run: 122, Failures: 0, Errors: 0` e `BUILD SUCCESS`. Mostrar o resumo por classe e a geração do
 relatório JaCoCo. Os logs `INFO` e `WARNING` durante os testes (por exemplo, "Exclusão ignorada: carteira 99") são
 esperados.
 
@@ -96,12 +96,14 @@ código 2, sem abrir janela.
 
 1. Percorrer todos os botões e abas da tabela acima, conferindo que não sobra nenhum texto em outro idioma.
 2. Ajuda e créditos: botões **Ajuda** e **Sobre** (Help/About, Ayuda/Acerca de).
-3. Operação inválida no cadastro de carteiras. Na interface não há campo para digitar o ID de uma carteira, então
-   "excluir carteira inexistente" não é possível pela tela (ver a divergência no fim deste roteiro). Use uma operação
-   inválida equivalente: **Nova carteira** com titular de 1 ou 2 letras. Mensagem esperada:
-   - pt: "O titular deve ter entre 3 e 100 caracteres."
-   - en: "Holder name must have between 3 and 100 characters."
-   - es: "El nombre del titular debe tener entre 3 y 100 caracteres."
+3. Operação inválida no cadastro de carteiras: na tela **Carteiras**, digitar no campo de ID um número que não existe
+   (por exemplo, `99`) e clicar em **Excluir**. Mensagem esperada:
+   - pt: "Nenhuma carteira encontrada com o ID 99."
+   - en: "No wallet found with ID 99."
+   - es: "No se ha encontrado ninguna cartera con el ID 99."
+
+   Alternativa: **Nova carteira** com titular de 1 ou 2 letras ("O titular deve ter entre 3 e 100 caracteres." /
+   "Holder name must have between 3 and 100 characters." / "El nombre del titular debe tener entre 3 y 100 caracteres.").
 4. Data inválida: na tela **Cotação**, digitar `abc` no lugar da data e clicar em Consultar (Query / Consultar):
    - pt: "Data inválida. Use o formato DD/MM/AAAA."
    - en: "Invalid date. Please use DD/MM/YYYY format."
@@ -125,15 +127,16 @@ Iniciar sem `--demo`: `java -cp "target\classes;target\dependency\*" br.com.ftco
    lista também está vazia.
 2. Cadastrar duas carteiras em **Nova carteira** (os IDs saem 1 e 2). Pausar o vídeo e cadastrar mais oito (IDs 3 a 10).
 3. Retomar. Relatórios, **Por identificador**: IDs 1 a 10 em ordem. **Por titular**: ordem alfabética do titular.
-4. Voltar a **Carteiras** e consultar duas carteiras (selecionar a linha e mostrar os dados). Editar duas (**Editar
-   carteira**), por exemplo as de ID 2 e 7. Relatório **Por identificador**: os nomes novos aparecem.
-5. Excluir as carteiras 5 e 10 (**Excluir**, confirmar). Mensagem: "Carteira 5 excluída com sucesso!".
-6. Efeito das exclusões: as linhas 5 e 10 não existem mais na tabela de **Carteiras**, e os relatórios **Por
-   identificador** e **Por titular** mostram só 8 carteiras (IDs 1, 2, 3, 4, 6, 7, 8, 9). Ver a divergência abaixo sobre
-   tentar consultar ou editar uma carteira excluída.
+4. Voltar a **Carteiras** e consultar duas carteiras: digitar o ID no campo e clicar em **Consultar** (abre uma janela com
+   ID, titular, corretora e saldo). Editar duas (digitar o ID, por exemplo 2 e 7, e clicar em **Editar carteira**).
+   Relatório **Por identificador**: os nomes novos aparecem.
+5. Excluir as carteiras 5 e 10: digitar o ID e clicar em **Excluir**, confirmando. Mensagem: "Carteira 5 excluída com
+   sucesso!".
+6. Efeito das exclusões: digitar 5 (ou 10) no campo de ID e clicar em **Consultar** ou em **Editar carteira**. A tela mostra
+   que a carteira não existe mais. Depois, os relatórios **Por identificador** e **Por titular** mostram só 8 carteiras
+   (IDs 1, 2, 3, 4, 6, 7, 8, 9).
 
-Resultado conferido no ensaio automático: a consulta, a edição e uma segunda exclusão das carteiras 5 e 10 dão
-`erro.carteira.naoEncontrada` nos três idiomas:
+Mensagem de carteira não encontrada (conferida no ensaio automático e no teste do presenter):
 
 - pt: "Nenhuma carteira encontrada com o ID 5."
 - en: "No wallet found with ID 5."
@@ -234,10 +237,7 @@ Clicar em **Sair** e confirmar. O programa fecha as conexões e encerra.
 1. **31/12/2025 tem cotação.** O servidor real tem cotações desde 01/01/2009. A data 31/12/2025 devolve valor (235,31), e
    a tela não mostra mensagem de erro. Se o roteiro esperava "sem cotação" para 31/12/2025, essa expectativa não se
    cumpre com o servidor real. O oráculo simulado foi alinhado ao servidor (sem cotação antes de 01/01/2009).
-2. **Excluir, consultar ou editar carteira inexistente não é possível pela tela.** A interface trabalha com a linha
-   selecionada na tabela de carteiras; não há campo para digitar o ID. Depois da exclusão, a carteira simplesmente some da
-   lista. A mensagem `erro.carteira.naoEncontrada` existe e funciona (conferida nos três idiomas pelo ensaio automático),
-   mas só aparece pela tela em situações raras (por exemplo, duas janelas abertas). Para 3.7.4 e 3.9.11 do roteiro, use a
-   operação inválida do cadastro (titular curto) e mostre que as carteiras 5 e 10 desapareceram das listas. Se for
-   necessário mostrar a mensagem, é preciso acrescentar um campo de consulta por ID, o que não foi feito.
+2. **Carteira inexistente (corrigida).** A tela só trabalhava com a linha selecionada, então não dava para consultar, editar ou
+   excluir uma carteira que não existe. Foi acrescentado o campo de ID na tela **Carteiras**, com os botões **Consultar**,
+   **Editar carteira** e **Excluir**, e agora a mensagem de carteira não encontrada aparece pela tela.
 3. **Cotação de hoje.** O não realizado e o total das tabelas acima dependem do dia da gravação.

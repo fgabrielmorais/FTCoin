@@ -73,6 +73,12 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
     private transient List<Carteira> carteirasCarregadas = List.of();
 
     /**
+     * Campo onde se digita o identificador da carteira a consultar, editar ou excluir. Vazio, as ações usam
+     * a linha selecionada na tabela.
+     */
+    private final JTextField campoId = new JTextField(6);
+
+    /**
      * Referência para a janela modal de formulário ativa.
      */
     private JDialog modalFormularioAtivo;
@@ -108,6 +114,14 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         JPanel painelBotoesAcao = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         painelBotoesAcao.setOpaque(false);
 
+        JLabel rotuloId = new JLabel();
+        textos.vincular(rotuloId::setText, "gui.carteira.label.id");
+        rotuloId.setFont(TemaCores.FONTE_LABEL);
+        rotuloId.setForeground(TemaCores.TEXTO_SECUNDARIO);
+        textos.vincular(campoId::setToolTipText, "gui.carteira.dica.id");
+        ModernButton botaoConsultarCarteira = new ModernButton("", ModernButton.Variante.NEUTRO);
+        textos.vincular(botaoConsultarCarteira::setText, "gui.carteira.btn.consultar");
+
         ModernButton botaoNovaCarteira = new ModernButton("", ModernButton.Variante.PRIMARIA);
         textos.vincular(botaoNovaCarteira::setText, "gui.carteira.btn.novo");
         ModernButton botaoEditarCarteira = new ModernButton("", ModernButton.Variante.NEUTRO);
@@ -117,11 +131,15 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
         ModernButton botaoAtualizarLista = new ModernButton("", ModernButton.Variante.NEUTRO);
         textos.vincular(botaoAtualizarLista::setText, "gui.carteira.btn.atualizar");
 
+        botaoConsultarCarteira.addActionListener(e -> presenter.consultarCarteira(campoId.getText()));
         botaoNovaCarteira.addActionListener(e -> abrirModalCadastro());
-        botaoEditarCarteira.addActionListener(e -> tratarAcaoEditar());
-        botaoExcluirCarteira.addActionListener(e -> tratarAcaoExcluir());
+        botaoEditarCarteira.addActionListener(e -> presenter.iniciarEdicao(campoId.getText()));
+        botaoExcluirCarteira.addActionListener(e -> presenter.excluirCarteira(campoId.getText()));
         botaoAtualizarLista.addActionListener(e -> presenter.carregarCarteiras());
 
+        painelBotoesAcao.add(rotuloId);
+        painelBotoesAcao.add(campoId);
+        painelBotoesAcao.add(botaoConsultarCarteira);
         painelBotoesAcao.add(botaoNovaCarteira);
         painelBotoesAcao.add(botaoEditarCarteira);
         painelBotoesAcao.add(botaoExcluirCarteira);
@@ -169,37 +187,37 @@ public class CarteirasPanel extends JPanel implements ICarteiraView {
     }
 
     /**
-     * Trata o evento de clique no botão de edição de carteira.
+     * Mostra os dados de uma carteira consultada.
+     *
+     * @param carteira carteira consultada
+     * @param posicao posição da carteira, com o saldo
      */
-    private void tratarAcaoEditar() {
-        Carteira selecionada = getCarteiraSelecionada();
-        if (selecionada != null) {
-            abrirModalEdicao(selecionada);
-        } else {
-            exibirMensagemErro(contexto.getMensagens().get("gui.carteira.erro.selecione"));
-        }
+    @Override
+    public void exibirDetalhesCarteira(Carteira carteira, Posicao posicao) {
+        MensagensGui mensagens = contexto.getMensagens();
+        String detalhes = mensagens.get("gui.carteira.consulta.detalhes", carteira.getId(), carteira.getNomeTitular(),
+                carteira.getCorretora(), mensagens.getFormatador().quantidade(posicao.getSaldo()));
+        JOptionPane.showMessageDialog(this, detalhes, mensagens.get("gui.carteira.consulta.titulo"),
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     /**
-     * Trata o evento de clique no botão de exclusão de carteira solicitando confirmação.
+     * Pede a confirmação da exclusão de uma carteira.
+     *
+     * @param carteira carteira a excluir
+     * @return {@code true} se o usuário confirmou
      */
-    private void tratarAcaoExcluir() {
-        Carteira selecionada = getCarteiraSelecionada();
-        if (selecionada != null) {
-            MensagensGui mensagens = contexto.getMensagens();
-            int confirmacao = JOptionPane.showConfirmDialog(
-                    this,
-                    mensagens.get("gui.carteira.confirm.excluir", selecionada.getId(), selecionada.getNomeTitular()),
-                    "gui.comum.atencao",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE
-            );
-            if (confirmacao == JOptionPane.YES_OPTION) {
-                presenter.excluirCarteira();
-            }
-        } else {
-            exibirMensagemErro(contexto.getMensagens().get("gui.carteira.erro.selecione"));
-        }
+    @Override
+    public boolean confirmarExclusao(Carteira carteira) {
+        MensagensGui mensagens = contexto.getMensagens();
+        int confirmacao = JOptionPane.showConfirmDialog(
+                this,
+                mensagens.get("gui.carteira.confirm.excluir", carteira.getId(), carteira.getNomeTitular()),
+                mensagens.get("gui.comum.atencao"),
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+        return confirmacao == JOptionPane.YES_OPTION;
     }
 
     /**

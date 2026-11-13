@@ -20,7 +20,7 @@ import br.com.ftcoin.services.MovimentacaoService;
  * </p>
  *
  * <p>
- * Coordena a geração e atualização dos cinco relatórios financeiros do sistema FTCoin,
+ * Coordena a geração e atualização dos relatórios financeiros do sistema FTCoin,
  * alimentando tabelas analíticas, séries temporais e cartões de rentabilidade (ROI).
  * </p>
  *

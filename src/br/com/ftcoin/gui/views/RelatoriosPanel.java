@@ -244,7 +244,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         pnlTopo.add(pnlFiltro, BorderLayout.SOUTH);
         add(pnlTopo, BorderLayout.NORTH);
 
-        // Abas para os 5 relatórios
+        // Uma aba para cada relatório
         tabRelatorios.setFont(TemaCores.FONTE_LABEL);
 
         // Modelos e Tabelas

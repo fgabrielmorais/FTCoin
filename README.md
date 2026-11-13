@@ -13,7 +13,7 @@ O sistema cadastra carteiras, registra compras e vendas de FTCoins e apura o res
 ## Funcionalidades
 
 - **Dashboard:** resumo do patrimônio, saldo, cotação do dia e últimas operações.
-- **Carteiras:** incluir, consultar, listar, editar e excluir. Uma carteira com movimentações não pode ser excluída.
+- **Carteiras:** incluir, consultar, listar, editar e excluir. Consultar, editar e excluir valem para o ID digitado no campo da tela ou, com o campo vazio, para a linha selecionada; um ID que não existe (ou que já foi excluído) mostra uma mensagem de carteira não encontrada. Uma carteira com movimentações não pode ser excluída.
 - **Movimentações:** compra e venda de FTCoins numa data à escolha (não futura), com estimativa do valor antes de confirmar. Uma venda é recusada se, em ordem cronológica, deixar o saldo da carteira negativo em qualquer data.
 - **Cotação:** consulta por data no Oráculo (simulado ou servidor de cotações do professor), com cache e indicação da origem (Oráculo ou cache).
 - **Relatórios:** posição da carteira, histórico de operações, consolidado do portfólio, desempenho, histórico de cotações, listagens de carteiras ordenadas por identificador e por titular e a lista de todas as movimentações, sem limite de linhas.
@@ -197,8 +197,8 @@ O desenvolvimento seguiu a metodologia ágil **Kanban**, com a seguinte distribu
 
 * **Gabriel Morais Felix**: Líder de Arquitetura, Versionamento e Integração e Desenvolvimento de Lógica de Negócio.
 * **Erik & Vitor**: Desenvolvimento de Dados (Models e DAOs).
-* **Hyago & Arthur**: Desenvolvimento de Lógica de Negócio (Controllers).
-* **Isabela & Ana**: Desenvolvimento de Experiência do Usuário (Views CLI).
+* **Hyago & Arthur**: Desenvolvimento de Lógica de Negócio (Services).
+* **Isabela & Ana**: Desenvolvimento de Experiência do Usuário (Views).
 * **Pedro**: Interface de Usuário e Garantia de Qualidade (QA/Testes).
 
 ---
