@@ -95,6 +95,16 @@ public interface IRelatoriosView {
     void exibirCarteirasPorTitular(List<Carteira> carteiras);
 
     /**
+     * Exibe o relatório 8: todas as operações da persistência ativa, sem limitar a quantidade.
+     *
+     * @param historico movimentações da mais recente para a mais antiga
+     * @param carteiras carteiras cadastradas, usadas para mostrar o titular e a corretora de cada operação
+     * @param cotacoes  cotação de cada data das movimentações, usada no valor de cada operação
+     */
+    void exibirTodasMovimentacoes(List<Movimentacao> historico, List<Carteira> carteiras,
+            Map<LocalDate, BigDecimal> cotacoes);
+
+    /**
      * Exibe uma mensagem de erro ao usuário.
      *
      * @param mensagem texto já traduzido

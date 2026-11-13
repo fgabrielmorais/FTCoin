@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -143,5 +144,29 @@ class MovimentacaoServiceTest {
         movimentacaoDAO.inserir(new Movimentacao(0, idCarteira, HOJE.minusDays(3), TipoOperacao.COMPRA, n("1")));
 
         assertEquals(HOJE.minusDays(3), servico.buscarHistorico(idCarteira).get(0).getDataOperacao());
+    }
+
+    @Test
+    @DisplayName("Histórico geral não tem limite e sai da operação mais recente para a mais antiga")
+    void historicoGeralSemLimiteEmOrdemDecrescente() {
+        int outraCarteira = idCarteira + 1; // o DAO em memória não exige que a carteira exista
+        for (int i = 0; i < 25; i++) {
+            movimentacaoDAO.inserir(new Movimentacao(0, i % 2 == 0 ? idCarteira : outraCarteira,
+                    i < 10 ? HOJE : HOJE.minusDays(1),
+                    i % 2 == 0 ? TipoOperacao.COMPRA : TipoOperacao.VENDA, n("1")));
+        }
+
+        List<Movimentacao> todas = servico.buscarTodasMovimentacoes();
+
+        assertEquals(25, todas.size());
+        assertEquals(2, todas.stream().map(Movimentacao::getIdCarteira).distinct().count());
+        for (int i = 1; i < todas.size(); i++) {
+            Movimentacao anterior = todas.get(i - 1);
+            Movimentacao atual = todas.get(i);
+            assertTrue(anterior.getDataOperacao().isAfter(atual.getDataOperacao())
+                    || (anterior.getDataOperacao().equals(atual.getDataOperacao())
+                    && anterior.getIdMovimento() > atual.getIdMovimento()));
+        }
+        assertEquals(todas.subList(0, 5), servico.buscarUltimasMovimentacoes(5));
     }
 }

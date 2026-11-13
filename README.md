@@ -16,7 +16,8 @@ O sistema cadastra carteiras, registra compras e vendas de FTCoins e apura o res
 - **Carteiras:** incluir, consultar, listar, editar e excluir. Uma carteira com movimentações não pode ser excluída.
 - **Movimentações:** compra e venda de FTCoins, com estimativa do valor antes de confirmar e recusa de venda acima do saldo.
 - **Cotação:** consulta por data no Oráculo (simulado ou servidor de cotações do professor), com cache e indicação da origem (Oráculo ou cache).
-- **Relatórios:** posição da carteira, histórico de operações, consolidado do portfólio, desempenho, histórico de cotações e listagens de carteiras ordenadas por identificador e por titular.
+- **Relatórios:** posição da carteira, histórico de operações, consolidado do portfólio, desempenho, histórico de cotações, listagens de carteiras ordenadas por identificador e por titular e a lista de todas as movimentações, sem limite de linhas.
+- **Impressão:** o botão **Imprimir relatório** da tela de Relatórios abre uma janela para marcar quais relatórios imprimir. Os escolhidos saem em um único trabalho de impressão, cada um em páginas próprias, com título e rodapé "Página N", e podem ser salvos em PDF por uma impressora virtual. Relatórios sem dados não podem ser marcados.
 - **Idiomas:** português, inglês e espanhol, com troca durante a execução.
 - **Ajuda, créditos e saída:** manual do usuário e tela de créditos nos três idiomas, e o botão **Sair**, que fecha as conexões e encerra o programa.
 

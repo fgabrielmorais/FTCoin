@@ -5,11 +5,16 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
+import java.awt.print.PrinterException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import javax.swing.BorderFactory;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -19,6 +24,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 
+import br.com.ftcoin.config.RegistroDeFalhas;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.GuiFormatador;
 import br.com.ftcoin.gui.common.MensagensGui;
@@ -27,6 +33,7 @@ import br.com.ftcoin.gui.common.TemaCores;
 import br.com.ftcoin.gui.common.TextosTraduzidos;
 import br.com.ftcoin.gui.presenters.RelatoriosPresenter;
 import br.com.ftcoin.gui.services.CotacaoCacheService;
+import br.com.ftcoin.gui.services.ImpressaoRelatorio;
 import br.com.ftcoin.gui.views.components.CurrencyTableCellRenderer;
 import br.com.ftcoin.gui.views.components.EstiloTabela;
 import br.com.ftcoin.gui.views.components.ModernButton;
@@ -40,14 +47,41 @@ import br.com.ftcoin.models.Posicao;
 /**
  * View do Módulo de Relatórios (Padrão MVP).
  * Apresenta tabelas e painéis analíticos com destaque visual de cores (verde para lucro e vermelho para prejuízo)
- * para os 5 relatórios do sistema FTCoin.
+ * para os relatórios do sistema FTCoin. Permite imprimir os relatórios escolhidos, ou salvá-los em PDF.
  *
  * @author Grupo B.05
- * @version 1.0.0
+ * @version 1.1.0
  */
 public class RelatoriosPanel extends JPanel implements IRelatoriosView {
 
     private static final long serialVersionUID = 1L;
+
+    /** Quantidade de abas, a partir da primeira, que dependem da carteira selecionada (Posição e Histórico). */
+    private static final int ABAS_POR_CARTEIRA = 2;
+
+    /** Posição da aba "Todas as movimentações" entre as abas dos relatórios. */
+    private static final int ABA_TODAS_MOVIMENTACOES = 7;
+
+    /** Coluna da operação (compra ou venda) na tabela de todas as movimentações. */
+    private static final int COLUNA_TODAS_OPERACAO = 5;
+
+    /** Coluna da quantidade na tabela de todas as movimentações. */
+    private static final int COLUNA_TODAS_QUANTIDADE = 6;
+
+    /** Coluna da cotação na tabela de todas as movimentações. */
+    private static final int COLUNA_TODAS_COTACAO = 7;
+
+    /** Coluna do valor total na tabela de todas as movimentações. */
+    private static final int COLUNA_TODAS_TOTAL = 8;
+
+    /** Largura da coluna de indicadores na impressão do relatório 1, em pontos. */
+    private static final int LARGURA_INDICADOR_IMPRESSAO = 360;
+
+    /** Largura da coluna de valores na impressão do relatório 1, em pontos. */
+    private static final int LARGURA_VALOR_IMPRESSAO = 220;
+
+    /** Registrador de eventos desta tela. */
+    private static final Logger LOG = Logger.getLogger(RelatoriosPanel.class.getName());
 
     private final transient RelatoriosPresenter presenter;
 
@@ -55,7 +89,7 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     private final JComboBox<ItemFiltroCarteira> cmbCarteiraFiltro = new JComboBox<>();
     /** Rótulo e seletor de carteira, visíveis só nas abas que dependem da carteira. */
     private final JPanel grupoCarteira = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
-    /** Abas dos cinco relatórios. */
+    /** Abas dos relatórios. */
     private final JTabbedPane tabRelatorios = new JTabbedPane();
     /** Evita gerar relatório enquanto o seletor de carteiras é preenchido. */
     private boolean carregandoFiltro = false;
@@ -111,6 +145,12 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
     private final DefaultTableModel modelRel7;
     /** Tabela da listagem de carteiras por titular. */
     private final JTable tabelaRel7;
+
+    // Componentes do Relatório 8 (todas as movimentações)
+    /** Dados do relatório 8 (todas as movimentações). */
+    private final DefaultTableModel modelTodas;
+    /** Tabela do relatório 8 (todas as movimentações). */
+    private final JTable tabelaTodas;
 
     private record ItemFiltroCarteira(int id, String descricao) {
         @Override
@@ -195,6 +235,11 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         textos.vincular(btnRecarregar::setText, "gui.rel.btn.atualizarTodos");
         btnRecarregar.addActionListener(e -> presenter.inicializar());
         pnlFiltro.add(btnRecarregar);
+
+        ModernButton btnImprimir = new ModernButton("", ModernButton.Variante.NEUTRO);
+        textos.vincular(btnImprimir::setText, "gui.rel.btn.imprimir");
+        btnImprimir.addActionListener(e -> imprimirRelatorio());
+        pnlFiltro.add(btnImprimir);
 
         pnlTopo.add(pnlFiltro, BorderLayout.SOUTH);
         add(pnlTopo, BorderLayout.NORTH);
@@ -314,7 +359,26 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         tabRelatorios.addTab("", EstiloTabela.comRolagemSemBorda(tabelaRel7));
         textos.vincular(titulo -> tabRelatorios.setTitleAt(6, titulo), "gui.rel.tab7.titulo");
 
-        tabRelatorios.addChangeListener(e -> grupoCarteira.setVisible(tabRelatorios.getSelectedIndex() <= 1));
+        // 8. Todas as operações, sem limite de linhas
+        String[] colTodas = chaves("gui.rel.todas.col.", "id", "carteira", "titular", "corretora",
+                "data", "operacao", "quantidade", "cotacao", "total");
+        modelTodas = new DefaultTableModel(colTodas, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        tabelaTodas = criarTabelaFormatada(modelTodas);
+        textos.vincularColunas(tabelaTodas, colTodas);
+        tabelaTodas.getColumnModel().getColumn(COLUNA_TODAS_OPERACAO).setCellRenderer(new CurrencyTableCellRenderer(
+                CurrencyTableCellRenderer.ModoRenderizacao.TIPO_OPERACAO, mensagens));
+        tabelaTodas.getColumnModel().getColumn(COLUNA_TODAS_QUANTIDADE).setCellRenderer(new CurrencyTableCellRenderer(
+                CurrencyTableCellRenderer.ModoRenderizacao.QUANTIDADE, mensagens));
+        for (int coluna : new int[] { COLUNA_TODAS_COTACAO, COLUNA_TODAS_TOTAL }) {
+            tabelaTodas.getColumnModel().getColumn(coluna).setCellRenderer(new CurrencyTableCellRenderer(
+                    CurrencyTableCellRenderer.ModoRenderizacao.MOEDA, mensagens));
+        }
+        tabRelatorios.addTab("", EstiloTabela.comRolagemSemBorda(tabelaTodas));
+        textos.vincular(titulo -> tabRelatorios.setTitleAt(ABA_TODAS_MOVIMENTACOES, titulo), "gui.rel.todas.titulo");
+
+        tabRelatorios.addChangeListener(e -> grupoCarteira.setVisible(tabRelatorios.getSelectedIndex() < ABAS_POR_CARTEIRA));
         add(tabRelatorios, BorderLayout.CENTER);
     }
 
@@ -467,6 +531,120 @@ public class RelatoriosPanel extends JPanel implements IRelatoriosView {
         for (Carteira c : carteiras) {
             modelo.addRow(new Object[]{ c.getId(), c.getNomeTitular(), c.getCorretora() });
         }
+    }
+
+    @Override
+    public void exibirTodasMovimentacoes(List<Movimentacao> historico, List<Carteira> carteiras,
+            Map<LocalDate, BigDecimal> cotacoes) {
+        modelTodas.setRowCount(0);
+        Map<Integer, Carteira> carteirasPorId = new HashMap<>();
+        carteiras.forEach(c -> carteirasPorId.put(c.getId(), c));
+        GuiFormatador formatador = contexto.getMensagens().getFormatador();
+        for (Movimentacao m : historico) {
+            Carteira carteira = carteirasPorId.get(m.getIdCarteira());
+            BigDecimal cotacao = cotacoes.get(m.getDataOperacao());
+            modelTodas.addRow(new Object[]{
+                    m.getIdMovimento(),
+                    m.getIdCarteira(),
+                    carteira == null ? "-" : carteira.getNomeTitular(),
+                    carteira == null ? "-" : carteira.getCorretora(),
+                    formatador.data(m.getDataOperacao()),
+                    m.getTipoOperacao(),
+                    m.getQuantidadeMovimentada(),
+                    cotacao,
+                    m.calcularValor(cotacao)
+            });
+        }
+    }
+
+    /**
+     * Pergunta quais relatórios imprimir e envia a seleção a um único trabalho de impressão (ou PDF).
+     * Só podem ser marcados os relatórios que têm dados; o da aba atual já vem marcado.
+     * O diálogo volta a aparecer enquanto o usuário confirmar sem marcar nenhum relatório.
+     */
+    private void imprimirRelatorio() {
+        MensagensGui mensagens = contexto.getMensagens();
+        ItemFiltroCarteira carteira = (ItemFiltroCarteira) cmbCarteiraFiltro.getSelectedItem();
+
+        JPanel escolhas = new JPanel(new GridLayout(0, 1, 4, 4));
+        escolhas.add(new JLabel(mensagens.get("gui.rel.impressao.escolha")));
+        escolhas.add(new JLabel(mensagens.get("gui.rel.impressao.carteira") + " "
+                + (carteira == null ? "-" : carteira.descricao())));
+
+        JCheckBox[] opcoes = new JCheckBox[tabRelatorios.getTabCount()];
+        for (int i = 0; i < opcoes.length; i++) {
+            opcoes[i] = new JCheckBox(tabRelatorios.getTitleAt(i));
+            boolean disponivel = (i >= ABAS_POR_CARTEIRA || carteira != null) && tabelaDoRelatorio(i).getRowCount() > 0;
+            opcoes[i].setEnabled(disponivel);
+            opcoes[i].setSelected(disponivel && i == tabRelatorios.getSelectedIndex());
+            if (!disponivel) {
+                opcoes[i].setToolTipText(mensagens.get("gui.rel.impressao.vazio"));
+            }
+            escolhas.add(opcoes[i]);
+        }
+        JCheckBox todas = new JCheckBox(mensagens.get("gui.rel.impressao.selecionarTodos"));
+        todas.addActionListener(e -> {
+            for (JCheckBox opcao : opcoes) {
+                if (opcao.isEnabled()) {
+                    opcao.setSelected(todas.isSelected());
+                }
+            }
+        });
+        escolhas.add(todas);
+
+        while (JOptionPane.showConfirmDialog(this, escolhas, mensagens.get("gui.rel.btn.imprimir"),
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) == JOptionPane.OK_OPTION) {
+            List<ImpressaoRelatorio.Relatorio> selecionados = new ArrayList<>();
+            for (int i = 0; i < opcoes.length; i++) {
+                if (!opcoes[i].isSelected() || !opcoes[i].isEnabled()) {
+                    continue;
+                }
+                String titulo = "FTCoin - " + tabRelatorios.getTitleAt(i);
+                if (i < ABAS_POR_CARTEIRA) {
+                    titulo += " (#" + carteira.id() + ")";
+                }
+                selecionados.add(new ImpressaoRelatorio.Relatorio(titulo,
+                        ImpressaoRelatorio.copiarTabela(tabelaDoRelatorio(i))));
+            }
+            if (selecionados.isEmpty()) {
+                exibirMensagemErro(mensagens.get("gui.rel.impressao.nenhum"));
+                continue;
+            }
+            try {
+                ImpressaoRelatorio.imprimir(selecionados,
+                        mensagens.getFormatador().data(LocalDate.now()) + " - "
+                                + mensagens.get("gui.rel.impressao.pagina"));
+            } catch (PrinterException | SecurityException e) {
+                RegistroDeFalhas.registrar(LOG, "imprimir os relatórios", e);
+                exibirMensagemErro(mensagens.get("gui.rel.impressao.erro") + " " + e.getMessage());
+            }
+            return;
+        }
+    }
+
+    /**
+     * Devolve a tabela com os dados de um relatório, na forma em que ele é impresso.
+     * O relatório 1 mostra cartões na tela e, por isso, vira uma tabela de indicador e valor.
+     *
+     * @param aba posição da aba do relatório, a partir de zero
+     * @return tabela com os dados do relatório
+     */
+    private JTable tabelaDoRelatorio(int aba) {
+        if (aba != 0) {
+            return new JTable[] { tabelaRel2, tabelaRel3, tabelaRel4, tabelaRel5,
+                    tabelaRel6, tabelaRel7, tabelaTodas }[aba - 1];
+        }
+        MensagensGui mensagens = contexto.getMensagens();
+        DefaultTableModel modelo = new DefaultTableModel(new String[] {
+                mensagens.get("gui.rel.impressao.indicador"), mensagens.get("gui.rel.impressao.valor") }, 0);
+        for (ModernCard card : new ModernCard[] { cardSaldo, cardCustoMedio, cardValorCusto, cardValorMercado,
+                cardGanhoRealizado, cardGanhoNaoRealizado, cardGanhoTotal, cardRoi }) {
+            modelo.addRow(new Object[] { card.getTitulo(), card.getValor() });
+        }
+        JTable tabela = new JTable(modelo);
+        tabela.getColumnModel().getColumn(0).setWidth(LARGURA_INDICADOR_IMPRESSAO);
+        tabela.getColumnModel().getColumn(1).setWidth(LARGURA_VALOR_IMPRESSAO);
+        return tabela;
     }
 
     @Override

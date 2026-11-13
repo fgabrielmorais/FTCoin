@@ -148,10 +148,18 @@ public class MovimentacaoService {
 	 * @return as movimentações da mais recente para a mais antiga
 	 */
 	public List<Movimentacao> buscarUltimasMovimentacoes(int limite) {
+		return buscarTodasMovimentacoes().stream().limit(limite).toList();
+	}
+
+	/**
+	 * Lista todas as movimentações de todas as carteiras, sem limite de quantidade.
+	 *
+	 * @return as movimentações da mais recente para a mais antiga
+	 */
+	public List<Movimentacao> buscarTodasMovimentacoes() {
 		return movimentacaoDAO.listarTodas().stream()
 				.sorted(Comparator.comparing(Movimentacao::getDataOperacao)
 						.thenComparing(Movimentacao::getIdMovimento).reversed())
-				.limit(limite)
 				.toList();
 	}
 

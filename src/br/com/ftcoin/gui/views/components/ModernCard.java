@@ -94,6 +94,24 @@ public class ModernCard extends JPanel {
     }
 
     /**
+     * Retorna o título atualmente exibido no cartão.
+     *
+     * @return Texto do título
+     */
+    public String getTitulo() {
+        return lblTitulo.getText();
+    }
+
+    /**
+     * Retorna o valor atualmente exibido no cartão.
+     *
+     * @return Texto do valor, já formatado
+     */
+    public String getValor() {
+        return lblValor.getText();
+    }
+
+    /**
      * Define o valor monetário ou quantitativo exibido no cartão acompanhado de sua cor.
      *
      * @param valor Texto formatado a ser exibido no centro do cartão
