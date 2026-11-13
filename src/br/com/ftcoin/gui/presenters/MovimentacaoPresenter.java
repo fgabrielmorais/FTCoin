@@ -132,8 +132,7 @@ public class MovimentacaoPresenter {
         }
 
         try {
-            String sanitizada = strQuantidade.trim().replace(",", ".");
-            BigDecimal qtd = new BigDecimal(sanitizada);
+            BigDecimal qtd = contexto.getMensagens().getFormatador().lerQuantidade(strQuantidade);
             if (qtd.signum() <= 0) {
                 view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
                 return;
@@ -163,7 +162,7 @@ public class MovimentacaoPresenter {
                         RegistroDeFalhas.registrar(LOG, "calcular estimativa", e);
                         view.informarCotacaoIndisponivel(tipo, contexto.getMensagens().descreverErro(e));
                     });
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException | RegraNegocioException e) {
             LOG.log(Level.FINEST, "Estimativa ignorada: quantidade digitada ainda não é um número ({0})", strQuantidade);
             view.atualizarEstimativas(tipo, BigDecimal.ZERO, BigDecimal.ZERO);
         }
@@ -203,13 +202,16 @@ public class MovimentacaoPresenter {
 
         BigDecimal quantidade;
         try {
-            String sanitizada = strQuantidade.trim().replace(",", ".");
-            quantidade = new BigDecimal(sanitizada);
+            quantidade = mensagens.getFormatador().lerQuantidade(strQuantidade);
             if (quantidade.signum() <= 0) {
                 LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.mov.erro.quantidadeZero");
                 view.exibirMensagemErro(mensagens.get("gui.mov.erro.quantidadeZero"));
                 return;
             }
+        } catch (RegraNegocioException e) {
+            LOG.log(Level.FINE, "Entrada rejeitada: {0}", e.getChave());
+            view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
+            return;
         } catch (NumberFormatException e) {
             LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.mov.erro.formatoNumero");
             view.exibirMensagemErro(mensagens.get("gui.mov.erro.formatoNumero"));
