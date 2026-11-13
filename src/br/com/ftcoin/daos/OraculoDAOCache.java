@@ -4,9 +4,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,6 +14,13 @@ import network.ExchangeRate;
 
 /**
  * Cache em volta de qualquer oráculo, para reduzir as consultas pela rede.
+ * <p>
+ * Estrutura: uma tabela hash encadeada ({@link LinkedHashMap}) que mantém as entradas na ordem de uso, indexada
+ * pela data, o que torna a busca de uma cotação já guardada O(1). O cache tem tamanho limitado
+ * ({@value #CAPACIDADE_MAXIMA} datas) e segue a política LRU: ao passar do limite, a entrada usada há mais
+ * tempo é descartada e a próxima consulta dessa data volta ao oráculo. O mapa é sincronizado, para uso por
+ * várias threads.
+ * </p>
  * <p>
  * Cada data é buscada no oráculo uma vez por execução. A ausência de cotação (que não é erro) de uma data
  * passada também fica guardada. A data de hoje sem cotação não fica no cache, porque o servidor pode
@@ -29,6 +36,12 @@ public class OraculoDAOCache extends OraculoDAO {
 
 	private static final int CASAS_DECIMAIS = 2;
 
+	/** Máximo de datas guardadas; cobre mais de um ano de datas consultadas. */
+	static final int CAPACIDADE_MAXIMA = 512;
+
+	/** Fator de carga padrão do {@link LinkedHashMap}. */
+	private static final float FATOR_DE_CARGA = 0.75f;
+
 	/**
 	 * Resultado de uma consulta ao cache.
 	 *
@@ -37,16 +50,43 @@ public class OraculoDAOCache extends OraculoDAO {
 	 */
 	public record Consulta(BigDecimal valor, boolean doCache) {}
 
+	/**
+	 * Tabela hash encadeada na ordem de acesso, que descarta a entrada menos recentemente usada
+	 * ao passar da capacidade.
+	 */
+	private static final class MapaLru extends LinkedHashMap<LocalDate, Optional<BigDecimal>> {
+
+		private static final long serialVersionUID = 1L;
+
+		private final int capacidade;
+
+		MapaLru(int capacidade) {
+			super(capacidade, FATOR_DE_CARGA, true);
+			this.capacidade = capacidade;
+		}
+
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<LocalDate, Optional<BigDecimal>> maisAntiga) {
+			return size() > capacidade;
+		}
+	}
+
 	private final OraculoDAO oraculo;
-	private final Map<LocalDate, Optional<BigDecimal>> cache = new ConcurrentHashMap<>();
+	private final Map<LocalDate, Optional<BigDecimal>> cache;
 
 	/**
-	 * Cria o cache em volta de um oráculo.
+	 * Cria o cache em volta de um oráculo, com a capacidade máxima padrão.
 	 *
 	 * @param oraculo oráculo consultado nas datas que ainda não estão no cache
 	 */
 	public OraculoDAOCache(OraculoDAO oraculo) {
+		this(oraculo, CAPACIDADE_MAXIMA);
+	}
+
+	// Capacidade pequena permite testar o descarte LRU
+	OraculoDAOCache(OraculoDAO oraculo, int capacidade) {
 		this.oraculo = oraculo;
+		this.cache = Collections.synchronizedMap(new MapaLru(capacidade));
 	}
 
 	/**

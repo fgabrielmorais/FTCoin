@@ -127,4 +127,33 @@ class OraculoDAOCacheTest {
         assertEquals(new BigDecimal("3.00"), periodo.get(d3).valor());
         assertEquals(3, oraculo.consultas());
     }
+
+    @Test
+    @DisplayName("Com o cache cheio, a entrada menos recentemente usada é descartada e volta ao oráculo")
+    void descarteLru() {
+        LocalDate a = PASSADO;
+        LocalDate b = PASSADO.plusDays(1);
+        LocalDate c = PASSADO.plusDays(2);
+        OraculoFalso oraculo = new OraculoFalso().com(a, "5.10").com(b, "5.20").com(c, "5.30");
+        OraculoDAOCache cache = new OraculoDAOCache(oraculo, 2);
+
+        cache.consultar(a);
+        cache.consultar(b);
+        cache.consultar(a); // a passa a ser a mais recente; b é a menos recente
+        cache.consultar(c); // estoura a capacidade: descarta b
+        assertEquals(3, oraculo.consultas());
+
+        assertTrue(cache.consultar(a).doCache());
+        assertTrue(cache.consultar(c).doCache());
+        assertEquals(3, oraculo.consultas());
+
+        assertFalse(cache.consultar(b).doCache());
+        assertEquals(4, oraculo.consultas());
+    }
+
+    @Test
+    @DisplayName("A capacidade padrão guarda mais de um ano de datas")
+    void capacidadePadrao() {
+        assertTrue(OraculoDAOCache.CAPACIDADE_MAXIMA > 366);
+    }
 }

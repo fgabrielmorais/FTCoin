@@ -27,13 +27,24 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+/**
+ * Cotação de uma data, como trafega no protocolo do servidor.
+ */
 public final class ExchangeRate implements Serializable
    {
    private static final long serialVersionUID = 1L;
 
+   /** Dia da cotação. */
    LocalDate                 date;
+   /** Valor da cotação. */
    BigDecimal                value;
 
+   /**
+    * Cria a cotação.
+    *
+    * @param date dia da cotação
+    * @param value valor da cotação
+    */
    public ExchangeRate(LocalDate date, BigDecimal value)
       {
       super();
@@ -41,11 +52,21 @@ public final class ExchangeRate implements Serializable
       this.value = value;
       }
 
+   /**
+    * Devolve o dia da cotação.
+    *
+    * @return a data
+    */
    public final LocalDate getDate()
       {
       return date;
       }
 
+   /**
+    * Devolve o valor da cotação.
+    *
+    * @return o valor
+    */
    public final BigDecimal getValue()
       {
       return value;

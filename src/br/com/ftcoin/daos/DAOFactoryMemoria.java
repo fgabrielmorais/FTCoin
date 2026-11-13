@@ -1,7 +1,8 @@
 package br.com.ftcoin.daos;
 
 /**
- * Família de DAOs em memória, usada no vídeo de demonstração e nos testes.
+ * Família de DAOs em memória, usada no vídeo de demonstração e nos testes: uma fábrica concreta do padrão
+ * Abstract Factory, que estende {@link DAOFactory}.
  * <p>
  * Cada DAO é criado uma vez por fábrica, para que todas as telas que usam a mesma fábrica
  * enxerguem os mesmos dados.
