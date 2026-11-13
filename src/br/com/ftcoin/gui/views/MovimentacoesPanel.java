@@ -105,7 +105,6 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
     /**
      * Rótulo com destaque positivo exibindo o saldo disponível para venda.
      */
-    private final JLabel rotuloSaldoDisponivelVenda = new JLabel("-");
 
     /**
      * Rótulo de exibição da cotação unitária estimada para venda.
@@ -266,8 +265,6 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
 
         JComboBox<ItemCarteiraCombo> comboCarteira = ehCompra ? comboCarteiraCompra : comboCarteiraVenda;
         JTextField campoData = ehCompra ? campoDataCompra : campoDataVenda;
-        // A operação é sempre registrada na data de hoje, então o campo só mostra a data
-        campoData.setEditable(false);
         JTextField campoQuantidade = ehCompra ? campoQuantidadeCompra : campoQuantidadeVenda;
         JLabel rotuloCotacao = ehCompra ? rotuloCotacaoEstimadaCompra : rotuloCotacaoEstimadaVenda;
         JLabel rotuloTotal = ehCompra ? rotuloTotalEstimadoCompra : rotuloTotalEstimadoVenda;
@@ -282,16 +279,6 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         restricoes.gridx = 1; restricoes.gridy = 0; restricoes.gridwidth = 2;
         painelForm.add(comboCarteira, restricoes);
         restricoes.gridwidth = 1;
-
-        // Se for Venda, exibe saldo disponível para alienação
-        if (!ehCompra) {
-            restricoes.gridx = 3; restricoes.gridy = 0;
-            painelForm.add(rotulo("gui.mov.label.saldoDisponivel"), restricoes);
-            restricoes.gridx = 4; restricoes.gridy = 0;
-            rotuloSaldoDisponivelVenda.setFont(TemaCores.FONTE_LABEL);
-            rotuloSaldoDisponivelVenda.setForeground(TemaCores.POSITIVO_LUCRO);
-            painelForm.add(rotuloSaldoDisponivelVenda, restricoes);
-        }
 
         // Linha 1: Data e Quantidade
         restricoes.gridx = 0; restricoes.gridy = 1;
@@ -384,14 +371,6 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         };
         campoQuantidadeVenda.getDocument().addDocumentListener(ouvinteDocVenda);
         campoDataVenda.getDocument().addDocumentListener(ouvinteDocVenda);
-
-        comboCarteiraVenda.addActionListener(e -> {
-            ItemCarteiraCombo selecionado = (ItemCarteiraCombo) comboCarteiraVenda.getSelectedItem();
-            if (selecionado != null) {
-                GuiFormatador formatador = contexto.getMensagens().getFormatador();
-                rotuloSaldoDisponivelVenda.setText(formatador.quantidade(selecionado.saldo()));
-            }
-        });
     }
 
     /**
@@ -429,18 +408,12 @@ public class MovimentacoesPanel extends JPanel implements IMovimentacaoView {
         comboCarteiraCompra.removeAllItems();
         comboCarteiraVenda.removeAllItems();
 
-        GuiFormatador formatador = contexto.getMensagens().getFormatador();
         posicoes.forEach((carteira, posicao) -> {
             String rotulo = "#" + carteira.getId() + " - " + carteira.getNomeTitular() + " (" + carteira.getCorretora() + ")";
             ItemCarteiraCombo item = new ItemCarteiraCombo(carteira.getId(), rotulo, posicao.getSaldo());
             comboCarteiraCompra.addItem(item);
             comboCarteiraVenda.addItem(item);
         });
-
-        if (comboCarteiraVenda.getItemCount() > 0) {
-            ItemCarteiraCombo primeiro = comboCarteiraVenda.getItemAt(0);
-            rotuloSaldoDisponivelVenda.setText(formatador.quantidade(primeiro.saldo()));
-        }
     }
 
     /**

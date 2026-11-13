@@ -1,6 +1,7 @@
 package br.com.ftcoin.gui.main;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -110,16 +111,16 @@ public class FTCoinGuiApp {
                 LOG.fine("Carregando dados de demonstração na persistência em memória");
                 // Popula carteiras iniciais para demonstração
                 Carteira c1 = carteiraService.criarCarteira("Gabriel Morais Felix", "Binance");
-                movimentacaoService.registrarOperacao(c1.getId(), TipoOperacao.COMPRA, new BigDecimal("150.000"));
-                movimentacaoService.registrarOperacao(c1.getId(), TipoOperacao.COMPRA, new BigDecimal("50.000"));
-                movimentacaoService.registrarOperacao(c1.getId(), TipoOperacao.VENDA, new BigDecimal("30.000"));
+                movimentacaoService.registrarOperacao(c1.getId(), TipoOperacao.COMPRA, LocalDate.now(), new BigDecimal("150.000"));
+                movimentacaoService.registrarOperacao(c1.getId(), TipoOperacao.COMPRA, LocalDate.now(), new BigDecimal("50.000"));
+                movimentacaoService.registrarOperacao(c1.getId(), TipoOperacao.VENDA, LocalDate.now(), new BigDecimal("30.000"));
 
                 Carteira c2 = carteiraService.criarCarteira("Isabela & Ana UX", "Mercado Bitcoin");
-                movimentacaoService.registrarOperacao(c2.getId(), TipoOperacao.COMPRA, new BigDecimal("85.500"));
-                movimentacaoService.registrarOperacao(c2.getId(), TipoOperacao.VENDA, new BigDecimal("15.500"));
+                movimentacaoService.registrarOperacao(c2.getId(), TipoOperacao.COMPRA, LocalDate.now(), new BigDecimal("85.500"));
+                movimentacaoService.registrarOperacao(c2.getId(), TipoOperacao.VENDA, LocalDate.now(), new BigDecimal("15.500"));
 
                 Carteira c3 = carteiraService.criarCarteira("UNICAMP Limeira Lab", "Coinbase");
-                movimentacaoService.registrarOperacao(c3.getId(), TipoOperacao.COMPRA, new BigDecimal("200.000"));
+                movimentacaoService.registrarOperacao(c3.getId(), TipoOperacao.COMPRA, LocalDate.now(), new BigDecimal("200.000"));
             }
         }
     }

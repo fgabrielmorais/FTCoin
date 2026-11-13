@@ -146,7 +146,7 @@ Para iniciar em outro idioma, use as opções de JVM `-Duser.language=en -Duser.
 - Quantidades aceitam ponto ou vírgula como separador decimal, sem separador de milhares: `2.5` e `2,5` são a mesma quantidade.
 - As datas usam o formato `DD/MM/AAAA` em qualquer idioma, na tela e nos campos (a tela Cotação também aceita `AAAA-MM-DD`). Datas futuras são recusadas.
 - Os números seguem o idioma escolhido, mas as datas têm sempre o mesmo formato. Os valores monetários são sempre em reais (BRL): trocar o idioma não converte a moeda.
-- **Limitação atual:** a compra ou venda é registrada com a data do dia e a cotação atual. O campo de data do formulário de movimentações só mostra a data de hoje e não pode ser editado; não é possível registrar uma operação retroativa.
+- **Data da operação:** o campo de data do formulário é editável (`DD/MM/AAAA`). A operação usa a cotação da data informada, que não pode ser futura, e é recusada se alguma venda ficar sem saldo naquela data, considerando toda a linha do tempo da carteira.
 
 ---
 

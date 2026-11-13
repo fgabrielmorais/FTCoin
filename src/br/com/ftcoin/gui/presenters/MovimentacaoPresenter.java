@@ -218,7 +218,7 @@ public class MovimentacaoPresenter {
 
         try {
             MovimentacaoService servico = contexto.getMovimentacaoService();
-            servico.registrarOperacao(idCarteira, tipo, quantidade);
+            servico.registrarOperacao(idCarteira, tipo, data, quantidade);
 
             view.limparFormulario();
             carregarCarteiras();

@@ -62,9 +62,9 @@ class MovimentacaoServiceTest {
     }
 
     @Test
-    @DisplayName("Compra é registrada hoje, com o tipo e a quantidade pedidos")
+    @DisplayName("Compra é registrada na data pedida, com o tipo e a quantidade pedidos")
     void compra() {
-        Movimentacao mov = servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, n("5"));
+        Movimentacao mov = servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, HOJE, n("5"));
 
         assertEquals(HOJE, mov.getDataOperacao());
         assertEquals(TipoOperacao.COMPRA, mov.getTipoOperacao());
@@ -75,28 +75,28 @@ class MovimentacaoServiceTest {
     @Test
     @DisplayName("Limite: vender exatamente o saldo é aceito")
     void vendaDoSaldoInteiro() {
-        servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, n("5"));
-        servico.registrarOperacao(idCarteira, TipoOperacao.VENDA, n("5"));
+        servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, HOJE, n("5"));
+        servico.registrarOperacao(idCarteira, TipoOperacao.VENDA, HOJE, n("5"));
         assertEquals(0, servico.apurarPosicao(idCarteira).getSaldo().signum());
     }
 
     @Test
     @DisplayName("Exceção: venda acima do saldo é recusada e nada é gravado")
     void vendaAcimaDoSaldo() {
-        servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, n("5"));
+        servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, HOJE, n("5"));
 
         RegraNegocioException erro = assertThrows(RegraNegocioException.class,
-                () -> servico.registrarOperacao(idCarteira, TipoOperacao.VENDA, n("5.001")));
+                () -> servico.registrarOperacao(idCarteira, TipoOperacao.VENDA, HOJE, n("5.001")));
 
-        assertEquals("erro.movimentacao.saldoInsuficiente", erro.getChave());
+        assertEquals("erro.movimentacao.saldoNegativoNaData", erro.getChave());
         assertEquals(1, servico.buscarHistorico(idCarteira).size());
     }
 
     @Test
     @DisplayName("Exceção: quantidade zero ou negativa")
     void quantidadeInvalida() {
-        assertThrows(RegraNegocioException.class, () -> servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, BigDecimal.ZERO));
-        assertThrows(RegraNegocioException.class, () -> servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, n("-1")));
+        assertThrows(RegraNegocioException.class, () -> servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, HOJE, BigDecimal.ZERO));
+        assertThrows(RegraNegocioException.class, () -> servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, HOJE, n("-1")));
         assertTrue(servico.buscarHistorico(idCarteira).isEmpty());
     }
 
@@ -104,7 +104,7 @@ class MovimentacaoServiceTest {
     @DisplayName("Exceção: carteira inexistente")
     void carteiraInexistente() {
         RegraNegocioException erro = assertThrows(RegraNegocioException.class,
-                () -> servico.registrarOperacao(99, TipoOperacao.COMPRA, BigDecimal.ONE));
+                () -> servico.registrarOperacao(99, TipoOperacao.COMPRA, HOJE, BigDecimal.ONE));
         assertEquals("erro.carteira.naoEncontrada", erro.getChave());
     }
 
@@ -113,7 +113,97 @@ class MovimentacaoServiceTest {
     void semCotacaoHoje() {
         cotacoes.clear();
         RegraNegocioException erro = assertThrows(RegraNegocioException.class,
-                () -> servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, BigDecimal.ONE));
+                () -> servico.registrarOperacao(idCarteira, TipoOperacao.COMPRA, HOJE, BigDecimal.ONE));
+        assertEquals("erro.oraculo.semCotacao", erro.getChave());
+        assertTrue(servico.buscarHistorico(idCarteira).isEmpty());
+    }
+
+    private Movimentacao operar(TipoOperacao tipo, LocalDate data, String quantidade) {
+        return servico.registrarOperacao(idCarteira, tipo, data, n(quantidade));
+    }
+
+    private void cotarDias(LocalDate... dias) {
+        for (LocalDate dia : dias) {
+            cotacoes.put(dia, n("10"));
+        }
+    }
+
+    @Test
+    @DisplayName("Venda de 500 em carteira vazia é recusada")
+    void vendaEmCarteiraVazia() {
+        LocalDate dia = LocalDate.of(2026, 1, 1);
+        cotarDias(dia);
+        RegraNegocioException erro = assertThrows(RegraNegocioException.class, () -> operar(TipoOperacao.VENDA, dia, "500"));
+        assertEquals("erro.movimentacao.saldoNegativoNaData", erro.getChave());
+        assertTrue(servico.buscarHistorico(idCarteira).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Compra e venda no mesmo dia: a venda vem depois e é aceita")
+    void compraEVendaNoMesmoDia() {
+        LocalDate dia = LocalDate.of(2026, 2, 1);
+        cotarDias(dia);
+        operar(TipoOperacao.COMPRA, dia, "1000");
+        operar(TipoOperacao.VENDA, dia, "500");
+        assertEquals(0, n("500").compareTo(servico.apurarPosicao(idCarteira).getSaldo()));
+    }
+
+    @Test
+    @DisplayName("Venda em data anterior com saldo menor que a venda é recusada")
+    void vendaRetroativaSemSaldoNaData() {
+        LocalDate d1 = LocalDate.of(2026, 2, 1);
+        LocalDate d2 = LocalDate.of(2026, 2, 2);
+        cotarDias(d1, d2);
+        operar(TipoOperacao.COMPRA, d1, "100");
+        operar(TipoOperacao.VENDA, d2, "50");
+        RegraNegocioException erro = assertThrows(RegraNegocioException.class, () -> operar(TipoOperacao.VENDA, d1, "101"));
+        assertEquals("erro.movimentacao.saldoNegativoNaData", erro.getChave());
+        assertEquals(2, servico.buscarHistorico(idCarteira).size());
+    }
+
+    @Test
+    @DisplayName("Operação retroativa que deixaria venda posterior sem saldo é recusada e nada é gravado")
+    void retroativaPrejudicaVendaPosterior() {
+        LocalDate d1 = LocalDate.of(2026, 2, 1);
+        LocalDate d2 = LocalDate.of(2026, 2, 2);
+        LocalDate d3 = LocalDate.of(2026, 2, 3);
+        cotarDias(d1, d2, d3);
+        operar(TipoOperacao.COMPRA, d1, "100");
+        operar(TipoOperacao.VENDA, d3, "100");
+        // Vender 60 em 02/02 deixaria a venda de 03/02 sem saldo
+        RegraNegocioException erro = assertThrows(RegraNegocioException.class, () -> operar(TipoOperacao.VENDA, d2, "60"));
+        assertEquals("erro.movimentacao.saldoNegativoNaData", erro.getChave());
+        assertEquals(d3, erro.getArgumentos()[0]);
+        assertEquals(2, servico.buscarHistorico(idCarteira).size());
+    }
+
+    @Test
+    @DisplayName("Compra retroativa que cobre vendas posteriores é aceita")
+    void compraRetroativaAceita() {
+        LocalDate d1 = LocalDate.of(2026, 2, 1);
+        LocalDate d2 = LocalDate.of(2026, 2, 2);
+        cotarDias(d1, d2);
+        operar(TipoOperacao.COMPRA, d2, "10");
+        operar(TipoOperacao.COMPRA, d1, "5");
+        operar(TipoOperacao.VENDA, d2, "15");
+        assertEquals(0, servico.apurarPosicao(idCarteira).getSaldo().signum());
+    }
+
+    @Test
+    @DisplayName("Exceção: data futura é recusada")
+    void dataFutura() {
+        LocalDate amanha = HOJE.plusDays(1);
+        cotarDias(amanha);
+        RegraNegocioException erro = assertThrows(RegraNegocioException.class, () -> operar(TipoOperacao.COMPRA, amanha, "1"));
+        assertEquals("erro.movimentacao.dataFutura", erro.getChave());
+        assertTrue(servico.buscarHistorico(idCarteira).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Exceção: data sem cotação")
+    void dataSemCotacao() {
+        RegraNegocioException erro = assertThrows(RegraNegocioException.class,
+                () -> operar(TipoOperacao.COMPRA, LocalDate.of(2025, 12, 31), "1"));
         assertEquals("erro.oraculo.semCotacao", erro.getChave());
         assertTrue(servico.buscarHistorico(idCarteira).isEmpty());
     }
