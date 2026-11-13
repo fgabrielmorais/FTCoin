@@ -127,7 +127,7 @@ Argumento desconhecido ou valor inválido imprime a linha de uso e encerra com c
 
 ### Modo memória
 
-Os dados são perdidos ao encerrar. Com o oráculo simulado (padrão), as cotações variam conforme a data, e a mesma data devolve sempre o mesmo valor. Não representam preços reais de mercado.
+Os dados são perdidos ao encerrar. Com o oráculo simulado (padrão), as cotações variam conforme a data, e a mesma data devolve sempre o mesmo valor. Não representam preços reais de mercado. O simulado segue o contrato do servidor: datas anteriores a 01/01/2009 (a primeira cotação do servidor) ficam sem cotação, e datas posteriores a hoje dão erro de data futura.
 
 ### Usando o servidor de cotações (API)
 
