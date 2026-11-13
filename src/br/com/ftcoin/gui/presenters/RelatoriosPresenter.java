@@ -64,6 +64,24 @@ public class RelatoriosPresenter {
         gerarRelatorio3Consolidado();
         gerarRelatorio4Desempenho();
         gerarRelatorio5Cotacoes(15);
+        gerarTodasMovimentacoes();
+    }
+
+    /**
+     * Carrega todas as operações da persistência ativa, sem limite de linhas (Relatório 8).
+     * Se a consulta falhar, a visão recebe listas vazias e a mensagem de erro.
+     */
+    public void gerarTodasMovimentacoes() {
+        try {
+            MovimentacaoService movimentacoes = contexto.getMovimentacaoService();
+            List<Movimentacao> historico = movimentacoes.buscarTodasMovimentacoes();
+            view.exibirTodasMovimentacoes(historico, contexto.getCarteiraService().listarTodasCarteiras(),
+                    movimentacoes.buscarCotacoesDasOperacoes(historico));
+        } catch (Exception e) {
+            view.exibirTodasMovimentacoes(List.of(), List.of(), Map.of());
+            RegistroDeFalhas.registrar(LOG, "gerar todas as movimentações", e);
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
+        }
     }
 
     /**
