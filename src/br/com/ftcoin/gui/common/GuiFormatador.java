@@ -1,12 +1,17 @@
 package br.com.ftcoin.gui.common;
 
 import java.math.BigDecimal;
+import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Currency;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import br.com.ftcoin.models.RegraNegocioException;
 
 /**
  * <p>
@@ -39,6 +44,11 @@ public class GuiFormatador {
      * Quantidade padrão de casas decimais para percentuais e taxas.
      */
     private static final int CASAS_PORCENTAGEM = 2;
+
+    /**
+     * Tamanho de cada grupo de milhar na digitação de quantidades.
+     */
+    private static final int DIGITOS_POR_GRUPO_MILHAR = 3;
 
     /**
      * Localidade ativa para padronização de números e datas.
@@ -129,6 +139,40 @@ public class GuiFormatador {
             return formatoQuantidade.format(BigDecimal.ZERO);
         }
         return formatoQuantidade.format(quantidade);
+    }
+
+    /**
+     * Lê uma quantidade digitada pelo usuário, segundo o idioma ativo. Em português e espanhol o ponto separa
+     * milhares e a vírgula separa decimais ({@code 1.000,5}); em inglês é o contrário ({@code 1,000.5}).
+     * Texto sem separadores ({@code 1000}) vale em todos os idiomas. O separador de milhar só é aceito
+     * em grupos de três dígitos, e o texto inteiro precisa ser consumido.
+     *
+     * @param texto Texto digitado
+     * @return A quantidade lida, possivelmente negativa ou zero (a regra de quantidade positiva é do presenter)
+     * @throws NumberFormatException se o texto não for um número no formato do idioma
+     * @throws RegraNegocioException se houver mais de três casas decimais
+     */
+    public BigDecimal lerQuantidade(String texto) {
+        if (texto == null) {
+            throw new NumberFormatException("Quantidade ausente");
+        }
+        DecimalFormatSymbols simbolos = DecimalFormatSymbols.getInstance(locale);
+        String separadorMilhar = String.valueOf(simbolos.getGroupingSeparator());
+        String milhar = Pattern.quote(separadorMilhar);
+        String decimal = Pattern.quote(String.valueOf(simbolos.getDecimalSeparator()));
+        Pattern padrao = Pattern.compile("(-?)(\\d+|\\d{1,3}(?:" + milhar + "\\d{" + DIGITOS_POR_GRUPO_MILHAR + "})+)(?:"
+                + decimal + "(\\d+))?");
+        Matcher casamento = padrao.matcher(texto.trim());
+        if (!casamento.matches()) {
+            throw new NumberFormatException("Quantidade inválida: " + texto);
+        }
+
+        String fracao = casamento.group(3);
+        if (fracao != null && fracao.length() > CASAS_QUANTIDADE) {
+            throw new RegraNegocioException("gui.mov.erro.casasDecimais", CASAS_QUANTIDADE);
+        }
+        String inteiro = casamento.group(2).replace(separadorMilhar, "");
+        return new BigDecimal(casamento.group(1) + inteiro + (fracao != null ? "." + fracao : ""));
     }
 
     /**

@@ -7,7 +7,7 @@ import br.com.ftcoin.models.FTCoinException;
 
 /**
  * <p>
- * Regra única para registrar falhas na camada de apresentação (presenters e menu do modo texto).
+ * Regra única para registrar falhas na camada de apresentação (presenters da interface gráfica).
  * </p>
  *
  * <p>

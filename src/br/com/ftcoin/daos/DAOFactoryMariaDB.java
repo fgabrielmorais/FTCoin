@@ -1,7 +1,8 @@
 package br.com.ftcoin.daos;
 
 /**
- * Família de DAOs do MariaDB. Todos os DAOs criados usam a mesma {@link ConexaoMariaDB}.
+ * Família de DAOs do MariaDB: uma fábrica concreta do padrão Abstract Factory, que estende {@link DAOFactory}.
+ * Todos os DAOs criados usam a mesma {@link ConexaoMariaDB}, o Singleton da conexão.
  *
  * @author Grupo B.05
  * @version 1.0.0

@@ -37,7 +37,7 @@ public class CarteiraDAOMemoria extends CarteiraDAO {
 	@Override
 	public List<Carteira> listarTodas() {
 		LOG.log(Level.FINEST, "Listando {0} carteira(s) em memória", tabelaCarteiras.size());
-		return tabelaCarteiras;
+		return List.copyOf(tabelaCarteiras);
 	}
 
 	@Override

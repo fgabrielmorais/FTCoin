@@ -13,8 +13,8 @@ O sistema cadastra carteiras, registra compras e vendas de FTCoins e apura o res
 ## Funcionalidades
 
 - **Dashboard:** resumo do patrimônio, saldo, cotação do dia e últimas operações.
-- **Carteiras:** incluir, consultar, listar, editar e excluir. Uma carteira com movimentações não pode ser excluída.
-- **Movimentações:** compra e venda de FTCoins, com estimativa do valor antes de confirmar e recusa de venda acima do saldo.
+- **Carteiras:** incluir, consultar, listar, editar e excluir. Consultar, editar e excluir valem para o ID digitado no campo da tela ou, com o campo vazio, para a linha selecionada; um ID que não existe (ou que já foi excluído) mostra uma mensagem de carteira não encontrada. Uma carteira com movimentações não pode ser excluída.
+- **Movimentações:** compra e venda de FTCoins numa data à escolha (não futura), com estimativa do valor antes de confirmar. Uma venda é recusada se, em ordem cronológica, deixar o saldo da carteira negativo em qualquer data.
 - **Cotação:** consulta por data no Oráculo (simulado ou servidor de cotações do professor), com cache e indicação da origem (Oráculo ou cache).
 - **Relatórios:** posição da carteira, histórico de operações, consolidado do portfólio, desempenho, histórico de cotações, listagens de carteiras ordenadas por identificador e por titular e a lista de todas as movimentações, sem limite de linhas.
 - **Impressão:** o botão **Imprimir relatório** da tela de Relatórios abre uma janela para marcar quais relatórios imprimir. Os escolhidos saem em um único trabalho de impressão, cada um em páginas próprias, com título e rodapé "Página N", e podem ser salvos em PDF por uma impressora virtual. Relatórios sem dados não podem ser marcados.
@@ -41,7 +41,7 @@ Todos os cálculos usam `BigDecimal` com arredondamento `HALF_EVEN`.
 - **Modelo:** as entidades (`Carteira`, `Movimentacao`, `Cotacao`), a apuração da posição (`Posicao`) e os serviços `CarteiraService` e `MovimentacaoService` concentram as regras e os cálculos, inclusive os dos relatórios (ROI, participação no portfólio, variação da cotação). As telas recebem as próprias entidades, sem objetos intermediários.
 - **Contexto da aplicação:** a GUI cria um único `ContextoAplicacao` na inicialização e o injeta nas telas. Ele guarda os DAOs, os serviços e as mensagens, e é o único ponto que troca entre memória e MariaDB.
 - **Persistência:** padrão DAO com classes abstratas (`CarteiraDAO`, `MovimentacaoDAO`) e duas implementações de cada, uma por tabela: em memória e em MariaDB. A `DAOFactory` (Abstract Factory) escolhe entre elas. Os DAOs não são Singleton; o Singleton fica só na conexão com o banco (`ConexaoMariaDB`), fechada ao sair.
-- **Oráculo:** a chave `oracle.provider` em `oracle.properties` escolhe a origem das cotações: `simulado` (padrão, sem rede e sem banco: a cotação é calculada localmente nos dois modos de persistência) ou `api` (servidor de cotações, cliente `OraculoDAOApi` sobre as classes de protocolo do pacote `network`). Em qualquer caso o oráculo é envolvido pelo `OraculoDAOCache`, que busca cada data uma vez por execução, guarda também as datas passadas sem cotação e nunca guarda falhas. As consultas que podem ir à rede rodam em virtual threads, sem travar a tela.
+- **Oráculo:** a chave `oracle.provider` em `oracle.properties` escolhe a origem das cotações: `simulado` (padrão, sem rede e sem banco: a cotação é calculada localmente nos dois modos de persistência) ou `api` (servidor de cotações, cliente `OraculoDAOApi` sobre as classes de protocolo do pacote `network`). O simulado segue o contrato do servidor: sem cotação antes de 01/01/2009 e erro de data futura depois de hoje. Em qualquer caso o oráculo é envolvido pelo `OraculoDAOCache`, que busca cada data uma vez por execução, guarda também as datas passadas sem cotação e nunca guarda falhas. O cache é uma tabela hash encadeada (`LinkedHashMap` em ordem de acesso, sincronizada) indexada pela data, com busca O(1), limitada a 512 datas: ao passar do limite, descarta a entrada menos recentemente usada (LRU). As consultas que podem ir à rede rodam em virtual threads, sem travar a tela.
 - **Textos:** nenhum texto de interface fica no código. Os textos curtos vêm dos arquivos `Messages_<idioma>.properties`, e o manual e os créditos, de arquivos HTML por idioma em `gui/textos`.
 - **Erros:** as exceções do sistema carregam a chave da mensagem, e a interface as exibe no idioma ativo.
 - **Logs:** `java.util.logging`, configurado em `logging.properties`, grava em `logs/`.
@@ -49,6 +49,10 @@ Todos os cálculos usam `BigDecimal` com arredondamento `HALF_EVEN`.
 ### Estrutura de pacotes
 
 ```text
+test/                              # testes JUnit 5 (fora de src/)
+docs/
+├── script.sql                     # criação das tabelas do MariaDB
+└── entrega/                       # listagem das classes e roteiro de ensaio do vídeo
 src/
 ├── database.properties.example    # modelo das credenciais do banco
 ├── oracle.properties.example      # modelo da configuração do oráculo (simulado ou API)
@@ -67,7 +71,7 @@ src/
         ├── common/        # contexto, mensagens, formatação e enums da interface
         ├── presenters/    # um presenter por tela
         ├── views/         # telas, contratos (contracts/) e componentes visuais
-        ├── services/      # consultas de cotação da interface (em segundo plano)
+        ├── services/      # consultas de cotação em segundo plano e impressão de relatórios
         └── textos/        # manual e créditos em HTML, um arquivo por idioma
 ```
 
@@ -105,11 +109,29 @@ No Linux ou macOS, troque o separador do classpath por `:` (`target/classes:targ
 
 Também é possível importar o projeto na IDE como **projeto Maven** e executar a classe `br.com.ftcoin.gui.main.FTCoinGuiApp`.
 
-A interface inicia no modo memória, com carteiras e operações de demonstração, e roda sem banco de dados. O seletor **Banco** da barra superior troca para MariaDB durante a execução; a troca não copia os dados de um modo para o outro.
+A interface inicia no modo memória, sem carteiras cadastradas, e roda sem banco de dados.
+
+#### Argumentos de partida
+
+| Argumento | Valores | Padrão |
+|---|---|---|
+| `--lang=` | `pt`, `en` ou `es` (também `pt_BR`, `en_US`, `es_ES`) | idioma do sistema, se for pt, en ou es; senão pt |
+| `--db=` | `memory` ou `mariadb` | `memory` |
+| `--demo` | carrega carteiras e operações de exemplo (datas de 2026) | desligado |
+
+Exemplos:
+
+```powershell
+.\iniciar_interface.bat --lang=es
+.\iniciar_interface.bat --lang=en --demo
+java -cp "target\classes;target\dependency\*" br.com.ftcoin.gui.main.FTCoinGuiApp --db=mariadb
+```
+
+Argumento desconhecido ou valor inválido imprime a linha de uso e encerra com código 2, sem abrir a janela. Se `--db=mariadb` não conectar, a interface avisa e abre em memória. O seletor **Banco** da barra superior troca para MariaDB durante a execução; a troca não copia os dados de um modo para o outro.
 
 ### Modo memória
 
-Os dados são perdidos ao encerrar. Com o oráculo simulado (padrão), as cotações variam conforme a data, e a mesma data devolve sempre o mesmo valor. Não representam preços reais de mercado.
+Os dados são perdidos ao encerrar. Com o oráculo simulado (padrão), as cotações variam conforme a data, e a mesma data devolve sempre o mesmo valor. Não representam preços reais de mercado. O simulado segue o contrato do servidor: datas anteriores a 01/01/2009 (a primeira cotação do servidor) ficam sem cotação, e datas posteriores a hoje dão erro de data futura.
 
 ### Usando o servidor de cotações (API)
 
@@ -133,20 +155,39 @@ Os testes unitários e de integração (JUnit 5) ficam em `test/`, fora de `src/
 mvn test
 ```
 
-Cobrem a apuração por custo médio, as entidades, os serviços com DAOs em memória, o cache do oráculo, o cliente da API contra um servidor local falso (sucesso, sem cotação, credenciais recusadas, resposta inválida, rede e timeout) e a paridade das chaves de mensagens nos três idiomas. Nenhum teste precisa de rede ou de banco de dados.
+Cobrem a apuração por custo médio (conferida linha a linha contra a planilha oficial da disciplina), o cenário completo do roteiro do vídeo, as entidades, os serviços e os DAOs em memória, o cache do oráculo (inclusive o descarte LRU), o oráculo simulado, o cliente da API contra um servidor local falso (sucesso, sem cotação, credenciais recusadas, resposta inválida, rede e timeout), a leitura de argumentos, a leitura de quantidades por idioma e a paridade das chaves de mensagens nos três idiomas. Nenhum teste precisa de rede ou de banco de dados.
+
+#### Cobertura
+
+O `mvn test` também gera o relatório de cobertura do JaCoCo em `target/site/jacoco/index.html`. As classes de modelo e de serviços ficam acima de 85% de linhas. O código dos DAOs de MariaDB e as telas Swing não têm teste automatizado, porque dependem de um banco e de uma janela.
+
+### Compilação e Javadoc
+
+A compilação roda com `-Xlint:all -Werror`: qualquer aviso do compilador faz o build falhar.
+
+```bash
+mvn -B clean compile
+```
+
+Para gerar o Javadoc (em `target/site/apidocs`), com os fontes listados num arquivo e as dependências preparadas por `mvn dependency:copy-dependencies`:
+
+```bash
+find src -name "*.java" > fontes.txt
+javadoc -Xdoclint:all -encoding UTF-8 -docencoding UTF-8 -charset UTF-8 --module-path target/dependency -d target/site/apidocs @fontes.txt
+```
 
 ### Idioma
 
-O idioma inicial segue o da JVM: português do Brasil, inglês dos Estados Unidos ou espanhol da Espanha. Outros idiomas caem em português. Na interface gráfica, o seletor **Idioma** troca o idioma sem reiniciar e preserva os campos preenchidos e a aba aberta.
+O idioma inicial é o da opção `--lang` (português do Brasil, inglês dos Estados Unidos ou espanhol da Espanha). Sem ela, segue o idioma da JVM; idiomas sem tradução caem em português. Na interface gráfica, o seletor **Idioma** troca o idioma sem reiniciar e preserva os campos preenchidos e a aba aberta.
 
-Para iniciar em outro idioma, use as opções de JVM `-Duser.language=en -Duser.country=US` (inglês) ou `-Duser.language=es -Duser.country=ES` (espanhol).
+Exemplos: `--lang=en` (inglês) e `--lang=es` (espanhol).
 
 ### Quantidades, datas e valores
 
-- Quantidades aceitam ponto ou vírgula como separador decimal, sem separador de milhares: `2.5` e `2,5` são a mesma quantidade.
-- As datas usam o formato `DD/MM/AAAA` em qualquer idioma, na tela e nos campos (a tela Cotação também aceita `AAAA-MM-DD`). Datas futuras são recusadas.
+- Quantidades seguem o idioma ativo. Em português e espanhol, o ponto separa milhares e a vírgula separa decimais (`1.000` é mil, `1.000,5` é mil e meio); em inglês é o contrário (`1,000` é mil, `1.5` é um e meio). Texto sem separadores (`1000`) vale em todos. São aceitas no máximo três casas decimais.
+- As datas usam o formato `DD/MM/AAAA` em qualquer idioma, na tela e nos campos (os campos também aceitam `AAAA-MM-DD`). Datas futuras são recusadas.
 - Os números seguem o idioma escolhido, mas as datas têm sempre o mesmo formato. Os valores monetários são sempre em reais (BRL): trocar o idioma não converte a moeda.
-- **Limitação atual:** a compra ou venda é registrada com a data do dia e a cotação atual. O campo de data do formulário de movimentações só mostra a data de hoje e não pode ser editado; não é possível registrar uma operação retroativa.
+- **Data da operação:** o campo de data do formulário é editável (`DD/MM/AAAA`). A operação usa a cotação da data informada, que não pode ser futura, e é recusada se alguma venda ficar sem saldo naquela data, considerando toda a linha do tempo da carteira.
 
 ---
 
@@ -156,8 +197,8 @@ O desenvolvimento seguiu a metodologia ágil **Kanban**, com a seguinte distribu
 
 * **Gabriel Morais Felix**: Líder de Arquitetura, Versionamento e Integração e Desenvolvimento de Lógica de Negócio.
 * **Erik & Vitor**: Desenvolvimento de Dados (Models e DAOs).
-* **Hyago & Arthur**: Desenvolvimento de Lógica de Negócio (Controllers).
-* **Isabela & Ana**: Desenvolvimento de Experiência do Usuário (Views CLI).
+* **Hyago & Arthur**: Desenvolvimento de Lógica de Negócio (Services).
+* **Isabela & Ana**: Desenvolvimento de Experiência do Usuário (Views).
 * **Pedro**: Interface de Usuário e Garantia de Qualidade (QA/Testes).
 
 ---

@@ -49,33 +49,61 @@ public class MovimentacaoService {
 	}
 
 	/**
-	 * Registra uma compra ou venda na data de hoje, pela cotação do dia.
+	 * Registra uma compra ou venda na data informada, pela cotação daquele dia. A operação só é aceita se, na linha
+	 * do tempo (por data e, no mesmo dia, por ordem de registro), nenhuma venda deixar o saldo negativo.
 	 *
 	 * @param idCarteira identificador da carteira
 	 * @param tipo compra ou venda
+	 * @param data dia da operação, que não pode ser posterior a hoje
 	 * @param quantidade quantidade de FTCoins, maior que zero
 	 * @return a movimentação registrada
-	 * @throws RegraNegocioException se a carteira não existir, a quantidade for inválida,
-	 *         não houver cotação para hoje ou a venda superar o saldo
+	 * @throws RegraNegocioException se a carteira não existir, a data for futura, a quantidade for inválida,
+	 *         não houver cotação para a data ou alguma venda ficar sem saldo na sua data
 	 */
-	public Movimentacao registrarOperacao(int idCarteira, TipoOperacao tipo, BigDecimal quantidade) {
-		LOG.log(Level.FINE, "Validando {0} de {1} FTC na carteira {2}", new Object[] { tipo, quantidade, idCarteira });
+	public Movimentacao registrarOperacao(int idCarteira, TipoOperacao tipo, LocalDate data, BigDecimal quantidade) {
+		LOG.log(Level.FINE, "Validando {0} de {1} FTC em {2} na carteira {3}",
+				new Object[] { tipo, quantidade, data, idCarteira });
 		carteiraDAO.buscarExistente(idCarteira);
+
+		if (data == null || data.isAfter(LocalDate.now())) {
+			throw new RegraNegocioException("erro.movimentacao.dataFutura", data);
+		}
 
 		Movimentacao novaMovimentacao = new Movimentacao();
 		novaMovimentacao.setIdCarteira(idCarteira);
-		novaMovimentacao.setDataOperacao(LocalDate.now());
+		novaMovimentacao.setDataOperacao(data);
 		novaMovimentacao.setTipoOperacao(tipo);
 		novaMovimentacao.setQuantidadeMovimentada(quantidade);
 
-		// Aplicar na posição atual valida a operação (ex.: saldo insuficiente na venda) antes de gravar
-		BigDecimal cotacaoAtual = buscarCotacaoAtual();
-		tipo.aplicar(apurarPosicao(idCarteira), quantidade, cotacaoAtual);
+		BigDecimal cotacaoDaData = buscarCotacao(data);
+		validarLinhaDoTempo(idCarteira, novaMovimentacao);
 
 		movimentacaoDAO.inserir(novaMovimentacao);
-		LOG.log(Level.INFO, "{0} de {1} FTC registrada na carteira {2} (cotação {3})",
-				new Object[] { tipo, quantidade, idCarteira, cotacaoAtual });
+		LOG.log(Level.INFO, "{0} de {1} FTC registrada em {2} na carteira {3} (cotação {4})",
+				new Object[] { tipo, quantidade, data, idCarteira, cotacaoDaData });
 		return novaMovimentacao;
+	}
+
+	/**
+	 * Reaplica o histórico da carteira com a nova operação na linha do tempo e recusa se alguma venda,
+	 * a nova ou uma já registrada, ficar sem saldo na sua data.
+	 */
+	private void validarLinhaDoTempo(int idCarteira, Movimentacao novaMovimentacao) {
+		List<Movimentacao> linhaDoTempo = new ArrayList<>(buscarHistorico(idCarteira));
+		linhaDoTempo.add(novaMovimentacao);
+		// A ordenação é estável: no mesmo dia a nova operação, adicionada por último, fica depois das já registradas
+		linhaDoTempo.sort(Comparator.comparing(Movimentacao::getDataOperacao));
+
+		Posicao posicao = new Posicao();
+		for (Movimentacao mov : linhaDoTempo) {
+			BigDecimal cotacaoNaData = buscarCotacao(mov.getDataOperacao());
+			try {
+				mov.getTipoOperacao().aplicar(posicao, mov.getQuantidadeMovimentada(), cotacaoNaData);
+			} catch (RegraNegocioException e) {
+				throw new RegraNegocioException("erro.movimentacao.saldoNegativoNaData",
+						mov.getDataOperacao(), posicao.getSaldo(), mov.getQuantidadeMovimentada());
+			}
+		}
 	}
 
 	/**

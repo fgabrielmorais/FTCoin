@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -122,13 +123,24 @@ public class MensagensGui {
             if (argumentos == null || argumentos.length == 0) {
                 return padrao;
             }
-            return new MessageFormat(padrao, localeAtual).format(argumentos);
+            return new MessageFormat(padrao, localeAtual).format(formatarDatas(argumentos));
         } catch (MissingResourceException e) {
             if (chavesAusentesAvisadas.add(localeAtual + ":" + chave)) {
                 LOG.log(Level.WARNING, "Chave de tradução ausente em {0}: {1}", new Object[] { localeAtual, chave });
             }
             return "!" + chave + "!";
         }
+    }
+
+    // Datas saem como DD/MM/AAAA; o MessageFormat usaria o formato ISO do toString()
+    private Object[] formatarDatas(Object[] argumentos) {
+        Object[] formatados = argumentos.clone();
+        for (int i = 0; i < formatados.length; i++) {
+            if (formatados[i] instanceof LocalDate data) {
+                formatados[i] = formatador.data(data);
+            }
+        }
+        return formatados;
     }
 
     /**

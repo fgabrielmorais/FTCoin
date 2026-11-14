@@ -59,7 +59,7 @@ echo.
 echo Iniciando a interface...
 echo.
 
-"%JAVA_BIN%" -cp "target\classes;target\dependency\*" br.com.ftcoin.gui.main.FTCoinGuiApp
+"%JAVA_BIN%" -cp "target\classes;target\dependency\*" br.com.ftcoin.gui.main.FTCoinGuiApp %*
 set "RESULTADO=%ERRORLEVEL%"
 
 popd

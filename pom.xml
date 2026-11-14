@@ -21,12 +21,26 @@
         </includes>
       </resource>
     </resources>
+    <testResources>
+      <!-- Gabarito da planilha oficial, lido pelo PlanilhaApuracaoTest -->
+      <testResource>
+        <directory>test</directory>
+        <includes>
+          <include>**/*.csv</include>
+        </includes>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
         <configuration>
           <release>21</release>
+          <showWarnings>true</showWarnings>
+          <compilerArgs>
+            <arg>-Xlint:all</arg>
+            <arg>-Werror</arg>
+          </compilerArgs>
         </configuration>
       </plugin>
       <plugin>
@@ -36,6 +50,25 @@
           <!-- O projeto tem module-info; os testes rodam no classpath para enxergar as classes de teste -->
           <useModulePath>false</useModulePath>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.12</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>relatorio-cobertura</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

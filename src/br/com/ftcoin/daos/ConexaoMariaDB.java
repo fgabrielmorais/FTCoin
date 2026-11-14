@@ -12,6 +12,10 @@ import java.util.logging.Logger;
 /**
  * Conexão única com o MariaDB, compartilhada por todos os DAOs de banco (padrão Singleton).
  * <p>
+ * Singleton: o construtor é privado e a única instância é obtida por {@link #getInstancia()}, método
+ * sincronizado que a cria na primeira chamada e a devolve nas seguintes.
+ * </p>
+ * <p>
  * A conexão é aberta na primeira consulta, reaberta se cair e fechada uma única vez ao encerrar a
  * aplicação, por {@link #fechar()}. As credenciais vêm do arquivo {@code database.properties}.
  * </p>

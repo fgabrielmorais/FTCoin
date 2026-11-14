@@ -11,6 +11,7 @@ import br.com.ftcoin.gui.common.MensagensGui;
 import br.com.ftcoin.gui.views.contracts.ICarteiraView;
 import br.com.ftcoin.models.Carteira;
 import br.com.ftcoin.models.FTCoinException;
+import br.com.ftcoin.models.Posicao;
 
 /**
  * <p>
@@ -59,6 +60,79 @@ public class CarteiraPresenter {
         } catch (Exception e) {
             RegistroDeFalhas.registrar(LOG, "carregar carteiras", e);
             view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
+        }
+    }
+
+    /**
+     * Descobre a carteira alvo de uma ação: a do identificador digitado ou, se o campo estiver vazio, a da linha
+     * selecionada na tabela. A carteira é sempre buscada de novo no serviço, para recusar uma que já foi excluída.
+     *
+     * @param textoId identificador digitado pelo usuário; vazio para usar a linha selecionada
+     * @return a carteira encontrada, ou {@code null} depois de mostrar o motivo à visão
+     */
+    private Carteira localizarCarteira(String textoId) {
+        MensagensGui mensagens = contexto.getMensagens();
+        int id;
+        if (textoId == null || textoId.isBlank()) {
+            Carteira selecionada = view.getCarteiraSelecionada();
+            if (selecionada == null) {
+                LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.carteira.erro.selecione");
+                view.exibirMensagemErro(mensagens.get("gui.carteira.erro.selecione"));
+                return null;
+            }
+            id = selecionada.getId();
+        } else {
+            try {
+                id = Integer.parseInt(textoId.trim());
+            } catch (NumberFormatException e) {
+                LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.carteira.erro.idInvalido");
+                view.exibirMensagemErro(mensagens.get("gui.carteira.erro.idInvalido"));
+                return null;
+            }
+        }
+
+        try {
+            return contexto.getCarteiraService().buscarCarteira(id);
+        } catch (FTCoinException e) {
+            RegistroDeFalhas.registrar(LOG, "buscar carteira " + id, e);
+            view.exibirMensagemErro(mensagens.get(e.getChave(), e.getArgumentos()));
+        } catch (Exception e) {
+            RegistroDeFalhas.registrar(LOG, "buscar carteira " + id, e);
+            view.exibirMensagemErro(mensagens.descreverErro(e));
+        }
+        return null;
+    }
+
+    /**
+     * Consulta uma carteira e mostra seus dados à visão.
+     *
+     * @param textoId identificador digitado; vazio para usar a linha selecionada
+     */
+    public void consultarCarteira(String textoId) {
+        LOG.log(Level.FINE, "Usuário pediu: consultar carteira {0}", textoId);
+        Carteira carteira = localizarCarteira(textoId);
+        if (carteira == null) {
+            return;
+        }
+        try {
+            Posicao posicao = contexto.getMovimentacaoService().apurarPosicao(carteira.getId());
+            view.exibirDetalhesCarteira(carteira, posicao);
+        } catch (Exception e) {
+            RegistroDeFalhas.registrar(LOG, "consultar carteira " + carteira.getId(), e);
+            view.exibirMensagemErro(contexto.getMensagens().descreverErro(e));
+        }
+    }
+
+    /**
+     * Abre a edição de uma carteira, se ela existir.
+     *
+     * @param textoId identificador digitado; vazio para usar a linha selecionada
+     */
+    public void iniciarEdicao(String textoId) {
+        LOG.log(Level.FINE, "Usuário pediu: abrir edição da carteira {0}", textoId);
+        Carteira carteira = localizarCarteira(textoId);
+        if (carteira != null) {
+            view.abrirModalEdicao(carteira);
         }
     }
 
@@ -139,16 +213,16 @@ public class CarteiraPresenter {
     }
 
     /**
-     * Exclui a carteira selecionada na tabela da visão caso não possua movimentações vinculadas.
+     * Exclui uma carteira, depois da confirmação do usuário, caso ela exista e não tenha movimentações.
+     *
+     * @param textoId identificador digitado; vazio para usar a linha selecionada
      */
-    public void excluirCarteira() {
-        Carteira selecionada = view.getCarteiraSelecionada();
-        LOG.log(Level.FINE, "Usuário pediu: excluir carteira {0}", selecionada == null ? "(nenhuma selecionada)" : selecionada.getId());
+    public void excluirCarteira(String textoId) {
+        LOG.log(Level.FINE, "Usuário pediu: excluir carteira {0}", textoId);
         MensagensGui mensagens = contexto.getMensagens();
 
-        if (selecionada == null) {
-            LOG.log(Level.FINE, "Entrada rejeitada: {0}", "gui.carteira.erro.selecione");
-            view.exibirMensagemErro(mensagens.get("gui.carteira.erro.selecione"));
+        Carteira selecionada = localizarCarteira(textoId);
+        if (selecionada == null || !view.confirmarExclusao(selecionada)) {
             return;
         }
 

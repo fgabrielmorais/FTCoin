@@ -50,6 +50,6 @@ public class MovimentacaoDAOMemoria extends MovimentacaoDAO {
 	@Override
 	public List<Movimentacao> listarTodas() {
 		LOG.log(Level.FINEST, "Listando {0} movimentação(ões) em memória", tabelaMovimentacoes.size());
-		return tabelaMovimentacoes;
+		return List.copyOf(tabelaMovimentacoes);
 	}
 }

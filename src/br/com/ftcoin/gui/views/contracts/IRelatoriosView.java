@@ -17,7 +17,7 @@ import br.com.ftcoin.models.Posicao;
  * </p>
  *
  * <p>
- * Especifica os métodos de apresentação dos cinco relatórios financeiros do sistema FTCoin:
+ * Especifica os métodos de apresentação dos relatórios financeiros do sistema FTCoin, entre eles:
  * </p>
  * <ul>
  *     <li><b>Relatório 1:</b> Posição Consolidada da Carteira (CMP).</li>
