@@ -9,7 +9,6 @@ import br.com.ftcoin.daos.CarteiraDAO;
 import br.com.ftcoin.daos.DAOFactory;
 import br.com.ftcoin.daos.MovimentacaoDAO;
 import br.com.ftcoin.daos.OraculoDAOCache;
-import br.com.ftcoin.daos.PersistenciaException;
 import br.com.ftcoin.daos.TipoPersistencia;
 import br.com.ftcoin.services.CarteiraService;
 import br.com.ftcoin.services.MovimentacaoService;
@@ -46,7 +45,7 @@ public class ContextoAplicacao {
      *
      * @param mensagens textos da interface no idioma ativo
      * @param tipoInicial mecanismo de persistência usado ao abrir a aplicação
-     * @throws PersistenciaException se a persistência inicial não puder ser criada
+     * @throws br.com.ftcoin.daos.PersistenciaException se a persistência inicial não puder ser criada
      */
     public ContextoAplicacao(MensagensGui mensagens, TipoPersistencia tipoInicial) {
         this.mensagens = mensagens;
@@ -86,7 +85,7 @@ public class ContextoAplicacao {
      * Troca o mecanismo de persistência e avisa as telas registradas.
      *
      * @param novoTipo mecanismo desejado; {@code null} ou o mecanismo atual não fazem nada
-     * @throws PersistenciaException se o MariaDB não estiver configurado ou não responder
+     * @throws br.com.ftcoin.daos.PersistenciaException se o MariaDB não estiver configurado ou não responder
      */
     public synchronized void alternarPersistencia(TipoPersistencia novoTipo) {
         if (novoTipo == null || novoTipo == this.tipoPersistenciaAtual) {
