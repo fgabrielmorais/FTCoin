@@ -82,8 +82,20 @@ src/
 ### Pré-requisitos
 
 - JDK 21.
-- Maven, ou uma IDE com suporte a projetos Maven.
+- Maven (opcional: o projeto inclui o Maven Wrapper, veja abaixo), ou uma IDE com suporte a projetos Maven.
 - MariaDB, apenas para o modo banco de dados.
+
+### Sem Maven instalado (Maven Wrapper)
+
+O repositório traz o Maven Wrapper (versão 3.9.9 do Maven). Basta ter o JDK 21: na primeira execução o wrapper baixa o Maven sozinho, e depois usa a cópia local. Em qualquer comando deste README, troque `mvn` por `mvnw`:
+
+```powershell
+.\mvnw.cmd -B clean test
+```
+
+```bash
+./mvnw -B clean test
+```
 
 ### Interface gráfica
 
