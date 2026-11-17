@@ -44,8 +44,10 @@ public final class ConfiguracaoLog {
     private static final String LOGGER_DO_PROJETO = "br.com.ftcoin";
 
     /**
-     * Mantém o logger pai do projeto vivo (o JUL guarda loggers por referência fraca).
+     * Mantém o logger pai do projeto vivo (o JUL guarda loggers por referência fraca). O campo é só gravado,
+     * nunca lido: a referência forte é a sua única função.
      */
+    @SuppressWarnings("unused")
     private static Logger loggerDoProjeto;
 
     /**

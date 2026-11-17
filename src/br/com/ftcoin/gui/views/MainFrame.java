@@ -17,7 +17,6 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
-import br.com.ftcoin.daos.TipoPersistencia;
 import br.com.ftcoin.gui.common.ContextoAplicacao;
 import br.com.ftcoin.gui.common.DatabaseSelector;
 import br.com.ftcoin.gui.common.IdiomaSelector;
@@ -226,7 +225,7 @@ public class MainFrame extends JFrame {
         pnlSeletores.setOpaque(false);
         pnlSeletores.add(lblBanco);
         pnlSeletores.add(cmbBanco);
-        pnlSeletores.add(javax.swing.Box.createHorizontalStrut(12));
+        pnlSeletores.add(Box.createHorizontalStrut(12));
         pnlSeletores.add(lblIdioma);
         pnlSeletores.add(cmbIdioma);
         pnlStatus.add(pnlSeletores, BorderLayout.EAST);
