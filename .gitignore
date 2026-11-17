@@ -23,8 +23,5 @@ database.properties
 #Credenciais do servidor de cotações
 oracle.properties
 
-# Plano de trabalho do grupo (material interno, não faz parte da entrega)
-docs/plano/
-
 # Saída de compilação manual (fora do Maven)
 out/
