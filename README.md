@@ -105,7 +105,7 @@ No Windows, execute na raiz do repositório:
 .\iniciar_interface.bat
 ```
 
-O script compila o projeto com Maven, prepara as dependências e abre a interface. Ele usa `JAVA_HOME` e `MAVEN_HOME` quando definidas; caso contrário, procura Java e Maven no `PATH`.
+O script compila o projeto, prepara as dependências e abre a interface, usando o Maven Wrapper do projeto (`mvnw.cmd`), que dispensa o Maven instalado. Se o wrapper não existir, usa `MAVEN_HOME` ou procura o Maven no `PATH`. O Java vem de `JAVA_HOME` ou do `PATH`.
 
 Pelo terminal, em qualquer sistema:
 
