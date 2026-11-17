@@ -14,7 +14,7 @@ if exist "%~dp0mvnw.cmd" (
     rem O Maven Wrapper do projeto dispensa ter o Maven instalado: baixa a versao certa na primeira execucao
     set "MAVEN_CMD=%~dp0mvnw.cmd"
 ) else if defined MAVEN_HOME (
-    set "MAVEN_CMD=%MAVEN_HOME%\bin\mvn.cmd"
+    set "MAVEN_CMD=%MAVEN_HOME%\mvn.cmd"
 ) else (
     rem O "call" falha com o nome puro entre aspas; por isso usamos o caminho completo achado no PATH
     for /f "delims=" %%i in ('where mvn.cmd 2^>nul') do if not defined MAVEN_CMD set "MAVEN_CMD=%%i"
