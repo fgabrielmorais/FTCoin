@@ -51,8 +51,7 @@ Todos os cálculos usam `BigDecimal` com arredondamento `HALF_EVEN`.
 ```text
 test/                              # testes JUnit 5 (fora de src/)
 docs/
-├── script.sql                     # criação das tabelas do MariaDB
-└── entrega/                       # listagem das classes e roteiro de ensaio do vídeo
+└── script.sql                     # criação das tabelas do MariaDB
 src/
 ├── database.properties.example    # modelo das credenciais do banco
 ├── oracle.properties.example      # modelo da configuração do oráculo (simulado ou API)
