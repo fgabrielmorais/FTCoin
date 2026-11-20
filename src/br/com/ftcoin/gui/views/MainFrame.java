@@ -256,7 +256,7 @@ public class MainFrame extends JFrame {
                 contexto.alternarPersistencia(escolhido.getTipoPersistencia());
                 lblStatusMensagem.setText(mensagens.get("gui.status.persistencia.alterada",
                         escolhido.getDescricaoLocalizada(mensagens)));
-                    } catch (RuntimeException ex) {
+            } catch (RuntimeException ex) {
                 // Volta o seletor para o mecanismo que continua ativo
                 cmbBanco.setSelectedItem(DatabaseSelector.porTipo(contexto.getTipoPersistenciaAtual()));
                 JOptionPane.showMessageDialog(

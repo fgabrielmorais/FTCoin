@@ -92,8 +92,9 @@ public class ContextoAplicacao {
             return;
         }
 
+        TipoPersistencia tipoAnterior = this.tipoPersistenciaAtual;
         LOG.log(Level.FINE, "Alternando persistência de {0} para {1}", new Object[] {
-                this.tipoPersistenciaAtual.getNome(), novoTipo.getNome() });
+                tipoAnterior.getNome(), novoTipo.getNome() });
         inicializarCamadaPersistencia(novoTipo);
 
         // Valida a conexão logo na troca, em vez de deixar o erro para a primeira tela
@@ -103,6 +104,8 @@ public class ContextoAplicacao {
             } catch (RuntimeException e) {
                 // O stack trace do banco é registrado pelo DAO; aqui fica só o efeito na aplicação
                 LOG.log(Level.WARNING, "MariaDB indisponível ao trocar a persistência: {0}", e.getMessage());
+                // Sem o banco, a aplicação volta ao mecanismo que funcionava (a memória não depende de rede)
+                inicializarCamadaPersistencia(tipoAnterior);
                 throw e;
             }
         }

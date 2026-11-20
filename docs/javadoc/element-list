@@ -1,0 +1,12 @@
+module:FTCoin
+br.com.ftcoin.config
+br.com.ftcoin.daos
+br.com.ftcoin.gui.common
+br.com.ftcoin.gui.main
+br.com.ftcoin.gui.presenters
+br.com.ftcoin.gui.services
+br.com.ftcoin.gui.views
+br.com.ftcoin.gui.views.components
+br.com.ftcoin.gui.views.contracts
+br.com.ftcoin.models
+br.com.ftcoin.services
