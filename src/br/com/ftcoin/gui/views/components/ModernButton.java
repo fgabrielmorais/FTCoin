@@ -55,12 +55,16 @@ public class ModernButton extends JButton {
         /** Menu de navegação: sem fundo nem contorno, só texto; o item ativo recebe um sublinhado. */
         NAVEGACAO(null, TemaCores.BORDA_SUAVE, TemaCores.TEXTO_SECUNDARIO, null);
 
+        /** Cor de fundo em repouso; {@code null} deixa o botão sem fundo. */
         final Color fundoPadrao;
 
+        /** Cor de fundo com o mouse sobre o botão. */
         final Color fundoHover;
 
+        /** Cor do texto. */
         final Color texto;
 
+        /** Cor do contorno; {@code null} deixa o botão sem contorno. */
         final Color contorno;
 
         Variante(Color fundoPadrao, Color fundoHover, Color texto, Color contorno) {

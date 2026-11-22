@@ -339,8 +339,15 @@ public class CotacaoPanel extends JPanel implements ICotacaoView {
         preencherHistorico(modeloTabelaHistorico, historico, contexto.getMensagens().getFormatador());
     }
 
-    // Tabela de cotações (aqui e no relatório 5): data, valor, variação em reais e em %, origem.
-    // O histórico vem do dia mais recente para o mais antigo, então a cotação anterior é a da linha seguinte.
+    /**
+     * Preenche a tabela de cotações (usada aqui e no relatório do Oráculo) com data, valor, variação em reais e
+     * em porcentagem e origem. O histórico vem do dia mais recente para o mais antigo, então a cotação anterior
+     * de cada linha é a da linha seguinte.
+     *
+     * @param modelo modelo da tabela a preencher; as linhas atuais são descartadas
+     * @param historico cotações com a origem de cada uma, da mais recente para a mais antiga
+     * @param formatador formatador do idioma ativo
+     */
     static void preencherHistorico(DefaultTableModel modelo, Map<Cotacao, OrigemCotacao> historico,
             GuiFormatador formatador) {
         modelo.setRowCount(0);

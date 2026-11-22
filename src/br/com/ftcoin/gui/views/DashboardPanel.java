@@ -310,8 +310,16 @@ public class DashboardPanel extends JPanel implements IDashboardView {
         }
     }
 
-    // Linha das tabelas de movimentações (aqui e na tela de movimentações): data, carteira, tipo, quantidade,
-    // cotação e valor da operação
+    /**
+     * Monta a linha das tabelas de movimentações (usada aqui e na tela de movimentações): data, carteira, tipo,
+     * quantidade, cotação e valor da operação.
+     *
+     * @param movimentacao movimentação a exibir
+     * @param carteiras carteiras indexadas pelo identificador, para mostrar o titular
+     * @param cotacoes cotação de cada data de operação
+     * @param formatador formatador do idioma ativo
+     * @return os valores das colunas, na ordem da tabela
+     */
     static Object[] linhaMovimentacao(Movimentacao movimentacao, Map<Integer, Carteira> carteiras,
             Map<LocalDate, BigDecimal> cotacoes, GuiFormatador formatador) {
         Carteira carteira = carteiras.get(movimentacao.getIdCarteira());

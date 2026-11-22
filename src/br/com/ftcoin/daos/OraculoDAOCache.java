@@ -83,7 +83,12 @@ public class OraculoDAOCache extends OraculoDAO {
 		this(oraculo, CAPACIDADE_MAXIMA);
 	}
 
-	// Capacidade pequena permite testar o descarte LRU
+	/**
+	 * Cria o cache com uma capacidade escolhida; uma capacidade pequena permite testar o descarte LRU.
+	 *
+	 * @param oraculo oráculo consultado nas datas que ainda não estão no cache
+	 * @param capacidade quantidade máxima de datas guardadas
+	 */
 	OraculoDAOCache(OraculoDAO oraculo, int capacidade) {
 		this.oraculo = oraculo;
 		this.cache = Collections.synchronizedMap(new MapaLru(capacidade));
